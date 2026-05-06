@@ -1,0 +1,4 @@
+-- Local Supabase CLI seed placeholder.
+-- This file stays intentionally empty until local auth-user seeding is
+-- formalized. That keeps `supabase db reset` focused on schema rebuilds
+-- while allowing `npm run db:seed` to remain a stable command.
