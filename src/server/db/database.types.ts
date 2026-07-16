@@ -821,37 +821,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_theater_with_owner: {
-        Args: {
-          p_actor_user_id: string
-          p_name: string
-          p_slug: string
-          p_timezone?: string | null
-        }
-        Returns: {
-          created: boolean
-          id: string
-          name: string
-          slug: string
-          status: Database['public']['Enums']['theater_status']
-        }[]
-      }
-      publish_theater: {
-        Args: { p_actor_user_id: string; p_theater_id: string }
-        Returns: Database['public']['Tables']['theaters']['Row'][]
-      }
-      set_default_theater: {
-        Args: { p_theater_id: string; p_user_id: string }
-        Returns: Database['public']['Tables']['theaters']['Row'][]
-      }
-      update_theater_setup: {
-        Args: {
-          p_actor_user_id: string
-          p_changes: Json
-          p_theater_id: string
-        }
-        Returns: Database['public']['Tables']['theaters']['Row'][]
-      }
       can_insert_show_cast: {
         Args: {
           p_show_id: string
@@ -889,6 +858,21 @@ export type Database = {
         Returns: boolean
       }
       can_view_show: { Args: { p_show_id: string }; Returns: boolean }
+      create_theater_with_owner: {
+        Args: {
+          p_actor_user_id: string
+          p_name: string
+          p_slug: string
+          p_timezone?: string
+        }
+        Returns: {
+          created: boolean
+          id: string
+          name: string
+          slug: string
+          status: Database['public']['Enums']['theater_status']
+        }[]
+      }
       is_active_member_of_theater: {
         Args: { p_theater_id: string }
         Returns: boolean
@@ -897,8 +881,101 @@ export type Database = {
       is_theater_admin: { Args: { p_theater_id: string }; Returns: boolean }
       is_theater_owner: { Args: { p_theater_id: string }; Returns: boolean }
       is_theater_staff: { Args: { p_theater_id: string }; Returns: boolean }
+      publish_theater: {
+        Args: { p_actor_user_id: string; p_theater_id: string }
+        Returns: {
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          postal_code: string | null
+          published_at: string | null
+          slug: string
+          social_links: Json
+          state_region: string | null
+          status: Database['public']['Enums']['theater_status']
+          street: string | null
+          tagline: string | null
+          timezone: string | null
+          timezone_source: Database['public']['Enums']['timezone_source']
+          upcoming_other_events_limit: number
+          upcoming_shows_limit: number
+          updated_at: string
+          website_url: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'theaters'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      set_default_theater: {
+        Args: { p_theater_id: string; p_user_id: string }
+        Returns: {
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          postal_code: string | null
+          published_at: string | null
+          slug: string
+          social_links: Json
+          state_region: string | null
+          status: Database['public']['Enums']['theater_status']
+          street: string | null
+          tagline: string | null
+          timezone: string | null
+          timezone_source: Database['public']['Enums']['timezone_source']
+          upcoming_other_events_limit: number
+          upcoming_shows_limit: number
+          updated_at: string
+          website_url: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'theaters'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { '': string }; Returns: string[] }
+      update_theater_setup: {
+        Args: { p_actor_user_id: string; p_changes: Json; p_theater_id: string }
+        Returns: {
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          postal_code: string | null
+          published_at: string | null
+          slug: string
+          social_links: Json
+          state_region: string | null
+          status: Database['public']['Enums']['theater_status']
+          street: string | null
+          tagline: string | null
+          timezone: string | null
+          timezone_source: Database['public']['Enums']['timezone_source']
+          upcoming_other_events_limit: number
+          upcoming_shows_limit: number
+          updated_at: string
+          website_url: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'theaters'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       activity_visibility: 'admin_only' | 'member_visible' | 'self_only'

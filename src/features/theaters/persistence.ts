@@ -75,7 +75,7 @@ export function createSupabaseTheaterPersistence(): TheaterPersistence {
         p_actor_user_id: input.actorUserId,
         p_name: input.name,
         p_slug: input.slug,
-        p_timezone: input.timezone ?? null,
+        ...(input.timezone ? { p_timezone: input.timezone } : {}),
       })
 
       if (error) {

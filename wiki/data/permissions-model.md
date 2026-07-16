@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: specified, not implemented
+Implementation status: partially implemented
 
 Stagecom permissions are contextual. Authority belongs to a Theater or Event relationship rather than to a global user type.
 
@@ -43,6 +43,15 @@ All mutations and private reads go through app-owned server functions/commands. 
 ## Public Read Boundary
 
 Public Theater/Event queries must use separate anonymous-safe public query modules. Draft and archived Theater data is not public.
+
+The persistent Theater slice enforces this boundary in the database as well as
+the app query layer. `anon` and `authenticated` may select only the approved
+public Theater columns, while Theater RLS returns published rows to anonymous
+requests and additionally returns a Member's own Theaters to authenticated
+requests. Theater membership columns are selectable by `authenticated` only;
+membership RLS limits those rows to the current Member or an authorized Theater
+relationship. Privileged Theater transaction functions remain executable only
+by `service_role` after app-level authorization.
 
 ## Reusable Join Links
 

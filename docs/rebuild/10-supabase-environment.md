@@ -50,14 +50,19 @@ VITE_SUPABASE_URL=http://127.0.0.1:54321
 Implemented scripts:
 
 ```txt
+npm run db:start:local
+npm run db:status:local
 npm run db:types
 npm run db:types:remote
 npm run db:types:local
+npm run db:types:check:local
 npm run db:link:remote
 npm run db:reset:local
 npm run db:migrate:local
 npm run db:migrate:remote
 npm run db:seed
+npm run db:test:local
+npm run db:stop:local
 ```
 
 Generate and commit DB types to `src/server/db/database.types.ts`.
@@ -101,8 +106,14 @@ Use deterministic seed scripts for tests, `/dev/components`, and manual QA.
 
 Use remote Supabase email behavior first. Document local email capture for local Supabase.
 
-Local Supabase captures auth emails with Inbucket at:
+Local Supabase captures auth emails with Mailpit at:
 
 ```txt
 http://127.0.0.1:54324
 ```
+
+The local callback allow-list includes both `localhost:3000` and
+`127.0.0.1:3000`, so the existing magic-link signup flow can create a local
+session for authenticated browser testing. See
+`docs/development/database-workflow.md` for the reset, verification, env, and
+logged-in testing procedure.
