@@ -25,11 +25,13 @@ export type PublicTheaterView = {
 }
 
 type PublicTheaterPageProps = {
+  previewAction?: React.ReactNode
   theater: PublicTheaterView
   mode: 'preview' | 'published'
 }
 
 export function PublicTheaterPage({
+  previewAction,
   theater,
   mode,
 }: PublicTheaterPageProps) {
@@ -50,6 +52,7 @@ export function PublicTheaterPage({
             Preview mode
           </p>
           <div className="flex gap-2">
+            {previewAction}
             <a
               className="rounded-md border border-[var(--line)] px-3 py-2 text-sm font-bold no-underline"
               href={`/app/${theater.slug}/settings`}
@@ -157,30 +160,4 @@ export function PublicTheaterPage({
       </section>
     </main>
   )
-}
-
-export function getDemoTheater(slug: string): PublicTheaterView {
-  return {
-    name: titleFromSlug(slug),
-    slug,
-    tagline: 'A community stage for bold performances and organized productions.',
-    websiteUrl: 'https://example.com',
-    location: {
-      street: '123 Main Street',
-      city: 'Austin',
-      stateRegion: 'TX',
-      postalCode: '78701',
-      country: 'United States',
-    },
-    socialLinks: [{ label: 'Instagram', url: 'https://example.com' }],
-    upcomingEvents: [],
-  }
-}
-
-function titleFromSlug(slug: string) {
-  return slug
-    .split('-')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
 }

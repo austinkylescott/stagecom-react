@@ -1,15 +1,51 @@
-import { err, notImplemented } from '@/server/errors'
+import { appError, err, notImplemented, ok, toAppError } from '@/server/errors'
+
+import { createSupabaseTheaterPersistence } from './persistence'
+import { toPublicTheaterView } from './queries'
 
 import type { z } from 'zod'
+import type { TheaterPersistence } from './persistence'
 import type {
   publishedTheaterEventsInputSchema,
   theaterSlugInputSchema,
 } from './schemas'
 
+export type PublicTheaterQueryDependencies = {
+  persistence: TheaterPersistence
+}
+
+function getDefaultDependencies(): PublicTheaterQueryDependencies {
+  return { persistence: createSupabaseTheaterPersistence() }
+}
+
 export async function getPublishedTheaterBySlug(
-  _input: z.infer<typeof theaterSlugInputSchema>,
+  input: z.infer<typeof theaterSlugInputSchema>,
+  dependencies: PublicTheaterQueryDependencies = getDefaultDependencies(),
 ) {
-  return err(notImplemented('getPublishedTheaterBySlug'))
+  try {
+    const theater = await dependencies.persistence.findPublishedBySlug({
+      theaterSlug: input.theaterSlug,
+    })
+
+    if (!theater) {
+      return err(appError('not_found', 'Theater was not found.'))
+    }
+
+    return ok({ theater: toPublicTheaterView(theater) })
+  } catch (error) {
+    const appFailure = toAppError(error)
+
+    if (appFailure.code !== 'internal_error') {
+      return err(appFailure)
+    }
+
+    return err(
+      appError(
+        'external_service_error',
+        'Published Theater could not be loaded.',
+      ),
+    )
+  }
 }
 
 export async function getPublishedTheaterEvents(

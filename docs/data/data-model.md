@@ -22,7 +22,9 @@ The relevant tables include:
 - `notifications`
 - `email_outbox`
 
-The rebuild delta migrations add Theater publication state, branding/social metadata, timezone provenance, the `owner` role, email-specific Theater invites, general activity history, staff defaults, simple acts/running order, public asset storage, and authorization fixes.
+The rebuild delta migrations add Theater publication state, branding/social metadata, timezone provenance, the `owner` role, email-specific Theater invites, general activity history, staff defaults, simple acts/running order, public asset storage, and authorization fixes. Draft Theaters may leave publication-required identity fields incomplete; a published-state constraint requires name, slug, tagline, structured address, country, and resolved timezone.
+
+Theater creation is transactional across the Theater, first Owner membership, initial default selection, and factual creation event. Publication is an idempotent transaction that writes the published state and factual Publication event once. Active memberships have at most one default Theater per person, and changing that default updates the legacy profile pointer in the same transaction.
 
 ## Current Role Model
 

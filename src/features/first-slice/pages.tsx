@@ -1,19 +1,15 @@
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  Mail,
-  Theater,
-  UserRound,
-} from 'lucide-react'
+import { ArrowRight, Loader2, Mail, Theater, UserRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import {
   resolveAuthRedirectFn,
   updateDisplayNameFn,
 } from '@/features/auth/server-functions'
-import { createSupabaseBrowserClient, getAuthCallbackUrl } from '@/features/auth/client'
+import {
+  createSupabaseBrowserClient,
+  getAuthCallbackUrl,
+} from '@/features/auth/client'
 
 type AuthPageProps = {
   inviteToken?: string
@@ -296,136 +292,11 @@ function OnboardingChoice({
       className="island-shell block rounded-lg px-6 py-6 no-underline transition hover:-translate-y-0.5"
       href={href}
     >
-      <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
-        {title}
-      </h2>
+      <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">{title}</h2>
       <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">{copy}</p>
       <span className="mt-5 inline-flex items-center gap-2 font-extrabold text-[var(--lagoon-deep)]">
         Continue <ArrowRight className="size-4" />
       </span>
     </a>
   )
-}
-
-export function TheaterSetupPage() {
-  const [name, setName] = useState('')
-  const [slug, setSlug] = useState('')
-  const [tagline, setTagline] = useState('')
-  const [street, setStreet] = useState('')
-  const [city, setCity] = useState('')
-  const [stateRegion, setStateRegion] = useState('')
-  const [postalCode, setPostalCode] = useState('')
-  const [timezone, setTimezone] = useState('')
-
-  const generatedSlug = slug || slugify(name)
-  const gates = [
-    ['Name', name.trim().length > 0],
-    ['Tagline', tagline.trim().length > 0],
-    ['Address', [street, city, stateRegion, postalCode].every(Boolean)],
-    ['Slug', generatedSlug.length > 0],
-    ['Timezone', timezone.trim().length > 0],
-  ] as const
-  const canPublish = gates.every(([, complete]) => complete)
-
-  return (
-    <main className="page-wrap py-8 sm:py-12">
-      <section className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
-          Theater setup
-        </p>
-        <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
-          Prepare your public theater home
-        </h1>
-      </section>
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-        <form className="island-shell grid gap-5 rounded-lg px-6 py-6">
-          <Field
-            label="Theater name"
-            onChange={(value) => {
-              setName(value)
-
-              if (!slug) {
-                setSlug(slugify(value))
-              }
-            }}
-            value={name}
-          />
-          <Field label="Public slug" onChange={setSlug} value={generatedSlug} />
-          <Field label="Tagline" onChange={setTagline} value={tagline} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Street" onChange={setStreet} value={street} />
-            <Field label="City" onChange={setCity} value={city} />
-            <Field
-              label="State / region"
-              onChange={setStateRegion}
-              value={stateRegion}
-            />
-            <Field
-              label="Postal code"
-              onChange={setPostalCode}
-              value={postalCode}
-            />
-          </div>
-          <Field label="Timezone" onChange={setTimezone} value={timezone} />
-        </form>
-        <aside className="island-shell rounded-lg px-5 py-5">
-          <h2 className="text-lg font-extrabold text-[var(--sea-ink)]">
-            Publish gate
-          </h2>
-          <div className="mt-4 grid gap-3">
-            {gates.map(([label, complete]) => (
-              <div className="flex items-center gap-2" key={label}>
-                <CheckCircle2
-                  className={
-                    complete
-                      ? 'size-5 text-[var(--palm)]'
-                      : 'size-5 text-[var(--sea-ink-soft)] opacity-35'
-                  }
-                />
-                <span className="font-semibold text-[var(--sea-ink)]">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-          <a
-            aria-disabled={!canPublish}
-            className="mt-6 block rounded-md bg-[var(--sea-ink)] px-4 py-3 text-center font-extrabold text-white no-underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
-            href={`/app/${generatedSlug || 'draft-theater'}/preview`}
-          >
-            Preview
-          </a>
-        </aside>
-      </div>
-    </main>
-  )
-}
-
-function Field({
-  label,
-  onChange,
-  value,
-}: {
-  label: string
-  onChange: (value: string) => void
-  value: string
-}) {
-  return (
-    <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
-      {label}
-      <input
-        className="rounded-md border border-[var(--line)] bg-white px-4 py-3 font-medium outline-none focus:border-[var(--lagoon-deep)]"
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      />
-    </label>
-  )
-}
-
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
 }

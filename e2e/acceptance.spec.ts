@@ -12,7 +12,9 @@ test('dev component baseline exposes brand tokens and typography choices', async
   await expect(page.getByText('--event / #eaa542')).toBeVisible()
   await expect(page.getByText('--performer / #c76056')).toBeVisible()
   await expect(page.getByText(/body text uses public sans/i)).toBeVisible()
-  await expect(page.getByText(/cubano carries stagecom identity/i)).toBeVisible()
+  await expect(
+    page.getByText(/cubano carries stagecom identity/i),
+  ).toBeVisible()
 })
 
 test('theater setup validates required fields and keeps slug editable', async ({
@@ -27,11 +29,12 @@ test('theater setup validates required fields and keeps slug editable', async ({
     page.getByRole('button', { name: 'Open TanStack Devtools' }),
   ).toBeVisible()
 
-  const previewLink = page.getByRole('link', { name: 'Preview' })
-  await expect(previewLink).toHaveAttribute('aria-disabled', 'true')
+  const saveButton = page.getByRole('button', { name: 'Save and preview' })
+  await expect(saveButton).toBeDisabled()
 
   await page.getByLabel('Theater name').fill('Main Stage Theater')
   await expect(page.getByLabel('Public slug')).toHaveValue('main-stage-theater')
+  await expect(saveButton).toBeEnabled()
 
   await page.getByLabel('Public slug').fill('custom-stage')
   await page.getByLabel('Tagline').fill('A home for organized productions')
@@ -41,31 +44,12 @@ test('theater setup validates required fields and keeps slug editable', async ({
   await page.getByLabel('Postal code').fill('78701')
   await page.getByLabel('Timezone').fill('America/Chicago')
 
-  await expect(previewLink).toHaveAttribute('aria-disabled', 'false')
-  await expect(previewLink).toHaveAttribute(
-    'href',
-    '/app/custom-stage/preview',
-  )
+  await expect(saveButton).toBeEnabled()
 })
 
-test('public theater home renders anonymous-safe demo state', async ({ page }) => {
-  await page.goto('/theater/main-stage')
-
-  await expect(
-    page.getByRole('heading', { name: 'Main Stage' }),
-  ).toBeVisible()
-  await expect(page.getByText('Theater', { exact: true })).toBeVisible()
-  await expect(page.getByText('Preview mode')).toHaveCount(0)
-  await expect(page.getByRole('link', { name: /website/i })).toHaveAttribute(
-    'href',
-    'https://example.com',
-  )
-  await expect(
-    page.getByRole('heading', { name: /events coming soon/i }),
-  ).toBeVisible()
-})
-
-test('invite route preserves invite intent into auth pages', async ({ page }) => {
+test('invite route preserves invite intent into auth pages', async ({
+  page,
+}) => {
   const inviteToken = 'valid-invite-token-1234567890'
 
   await page.goto(`/join/${inviteToken}`)

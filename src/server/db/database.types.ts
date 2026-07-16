@@ -749,21 +749,21 @@ export type Database = {
       }
       theaters: {
         Row: {
-          city: string
-          country: string
+          city: string | null
+          country: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
-          postal_code: string
+          postal_code: string | null
           published_at: string | null
           slug: string
           social_links: Json
-          state_region: string
+          state_region: string | null
           status: Database['public']['Enums']['theater_status']
-          street: string
-          tagline: string
-          timezone: string
+          street: string | null
+          tagline: string | null
+          timezone: string | null
           timezone_source: Database['public']['Enums']['timezone_source']
           upcoming_other_events_limit: number
           upcoming_shows_limit: number
@@ -771,21 +771,21 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
-          city: string
-          country: string
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name: string
-          postal_code: string
+          postal_code?: string | null
           published_at?: string | null
           slug: string
           social_links?: Json
-          state_region: string
+          state_region?: string | null
           status?: Database['public']['Enums']['theater_status']
-          street: string
-          tagline: string
-          timezone?: string
+          street?: string | null
+          tagline?: string | null
+          timezone?: string | null
           timezone_source?: Database['public']['Enums']['timezone_source']
           upcoming_other_events_limit?: number
           upcoming_shows_limit?: number
@@ -793,21 +793,21 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
-          city?: string
-          country?: string
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name?: string
-          postal_code?: string
+          postal_code?: string | null
           published_at?: string | null
           slug?: string
           social_links?: Json
-          state_region?: string
+          state_region?: string | null
           status?: Database['public']['Enums']['theater_status']
-          street?: string
-          tagline?: string
-          timezone?: string
+          street?: string | null
+          tagline?: string | null
+          timezone?: string | null
           timezone_source?: Database['public']['Enums']['timezone_source']
           upcoming_other_events_limit?: number
           upcoming_shows_limit?: number
@@ -821,6 +821,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_theater_with_owner: {
+        Args: {
+          p_actor_user_id: string
+          p_name: string
+          p_slug: string
+          p_timezone?: string | null
+        }
+        Returns: {
+          created: boolean
+          id: string
+          name: string
+          slug: string
+          status: Database['public']['Enums']['theater_status']
+        }[]
+      }
+      publish_theater: {
+        Args: { p_actor_user_id: string; p_theater_id: string }
+        Returns: Database['public']['Tables']['theaters']['Row'][]
+      }
+      set_default_theater: {
+        Args: { p_theater_id: string; p_user_id: string }
+        Returns: Database['public']['Tables']['theaters']['Row'][]
+      }
+      update_theater_setup: {
+        Args: {
+          p_actor_user_id: string
+          p_changes: Json
+          p_theater_id: string
+        }
+        Returns: Database['public']['Tables']['theaters']['Row'][]
+      }
       can_insert_show_cast: {
         Args: {
           p_show_id: string
@@ -881,33 +912,15 @@ export type Database = {
       review_action: 'submitted' | 'approved' | 'rejected' | 'changes_requested'
       show_cast_source: 'invited' | 'requested'
       show_cast_status:
-        | 'pending'
-        | 'accepted'
-        | 'declined'
-        | 'withdrawn'
-        | 'removed'
+        'pending' | 'accepted' | 'declined' | 'withdrawn' | 'removed'
       show_occurrence_status: 'scheduled' | 'changed' | 'cancelled'
       show_role: 'producer'
       show_status:
-        | 'draft'
-        | 'pending_review'
-        | 'approved'
-        | 'rejected'
-        | 'cancelled'
+        'draft' | 'pending_review' | 'approved' | 'rejected' | 'cancelled'
       staff_slot_type:
-        | 'lead'
-        | 'front_of_house'
-        | 'box_office'
-        | 'bar'
-        | 'tech'
-        | 'other'
+        'lead' | 'front_of_house' | 'box_office' | 'bar' | 'tech' | 'other'
       theater_role:
-        | 'owner'
-        | 'admin'
-        | 'manager'
-        | 'staff'
-        | 'instructor'
-        | 'member'
+        'owner' | 'admin' | 'manager' | 'staff' | 'instructor' | 'member'
       theater_status: 'draft' | 'published' | 'archived'
       timezone_source: 'unknown' | 'inferred' | 'manual'
     }
@@ -925,12 +938,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -952,13 +965,12 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -977,13 +989,12 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1002,13 +1013,12 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1021,11 +1031,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

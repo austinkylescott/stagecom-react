@@ -33,4 +33,6 @@ Use the design baseline in `docs/design/design-baseline.md`. Public pages should
 
 ## Implementation Reality
 
-Route shells, local form behavior, demo public rendering, and smoke tests exist. Database-backed Theater creation, setup persistence, invitation acceptance, publication, and anonymous published-only reads remain incomplete or explicit `notImplemented` stubs.
+Persistent Theater creation, Owner membership, setup persistence, private preview, explicit Publication, default-Theater selection, and anonymous published-only rendering are implemented through the app-owned command/query boundary. Creation and Publication are idempotent transactional operations with factual activity events.
+
+Invitation acceptance remains incomplete and is the outstanding behavior in this foundation specification.

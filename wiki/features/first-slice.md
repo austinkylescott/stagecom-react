@@ -30,7 +30,9 @@ The foundation slice proves the rebuilt app shape through auth, onboarding, Thea
 
 ## Current Implementation Reality
 
-Route shells, local form behavior, demo public rendering, and smoke tests exist. Database-backed Theater creation, setup persistence, invitation acceptance, publication, and anonymous published-only reads remain incomplete or explicit `notImplemented` stubs.
+Database-backed Theater creation now atomically establishes the first Owner membership and factual creation event. Owners can persist the required public identity, preview the anonymous-safe result, publish explicitly, and choose a default Theater for navigation. The public Theater route now uses a published-only anonymous query rather than demo state, and Publication writes a durable factual event without duplicating it on retry.
+
+Targeted Invitation acceptance remains incomplete, so the broader foundation slice is still only partially implemented.
 
 ## Acceptance Sources
 

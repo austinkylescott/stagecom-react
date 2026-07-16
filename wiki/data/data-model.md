@@ -12,6 +12,9 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - Theater roles include the rebuild's `owner`, `admin`, and `member` values alongside legacy enum history.
 - `show_roles`, `show_occurrences`, `show_cast`, and `show_review_events` provide early Event foundations.
 - Published Theater visibility depends on `theaters.status = published`.
+- Draft Theaters may keep public identity fields incomplete; a database constraint requires the complete identity before `published` state can be stored.
+- Theater creation atomically writes the Theater, first Owner membership, default-membership choice when applicable, and creation event.
+- Publication and default-Theater changes use transactional database functions, and active membership permits at most one default Theater per person.
 - Email-specific Theater invitations store hashed tokens.
 - Activity history is stored in `activity_events`.
 - Event staff defaults are separate from per-Event staff assignments.
