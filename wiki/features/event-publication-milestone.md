@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: specified, not implemented
+Implementation status: partially implemented
 
 ## What Does This Milestone Prove?
 
@@ -35,6 +35,16 @@ This is Stagecom's first meaningful product win. It proves that multiple Theater
 
 ## Implementation Boundary
 
-The current repository contains route shells, UI demonstrations, schema foundations, and smoke coverage for parts of auth, onboarding, Theater setup, and public Theater rendering. Persistent Theater setup, membership acceptance, Theater publication, and the Event workflow remain unimplemented or incomplete.
+The Theater foundation is implemented. An authenticated person can create a
+persistent Theater with its first Owner membership, persist the required public
+identity, choose a default Theater, preview the anonymous-safe result, publish
+explicitly, and expose only published Theaters to anonymous visitors. Creation
+and Publication are idempotent transactional operations that emit durable
+factual events, and the complete migration chain has local database acceptance
+coverage.
 
-The accepted product boundary lives in `docs/product/event-publication-milestone.md`. Detailed implementation specs have not yet been written.
+Membership through Targeted Invitations or Reusable Join Links and the managed
+Event workflow remain unimplemented or incomplete. The accepted product
+boundary lives in `docs/product/event-publication-milestone.md`; detailed
+implementation tickets and dependency relationships are tracked under STA-5 in
+Linear.

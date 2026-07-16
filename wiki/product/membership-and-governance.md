@@ -2,11 +2,16 @@
 
 Documentation status: active
 
-Implementation status: specified, not implemented
+Implementation status: partially implemented
 
 ## Who Can Belong To A Theater?
 
 A person may hold active membership in multiple Theaters and choose a default Theater for navigation. All Producers, Directors, Reviewers, and Cast Members must be active members of the relevant Theater in the first meaningful milestone.
+
+Persistent Theater creation currently grants the creator one active Owner
+membership atomically, and Members can choose one default Theater across
+multiple active memberships. Invitation-based membership, Event capabilities,
+and membership deactivation remain to be implemented.
 
 ## How Does Someone Join?
 

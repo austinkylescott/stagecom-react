@@ -1,6 +1,6 @@
 # Event Publication Milestone
 
-Status: accepted product direction; not implemented
+Status: accepted product direction; partially implemented
 
 ## Outcome
 
@@ -43,4 +43,14 @@ The foundation Theater-home slice remains a prerequisite but is not sufficient b
 - Casting and availability: `wiki/workflows/casting-and-availability.md`
 - Review and publication: `wiki/workflows/review-scheduling-and-publication.md`
 
-Detailed schema, command/query, state-machine, interface, and executable-acceptance specs are intentionally deferred to the specification phase.
+## Implementation Progress
+
+The prerequisite Theater foundation is implemented: persistent Theater and
+Owner-membership creation, public identity configuration, default-Theater
+selection, private preview, explicit Publication, anonymous published-only
+reads, durable creation and Publication events, and local migration/database
+verification.
+
+Membership acquisition and the multi-user Event workflow remain to be built.
+Detailed implementation tickets, acceptance criteria, and dependency
+relationships are tracked under STA-5 in Linear.
