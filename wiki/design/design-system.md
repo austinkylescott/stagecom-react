@@ -1,6 +1,8 @@
 # Design System
 
-Status: active synthesis
+Documentation status: active
+
+Implementation status: implemented
 
 The design system starts from `docs/design/design-baseline.md` and the living `/dev/components` route.
 

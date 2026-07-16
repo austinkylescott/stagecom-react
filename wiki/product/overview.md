@@ -1,27 +1,54 @@
 # Product Overview
 
-Status: active synthesis
+Documentation status: active
+
+Implementation status: partially implemented
 
 Stagecom is a theater-ops-first SaaS product for improv theaters, comedy theaters, indie venues, and community arts spaces.
 
-The first rebuilt slice focuses on helping a theater operator create, preview, and publish a credible public theater home.
+The foundation slice helps a theater operator create, preview, and publish a credible public Theater home. The first meaningful product milestone goes further: a Theater Member develops a viable performance Event with a cast and schedule, submits it to management, responds to review, and receives approval before an Owner or Admin publishes it.
 
 ## Audience
 
 The rebuild starts with theater owner/admin workflows. Producers, staff, cast, and public visitors are important actors, but the product should first solve theater-level trust, publishing, and coordination.
 
+## What Problem Does Stagecom Solve?
+
+Theater programming is commonly split across forms, spreadsheets, calendars, group messages, ticketing tools, and public websites. Stagecom brings the operational record and the public result into one workflow without turning performers into a generic social network.
+
+## What Is The First Meaningful Win?
+
+A successful milestone journey proves that:
+
+1. An Owner creates and publishes a Theater.
+2. Members join through targeted invitations or reusable links.
+3. An eligible Producer drafts a performance Event.
+4. A Producer and Director assemble a willing, available Proposed Cast.
+5. Theater management reviews the schedule and operational commitments.
+6. The Event is approved, prepared for publication, and published.
+7. An anonymous visitor can view the Event and follow its admission call to action.
+
 ## Core Concepts
 
 - Theater: the organization and public identity.
-- Event: user-facing programming language for shows, practices, meetings, auditions, and workshops.
-- Producer: an event-level content/cast/acts role.
-- Cast: explicit event participation.
+- Event: the continuous programming record from draft through completion or cancellation.
+- Occurrence: an Event-specific Rehearsal or Performance.
+- Candidate Slot: a possible date, time, and place for an Occurrence.
+- Producer: an Event-level proposal, logistics, and public-presentation role.
+- Director: an Event-level casting and artistic-participation role.
+- Cast: explicit, accepted Event participation by a Theater Member.
 - Staff assignment: event-specific operational staffing.
 
 ## Product Rules
 
 - Producers are never assumed to be cast.
 - Cast membership requires an explicit cast row.
-- Owner/admin controls theater publishing and event staff assignments.
-- Producers manage event content, cast, and acts by default.
+- Producers and Directors are distinct roles, although one person may hold both.
+- Owner/Admin controls Theater and Event publication and event staff assignments.
+- Operational approval and public publication are separate decisions.
+- Scheduling recommendations support human decisions; Stagecom never commits a schedule automatically.
 - Public pages expose only published anonymous-safe data.
+
+## What Is Not In The First Meaningful Milestone?
+
+Native Stagecom ticket sales, recurring Event series, open casting calls, guest cast, multiple modeled rooms or venues, committee review, automated application email/SMS, audience analytics, and automated Producer reliability scores are deferred.

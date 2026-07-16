@@ -1,6 +1,8 @@
 # Stack And Layout
 
-Status: active synthesis
+Documentation status: active
+
+Implementation status: implemented
 
 ## Stack
 

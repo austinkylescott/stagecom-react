@@ -1,6 +1,8 @@
 # Acceptance Tests And Build Milestones
 
-Status: active rebuild plan
+Status: historical foundation-slice test plan
+
+This plan does not cover the accepted multi-user Event-publication milestone. Use it only for foundation-slice history until new implementation specs and acceptance plans are written.
 
 ## Definition Of Done
 

@@ -1,8 +1,8 @@
 # Stagecom Rebuild Plans
 
-Status: active planning source
+Status: historical planning record
 
-These docs preserve the TanStack rebuild decisions made before implementation. They are the primary source of truth for the rebuild until individual feature specs, implementation docs, and wiki pages supersede them.
+These docs preserve the TanStack rebuild decisions made before implementation. They are no longer the primary product source: use `CONTEXT.md`, `wiki/`, and active documents under `docs/product/`, `docs/data/`, and `docs/specs/`. Rebuild plans remain useful for implementation history and details that current documents still reference.
 
 ## Plan Set
 
@@ -20,11 +20,13 @@ These docs preserve the TanStack rebuild decisions made before implementation. T
 - `12-docs-migration.md`: raw docs/wiki/archive migration strategy.
 - `13-design-token-spec.md`: minimal token starter set.
 
-## Locked Direction
+## Direction At The Time Of Planning
 
 - Framework: TanStack Start, React, TypeScript.
 - Product center: theater operator/admin first.
 - Business: hosted SaaS first; self-host-compatible later.
 - Database: keep current Supabase/Postgres baseline and add forward reset deltas.
 - UI: shadcn/ui, Tailwind, Stagecom fonts/colors retained and refined.
-- First slice: signup, onboarding, theater setup, public preview, and published public theater home.
+- Foundation slice: signup, onboarding, Theater setup, public preview, and published public Theater home.
+
+The foundation slice has since been distinguished from the first meaningful product milestone. The current milestone continues through Event casting, scheduling, review, approval, and publication; see `docs/product/event-publication-milestone.md`.

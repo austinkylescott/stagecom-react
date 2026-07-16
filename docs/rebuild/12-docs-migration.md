@@ -1,6 +1,6 @@
 # Docs Migration Plan
 
-Status: implemented baseline
+Status: historical, implemented baseline
 
 ## Summary
 

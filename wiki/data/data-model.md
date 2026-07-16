@@ -1,29 +1,48 @@
 # Data Model
 
-Status: active synthesis
+Documentation status: active
 
-The rebuild keeps the existing Supabase schema as baseline and adds forward reset migrations.
+Implementation status: partially implemented
 
-## Key Decisions
+The rebuild keeps the existing Supabase schema as its executable baseline and adds forward migrations. Product requirements that are not in migrations are described as target model, not current schema.
 
-- User-facing Events remain stored in the `shows` table for now.
-- Theater-level rebuild roles are `owner`, `admin`, and `member`.
-- Event-level roles are producer, staff assignment, and cast.
-- Public theater pages depend on `theaters.status = published`.
-- Theater invites use email-specific hashed tokens.
+## Current Executable Baseline
+
+- User-facing Events are stored in the `shows` table.
+- Theater roles include the rebuild's `owner`, `admin`, and `member` values alongside legacy enum history.
+- `show_roles`, `show_occurrences`, `show_cast`, and `show_review_events` provide early Event foundations.
+- Published Theater visibility depends on `theaters.status = published`.
+- Email-specific Theater invitations store hashed tokens.
 - Activity history is stored in `activity_events`.
-- Event staff defaults are stored separately from per-event staff assignments.
-- Simple public grouping/running order is supported by `show_acts`.
+- Event staff defaults are separate from per-Event staff assignments.
+- `show_acts` supports simple public grouping and running order.
 - Public media uses the `theater-assets` storage bucket.
+
+## Target Event Model
+
+The existing schema does not yet express the agreed workflow completely. The target model must support:
+
+- an Event that persists from draft through completion or cancellation
+- typed Rehearsal and Performance Occurrences
+- multiple Candidate Slots per Occurrence and one Confirmed Slot
+- Event-wide cast membership with per-Occurrence required, optional, or not-called assignments
+- per-Candidate-Slot availability responses
+- immutable numbered Proposal Revisions
+- review decisions including Counteroffers and Denials
+- exclusive Counteroffer holds with deadlines
+- separate Event lifecycle, Proposal decision, publication, and operational-health states
+- Theater proposal policy and explicit Proposer/Reviewer capabilities
+- Targeted Invitations and Reusable Join Links
+- explicit ticket Sales Channel and price
+
+These are specified product requirements, not claims about the executable schema. A future schema spec and forward migration must reconcile the current tables and enums with this model.
 
 ## Active Sources
 
+- `CONTEXT.md`
 - `docs/data/data-model.md`
-- `docs/rebuild/11-schema-delta-spec.md`
-- `supabase/migrations/20260503192900_add_owner_theater_role.sql`
-- `supabase/migrations/20260503193000_stagecom_rebuild_schema_delta.sql`
-- `supabase/migrations/20260505110000_create_theater_assets_bucket.sql`
-- `supabase/migrations/20260505112000_drop_legacy_show_cast_update_helper.sql`
+- `docs/product/event-publication-milestone.md`
+- `supabase/migrations/`
 
 ## Generated Types
 

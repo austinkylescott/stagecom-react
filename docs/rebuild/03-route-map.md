@@ -1,6 +1,8 @@
 # Route Map Plan
 
-Status: active rebuild plan
+Status: historical route plan; partially reflected in the app
+
+Current product workflows include Reusable Join Links and a broader Event-publication milestone. Use the wiki and active product documents before deriving new route requirements from this plan.
 
 ## Summary
 

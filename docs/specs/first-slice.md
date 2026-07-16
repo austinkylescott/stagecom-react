@@ -1,8 +1,8 @@
-# First Slice Spec
+# Foundation Slice Spec
 
-Status: active synthesis
+Status: partially implemented foundation specification
 
-The first product slice turns the rebuild plans into a coherent workflow: auth, onboarding, theater setup, public preview, and published public theater home.
+The foundation slice turns the rebuild plans into a coherent workflow: auth, onboarding, Theater setup, public preview, and published public Theater home. It is a prerequisite for, but not the definition of, the first meaningful Event-publication milestone in `docs/product/event-publication-milestone.md`.
 
 ## Routes
 
@@ -30,3 +30,7 @@ A theater needs name, tagline, structured address, unique slug, resolved timezon
 ## Design Requirements
 
 Use the design baseline in `docs/design/design-baseline.md`. Public pages should feel poster-like; authenticated setup should stay calm and operational.
+
+## Implementation Reality
+
+Route shells, local form behavior, demo public rendering, and smoke tests exist. Database-backed Theater creation, setup persistence, invitation acceptance, publication, and anonymous published-only reads remain incomplete or explicit `notImplemented` stubs.

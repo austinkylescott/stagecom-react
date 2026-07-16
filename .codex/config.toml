@@ -1,0 +1,9 @@
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+
+[mcp_servers.shadcn]
+command = "npx"
+args = ["--no-install", "shadcn", "mcp"]

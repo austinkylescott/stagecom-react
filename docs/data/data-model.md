@@ -1,75 +1,77 @@
 # Data Model
 
-Status: active synthesis
+Status: active current-schema and target-model guide
 
-The executable schema baseline lives in `supabase/migrations/`. The active schema delta plan lives in `docs/rebuild/11-schema-delta-spec.md`.
+The executable schema lives in `supabase/migrations/`. Generated types live in `src/server/db/database.types.ts`. Product requirements that are absent from migrations are explicitly labeled as target model.
 
-## Current Baseline
+## Current Executable Baseline
 
-The rebuild starts from the existing Supabase schema:
+The relevant tables include:
 
-- profiles
-- theaters
-- theater_memberships
-- shows
-- show_roles
-- show_occurrences
-- show_cast
-- show_review_events
-- show_staff_assignments
-- notifications
-- email_outbox
+- `profiles`
+- `theaters`
+- `theater_memberships`
+- `theater_invites`
+- `shows`
+- `show_roles`
+- `show_occurrences`
+- `show_cast`
+- `show_review_events`
+- `show_staff_assignments`
+- `activity_events`
+- `notifications`
+- `email_outbox`
 
-## Reset Additions
+The rebuild delta migrations add Theater publication state, branding/social metadata, timezone provenance, the `owner` role, email-specific Theater invites, general activity history, staff defaults, simple acts/running order, public asset storage, and authorization fixes.
 
-The first rebuild delta is represented by:
+## Current Role Model
 
-- `20260503192900_add_owner_theater_role.sql`
-- `20260503193000_stagecom_rebuild_schema_delta.sql`
-- `20260505110000_create_theater_assets_bucket.sql`
-- `20260505112000_drop_legacy_show_cast_update_helper.sql`
+- Theater roles assigned by rebuild UI: `owner`, `admin`, `member`
+- Current persisted Event role: `producer`
+- Current cast relationship: `show_cast`
+- Current Event staffing relationship: `show_staff_assignments`
 
-It adds:
+Legacy Theater enum values remain in migration history but should not be assigned by new UI.
 
-- theater publication lifecycle with `theater_status`, `theaters.status`, and `theaters.published_at`
-- theater branding/social metadata with `theaters.social_links`
-- timezone provenance with `timezone_source`
-- `owner` as the new top theater authority role
-- email-specific theater invites with hashed tokens
-- general activity history through `activity_events`
-- event staff defaults through `theater_staff_slot_defaults`
-- simple acts/running order through `show_acts` and `show_cast.act_id`
-- a public `theater-assets` storage bucket
-- removal of the legacy six-argument `can_update_show_cast` helper overload
+## Target Event-Publication Model
 
-## Role Model
+The accepted product model in `docs/product/event-publication-milestone.md` requires schema work that has not yet been specified or migrated:
 
-The rebuild product model uses:
+- Director and Reviewer relationships/capabilities
+- Theater proposal policies and designated Proposers
+- Reusable Join Links with optional expiration and use limits
+- typed Rehearsal and Performance Occurrences
+- Candidate Slots separate from Confirmed Slots
+- per-Occurrence required, optional, and not-called cast assignments
+- per-Candidate-Slot availability responses
+- immutable numbered Proposal Revisions
+- approve, deny, request-edits, and Counteroffer decisions
+- exclusive Counteroffer holds and response deadlines
+- separate lifecycle, review, publication, and operational-health state
+- explicit ticket Sales Channel and price
+- per-Event public cast-credit preference
 
-- theater roles: `owner`, `admin`, `member`
-- event roles: producer, staff assignment, cast
-
-Legacy theater role enum values may still exist in the baseline schema, but new rebuild UI should not assign `manager`, `staff`, or `instructor`.
+Do not treat current generic JSON availability, the single scheduled `show_occurrences` timestamp, or the existing `show_status` enum as satisfying these requirements.
 
 ## Events Naming
 
-User-facing Events are stored in the existing `shows` table for now. Do not rename the database table unless a future migration explicitly chooses that cost.
+User-facing Events remain stored in `shows` unless a future migration explicitly accepts the cost of renaming it. Code may use product-facing Event names while database adapters remain aligned with generated `shows` types.
 
 ## Public Data Boundary
 
-Public theater pages use anonymous-safe public queries. A theater is publicly readable when `theaters.status = 'published'`. Draft and archived theaters remain behind authenticated owner/admin/member access.
+Public Theater and Event pages use anonymous-safe public queries. Draft, unpublished, internal, membership, availability, review, and operational-history data remain behind authenticated authorization.
 
-## Invites
+## Invitations
 
-Theater invites are email-specific and store token hashes only. Invite acceptance goes through app command logic so the app can validate token status, email match, expiration, membership changes, and activity events together.
+The current schema supports email-specific hashed Theater invitation tokens. The accepted target also requires Reusable Join Links whose possession grants immediate base membership. Link creation, revocation, rotation, expiration, limits, acceptance, membership writes, and activity events must be handled atomically by app commands.
 
 ## Activity And Notifications
 
-Activity history uses `activity_events` with explicit visibility. Notifications must originate from explicit domain events; UI code should not create notification rows directly.
+Activity history uses explicit domain events with appropriate visibility. Notifications must originate from domain events; UI code must not create notification rows directly. The first Event-publication milestone delivers workflow notifications in-app only.
 
 ## Generated Types
 
-Generated Supabase types are committed at `src/server/db/database.types.ts`. Regenerate them after local schema migrations with:
+Regenerate committed database types after applying local migrations:
 
 ```bash
 npm run db:types

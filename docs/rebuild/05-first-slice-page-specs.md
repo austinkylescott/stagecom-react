@@ -1,6 +1,8 @@
 # First Slice Page Specs
 
-Status: active rebuild plan
+Status: historical foundation-slice plan
+
+This plan covers prerequisite Theater setup, not the first meaningful Event-publication milestone. Current guidance lives in `docs/specs/first-slice.md` and `docs/product/event-publication-milestone.md`.
 
 ## Summary
 

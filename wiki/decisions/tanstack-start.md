@@ -2,6 +2,8 @@
 
 Status: accepted
 
+Implementation status: implemented
+
 Stagecom rebuild uses TanStack Start to explore a modern full-stack React architecture while preserving a cohesive frontend/server codebase.
 
 Key reasons:

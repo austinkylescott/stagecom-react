@@ -93,7 +93,22 @@ Use raw docs for more detail:
 - Build `/dev/components` before product pages multiply.
 - Keep authenticated workflows calm and task-focused.
 - Save the marketing page until product components/screens exist.
+
 <!-- stagecom:end -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in Linear through the official Linear MCP; GitHub Issues are not used. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical Matt Pocock triage labels without renaming. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository using a root `CONTEXT.md` and system-wide ADRs under `docs/adr/`. See `docs/agents/domain.md`.
 
 <!-- intent-skills:start -->
 
@@ -160,5 +175,6 @@ skills:
 - when: "Server-side runtime for TanStack Start: createStartHandler, request/response utilities (getRequest, setResponseHeader, setCookie, getCookie, useSession), three-phase request handling, AsyncLocalStorage context."
   use: "@tanstack/start-server-core#start-server-core"
 - when: "Programmatic route tree building as an alternative to filesystem conventions: rootRoute, index, route, layout, physical, defineVirtualSubtreeConfig. Use with TanStack Router plugin's virtualRouteConfig option."
-use: "@tanstack/virtual-file-routes#virtual-file-routes"
+  use: "@tanstack/virtual-file-routes#virtual-file-routes"
+
 <!-- intent-skills:end -->
