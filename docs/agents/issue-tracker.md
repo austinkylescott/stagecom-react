@@ -22,6 +22,8 @@ When given a Linear issue identifier or URL, read its complete description, comm
 - Use Stagecom domain terminology in titles and descriptions.
 - Do not create, modify, close, or move issues without confirming the proposed outcome with the maintainer.
 
+Invoking `/implement` for an issue authorizes moving that issue through `In Progress`, `In Review`, and `Done` as the corresponding implementation stages are reached. This authorization applies only to the implementation ticket being worked; it does not extend to parent, related, or introductory issues.
+
 ## Availability
 
 If the Linear MCP is unavailable or unauthenticated, stop and request reconnection. Do not silently fall back to GitHub Issues or local Markdown.
