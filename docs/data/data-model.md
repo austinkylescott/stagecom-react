@@ -22,7 +22,19 @@ The relevant tables include:
 - `notifications`
 - `email_outbox`
 
-The rebuild delta migrations add Theater publication state, branding/social metadata, timezone provenance, the `owner` role, email-specific Theater invites, general activity history, staff defaults, simple acts/running order, public asset storage, and authorization fixes. Draft Theaters may leave publication-required identity fields incomplete; a published-state constraint requires name, slug, tagline, structured address, country, and resolved timezone.
+The rebuild delta migrations add Theater publication state, branding/social metadata, timezone provenance, the `owner` role, email-specific Theater invites, general activity history, staff defaults, simple acts/running order, public asset storage, independent Event state dimensions, and authorization fixes. Draft Theaters may leave publication-required identity fields incomplete; a published-state constraint requires name, slug, tagline, structured address, country, and resolved timezone.
+
+Events now persist lifecycle (`draft`, `in_review`, `approved`, `cancelled`, `completed`), Publication (`unpublished`, `published`), and operational health (`on_track`, `at_risk`) independently while the legacy `shows.status` and `shows.is_public_listed` fields remain available during expansion. Existing rows and legacy writes use this explicit compatibility mapping:
+
+| Legacy status | Lifecycle | Publication | Operational health |
+| --- | --- | --- | --- |
+| `draft` | `draft` | `unpublished` | `on_track` |
+| `pending_review` | `in_review` | `unpublished` | `on_track` |
+| `approved` | `approved` | `published` only when `is_public_listed`; otherwise `unpublished` | `on_track` |
+| `rejected` | `cancelled` | `unpublished` | `on_track` |
+| `cancelled` | `cancelled` | `unpublished` | `on_track` |
+
+Legacy `rejected` remains distinguishable in `shows.status`; its lifecycle maps to `cancelled` rather than reviving a closed Event as a draft. No legacy field represents operational risk reliably, so migrated rows begin `on_track`. During expansion, legacy writes synchronize forward into the independent dimensions, while writes to the independent dimensions do not collapse back into the lossy legacy representation.
 
 Theater creation is transactional across the Theater, first Owner membership, initial default selection, and factual creation event. Publication is an idempotent transaction that writes the published state and factual Publication event once. Active memberships have at most one default Theater per person, and changing that default updates the legacy profile pointer in the same transaction.
 
@@ -49,11 +61,11 @@ The accepted product model in `docs/product/event-publication-milestone.md` requ
 - immutable numbered Proposal Revisions
 - approve, deny, request-edits, and Counteroffer decisions
 - exclusive Counteroffer holds and response deadlines
-- separate lifecycle, review, publication, and operational-health state
+- Proposal decision state on immutable Proposal Revisions
 - explicit ticket Sales Channel and price
 - per-Event public cast-credit preference
 
-Do not treat current generic JSON availability, the single scheduled `show_occurrences` timestamp, or the existing `show_status` enum as satisfying these requirements.
+Do not treat current generic JSON availability, the single scheduled `show_occurrences` timestamp, or the retained compatibility `show_status` enum as satisfying these requirements.
 
 ## Events Naming
 

@@ -513,9 +513,12 @@ export type Database = {
           id: string
           is_cast_finalized: boolean
           is_public_listed: boolean
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
           on_sale_at: string | null
+          operational_health: Database['public']['Enums']['show_operational_health']
           poster_url: string | null
           producer_note: string | null
+          publication_status: Database['public']['Enums']['show_publication_status']
           slug: string
           status: Database['public']['Enums']['show_status']
           summary: string | null
@@ -535,9 +538,12 @@ export type Database = {
           id?: string
           is_cast_finalized?: boolean
           is_public_listed?: boolean
+          lifecycle_status?: Database['public']['Enums']['show_lifecycle_status']
           on_sale_at?: string | null
+          operational_health?: Database['public']['Enums']['show_operational_health']
           poster_url?: string | null
           producer_note?: string | null
+          publication_status?: Database['public']['Enums']['show_publication_status']
           slug: string
           status?: Database['public']['Enums']['show_status']
           summary?: string | null
@@ -557,9 +563,12 @@ export type Database = {
           id?: string
           is_cast_finalized?: boolean
           is_public_listed?: boolean
+          lifecycle_status?: Database['public']['Enums']['show_lifecycle_status']
           on_sale_at?: string | null
+          operational_health?: Database['public']['Enums']['show_operational_health']
           poster_url?: string | null
           producer_note?: string | null
+          publication_status?: Database['public']['Enums']['show_publication_status']
           slug?: string
           status?: Database['public']['Enums']['show_status']
           summary?: string | null
@@ -878,9 +887,24 @@ export type Database = {
         Returns: boolean
       }
       is_show_producer: { Args: { p_show_id: string }; Returns: boolean }
+      is_show_publicly_visible: {
+        Args: { p_show_id: string }
+        Returns: boolean
+      }
       is_theater_admin: { Args: { p_theater_id: string }; Returns: boolean }
       is_theater_owner: { Args: { p_theater_id: string }; Returns: boolean }
       is_theater_staff: { Args: { p_theater_id: string }; Returns: boolean }
+      legacy_show_lifecycle_status: {
+        Args: { p_status: Database['public']['Enums']['show_status'] }
+        Returns: Database['public']['Enums']['show_lifecycle_status']
+      }
+      legacy_show_publication_status: {
+        Args: {
+          p_is_public_listed: boolean
+          p_status: Database['public']['Enums']['show_status']
+        }
+        Returns: Database['public']['Enums']['show_publication_status']
+      }
       publish_theater: {
         Args: { p_actor_user_id: string; p_theater_id: string }
         Returns: {
@@ -990,7 +1014,11 @@ export type Database = {
       show_cast_source: 'invited' | 'requested'
       show_cast_status:
         'pending' | 'accepted' | 'declined' | 'withdrawn' | 'removed'
+      show_lifecycle_status:
+        'draft' | 'in_review' | 'approved' | 'cancelled' | 'completed'
       show_occurrence_status: 'scheduled' | 'changed' | 'cancelled'
+      show_operational_health: 'on_track' | 'at_risk'
+      show_publication_status: 'unpublished' | 'published'
       show_role: 'producer'
       show_status:
         'draft' | 'pending_review' | 'approved' | 'rejected' | 'cancelled'
@@ -1144,7 +1172,16 @@ export const Constants = {
         'withdrawn',
         'removed',
       ],
+      show_lifecycle_status: [
+        'draft',
+        'in_review',
+        'approved',
+        'cancelled',
+        'completed',
+      ],
       show_occurrence_status: ['scheduled', 'changed', 'cancelled'],
+      show_operational_health: ['on_track', 'at_risk'],
+      show_publication_status: ['unpublished', 'published'],
       show_role: ['producer'],
       show_status: [
         'draft',
