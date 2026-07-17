@@ -109,9 +109,6 @@ export function TheaterGovernanceSettings({
               }
               value={governance.primaryVenueName}
             />
-            <span className="font-mono text-xs font-medium text-[var(--sea-ink-soft)]">
-              Venue identity: {governance.primaryVenueId}
-            </span>
           </label>
           <GovernanceField
             label="Setup buffer (minutes)"

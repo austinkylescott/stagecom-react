@@ -119,6 +119,49 @@ export async function getManagedEventWorkspace(
     return access
   }
 
+  const authenticated = createSupabaseAnonClient(access.data.bearerToken)
+  const { data: visibleEvent, error: visibilityError } = await authenticated
+    .from('shows')
+    .select('id')
+    .eq('theater_id', access.data.theater.id)
+    .eq('slug', input.eventSlug)
+    .maybeSingle()
+
+  if (visibilityError) {
+    return err(appError('external_service_error', 'Event could not be loaded.'))
+  }
+
+  if (!visibleEvent) {
+    return err(appError('not_found', 'Event was not found.'))
+  }
+
+  const canManage = access.data.membership.roles.some(
+    (role) => role === 'owner' || role === 'admin',
+  )
+
+  if (!canManage) {
+    const { data: leadership, error: leadershipError } = await authenticated
+      .from('show_leadership')
+      .select('user_id')
+      .eq('show_id', visibleEvent.id)
+      .eq('user_id', access.data.actorUserId)
+      .limit(1)
+
+    if (leadershipError) {
+      return err(
+        appError('external_service_error', 'Event could not be loaded.'),
+      )
+    }
+
+    if (leadership.length === 0) {
+      return err(
+        appError('forbidden', 'Event collaborator access is required.'),
+      )
+    }
+  }
+
+  // The actor is now explicitly authorized as Theater staff or Event
+  // leadership, so the detailed cross-table workspace read may elevate.
   const supabase = createSupabaseServiceRoleClient()
   const { data: managedEvent, error } = await supabase
     .from('shows')
@@ -135,17 +178,6 @@ export async function getManagedEventWorkspace(
 
   if (!managedEvent) {
     return err(appError('not_found', 'Event was not found.'))
-  }
-
-  const canManage = access.data.membership.roles.some(
-    (role) => role === 'owner' || role === 'admin',
-  )
-  const isLeader = managedEvent.show_leadership.some(
-    (leader) => leader.user_id === access.data.actorUserId,
-  )
-
-  if (!canManage && !isLeader) {
-    return err(appError('forbidden', 'Event collaborator access is required.'))
   }
 
   return ok({ event: managedEvent, theater: access.data.theater })
@@ -199,5 +231,10 @@ async function getTheaterAccess(theaterSlug: string) {
     return err(appError('forbidden', 'Active Theater membership is required.'))
   }
 
-  return ok({ actorUserId: currentUser.data.id, membership, theater })
+  return ok({
+    actorUserId: currentUser.data.id,
+    bearerToken: token,
+    membership,
+    theater,
+  })
 }
