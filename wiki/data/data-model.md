@@ -13,6 +13,10 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - `show_roles`, `show_occurrences`, `show_cast`, and `show_review_events` provide early Event foundations.
 - Published Theater visibility depends on `theaters.status = published`.
 - Event lifecycle, Publication, and operational health are persisted independently on `shows`; the legacy Event status remains during expansion.
+- Theater Event governance stores Producer eligibility, Owner self-approval,
+  the Counteroffer response window, and Primary Venue setup/turnover buffers.
+- `theater_member_capabilities` stores narrow Proposer and Reviewer grants;
+  `show_leadership` stores explicit Producer and Director assignments.
 - Draft Theaters may keep public identity fields incomplete; a database constraint requires the complete identity before `published` state can be stored.
 - Theater creation atomically writes the Theater, first Owner membership, default-membership choice when applicable, and creation event.
 - Publication and default-Theater changes use transactional database functions, and active membership permits at most one default Theater per person.
@@ -51,10 +55,9 @@ The existing schema does not yet express the agreed workflow completely. The tar
 - review decisions including Counteroffers and Denials
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
-- Theater proposal policy and explicit Proposer/Reviewer capabilities
 - explicit ticket Sales Channel and price
 
-These are specified product requirements, not claims about the executable schema. A future schema spec and forward migration must reconcile the current tables and enums with this model.
+These remaining items are specified product requirements, not claims about the executable schema. Future forward migrations must reconcile the current tables and enums with this model.
 
 ## Active Sources
 

@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: specified, not implemented
+Implementation status: partially implemented
 
 ## What Is An Event?
 
@@ -40,6 +40,12 @@ An Event can therefore be approved, published, and at risk at the same time.
 8. Approved Event content is prepared and previewed.
 9. Owner/Admin publishes the Event.
 10. The Event completes after its last confirmed Occurrence or is cancelled by management.
+
+The first transition is implemented: Theater governance determines Producer
+eligibility, every co-Producer is checked independently, any active Member may
+be Director, and creation persists one performance Event with draft,
+unpublished, and on-track state. Leadership is explicit and never inserts a
+Cast Member.
 
 ## Which Changes Require A New Proposal Revision?
 

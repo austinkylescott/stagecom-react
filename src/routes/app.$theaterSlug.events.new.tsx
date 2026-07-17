@@ -1,20 +1,24 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 
-import { RoutePlaceholder } from '@/components/stage/route-placeholder'
+import { CreateManagedEventPage } from '@/features/events/components'
+import { getEventCreationOptionsFn } from '@/features/events/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/events/new')({
+  loader: async ({ params }) => {
+    const result = await getEventCreationOptionsFn({
+      data: { theaterSlug: params.theaterSlug },
+    })
+
+    if (!result.ok) {
+      if (result.error.code === 'not_found') throw notFound()
+      throw result.error
+    }
+
+    return result.data
+  },
   component: NewEventPage,
 })
 
 function NewEventPage() {
-  const { theaterSlug } = Route.useParams()
-
-  return (
-    <RoutePlaceholder
-      eyebrow="Events"
-      title="Create an event"
-      description="Theater-scoped event builder for shows, practices, meetings, auditions, and workshops."
-      details={[['Theater', theaterSlug]]}
-    />
-  )
+  return <CreateManagedEventPage {...Route.useLoaderData()} />
 }

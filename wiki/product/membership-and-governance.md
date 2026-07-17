@@ -15,8 +15,10 @@ single-recipient link whose token is stored only as a cryptographic hash. A
 matching authenticated recipient can accept once to create or reactivate base
 Member access; retries are idempotent. Reusable Join Links now grant immediate
 base Member access through governed hash-only links with optional expiration
-and use limits. Event capabilities and membership deactivation remain to be
-implemented.
+and use limits. Owner/Admin can now configure Producer eligibility, designate
+narrow Proposer and Reviewer capabilities for active Members, and persist the
+Owner self-approval, Counteroffer-window, and Primary Venue defaults used by
+the managed Event workflow. Membership deactivation remains to be implemented.
 
 ## How Does Someone Join?
 
@@ -47,6 +49,11 @@ Each Theater chooses one proposal policy:
 - `admins only`
 
 Owner/Admin are always eligible. The policy governs the complete Producer workflow: creating a managed draft, inviting cast, and submitting a Proposal Revision. Every co-Producer must independently satisfy the policy. Any active Theater Member may be a Director.
+
+These rules are enforced transactionally when the initial Event leadership is
+assigned. A designated Proposer or Reviewer remains a base Theater Member; the
+capability does not add Admin authority. Governance and capability changes are
+recorded as durable Theater activity.
 
 ## Who Can Review?
 
