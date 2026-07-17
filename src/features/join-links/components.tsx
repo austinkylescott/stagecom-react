@@ -10,7 +10,7 @@ import {
 } from './server-functions'
 
 import type { ReusableJoinLinkListItem } from './persistence'
-import type { ReusableJoinLinkView } from './queries'
+import type { ReusableJoinLinkView } from './public-queries'
 
 export function ReusableJoinLinksManager({
   initialLinks,

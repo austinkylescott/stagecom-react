@@ -1,28 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getReusableJoinLinkPreview, listReusableJoinLinks } from './queries'
+import { listReusableJoinLinks } from './queries'
 
 describe('Reusable Join Link queries', () => {
-  it('previews an active link without exposing its limits or history', async () => {
-    const result = await getReusableJoinLinkPreview(
-      { joinToken: 'reusable-join-link-token-1234567890' },
-      {
-        hashToken: async () => 'token-hash',
-        persistence: {
-          preview: async () => ({
-            result: 'active',
-            theaterName: 'Main Stage',
-          }),
-        },
-      },
-    )
-
-    expect(result).toEqual({
-      ok: true,
-      data: { state: 'active', theaterName: 'Main Stage' },
-    })
-  })
-
   it('lists governed links for an Owner or Admin', async () => {
     const links = [
       {

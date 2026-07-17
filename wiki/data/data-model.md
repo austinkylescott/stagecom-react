@@ -16,7 +16,9 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - Draft Theaters may keep public identity fields incomplete; a database constraint requires the complete identity before `published` state can be stored.
 - Theater creation atomically writes the Theater, first Owner membership, default-membership choice when applicable, and creation event.
 - Publication and default-Theater changes use transactional database functions, and active membership permits at most one default Theater per person.
-- Email-specific Theater invitations store hashed tokens.
+- Email-specific Targeted Invitations and Reusable Join Links store hashed
+  tokens. Reusable links support optional expiry/use limits, revocation, and
+  rotation lineage.
 - Activity history is stored in `activity_events`.
 - Event staff defaults are separate from per-Event staff assignments.
 - `show_acts` supports simple public grouping and running order.
@@ -50,8 +52,6 @@ The existing schema does not yet express the agreed workflow completely. The tar
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
 - Theater proposal policy and explicit Proposer/Reviewer capabilities
-- Targeted Invitations and Reusable Join Links, including hash-only tokens,
-  optional expiry/use limits, revocation, and rotation lineage
 - explicit ticket Sales Channel and price
 
 These are specified product requirements, not claims about the executable schema. A future schema spec and forward migration must reconcile the current tables and enums with this model.
@@ -65,4 +65,5 @@ These are specified product requirements, not claims about the executable schema
 
 ## Generated Types
 
-The generated TypeScript schema lives at `src/server/db/database.types.ts`. Regenerate it after applying local migrations with `npm run db:types`.
+The generated TypeScript schema lives at `src/server/db/database.types.ts`.
+Regenerate it from the authoritative remote schema with `npm run db:types`.

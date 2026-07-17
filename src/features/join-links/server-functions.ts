@@ -6,7 +6,8 @@ import {
   revokeReusableJoinLink,
   rotateReusableJoinLink,
 } from './commands'
-import { getReusableJoinLinkPreview, listReusableJoinLinks } from './queries'
+import { getReusableJoinLinkPreview } from './public-queries'
+import { listReusableJoinLinks } from './queries'
 import {
   acceptReusableJoinLinkInputSchema,
   createReusableJoinLinkInputSchema,

@@ -118,6 +118,7 @@ test('Owner creates, rotates, and revokes a governed Reusable Join Link', async 
 })
 
 test('Reusable Join Link acceptance is idempotent and enforces every terminal state atomically', async ({
+  browser,
   context,
   page,
 }) => {
@@ -130,6 +131,7 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
   const concurrentToken = randomBytes(32).toString('base64url')
   const expiredToken = randomBytes(32).toString('base64url')
   const revokedToken = randomBytes(32).toString('base64url')
+  const contenderContexts: import('@playwright/test').BrowserContext[] = []
 
   try {
     await createJoinLink(fixture, successfulToken, { maxUses: 1 })
@@ -200,20 +202,48 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
     ).toBeVisible()
 
     await createJoinLink(fixture, concurrentToken, { maxUses: 1 })
-    const concurrentResults = await Promise.all(
-      fixture.memberIds.slice(1).map((memberId) =>
-        fixture.admin.rpc('accept_reusable_theater_join_link', {
-          p_actor_user_id: memberId,
-          p_token_hash: hashToken(concurrentToken),
-        }),
+    contenderContexts.push(
+      await browser.newContext(),
+      await browser.newContext(),
+    )
+    await Promise.all(
+      contenderContexts.map((contenderContext, index) =>
+        signInBrowserAsMember(contenderContext, fixture, index + 1),
       ),
     )
-    const resultStates = concurrentResults
-      .map(({ data, error }) => {
-        expect(error).toBeNull()
-        return data?.[0].result
-      })
-      .sort()
+    const contenderPages = await Promise.all(
+      contenderContexts.map(async (contenderContext) => {
+        const contenderPage = await contenderContext.newPage()
+        await contenderPage.goto(`/join-link/${concurrentToken}`)
+        await expect(
+          contenderPage.getByRole('heading', {
+            name: `Join ${fixture.theaterName}`,
+          }),
+        ).toBeVisible()
+        await contenderPage.waitForTimeout(500)
+        return contenderPage
+      }),
+    )
+
+    await Promise.all(
+      contenderPages.map((contenderPage) =>
+        contenderPage.getByRole('button', { name: 'Join Theater' }).click(),
+      ),
+    )
+    await Promise.all(
+      contenderPages.map((contenderPage) =>
+        expect(
+          contenderPage.getByText(
+            /You joined|This Reusable Join Link has reached its use limit/,
+          ),
+        ).toBeVisible(),
+      ),
+    )
+    const contenderOutcomes = await Promise.all(
+      contenderPages.map((contenderPage) =>
+        contenderPage.locator('main').innerText(),
+      ),
+    )
     const { data: concurrentLink } = await fixture.admin
       .from('theater_join_links')
       .select('use_count')
@@ -226,7 +256,14 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
       .in('user_id', fixture.memberIds.slice(1))
       .eq('status', 'active')
 
-    expect(resultStates).toEqual(['accepted', 'exhausted'])
+    expect(
+      contenderOutcomes.filter((outcome) => outcome.includes('You joined')),
+    ).toHaveLength(1)
+    expect(
+      contenderOutcomes.filter((outcome) =>
+        outcome.includes('has reached its use limit'),
+      ),
+    ).toHaveLength(1)
     expect(concurrentLink?.use_count).toBe(1)
     expect(acceptedMemberships).toBe(1)
 
@@ -251,6 +288,9 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
       history?.filter(({ action }) => action === 'theater.join_link.exhausted'),
     ).toHaveLength(2)
   } finally {
+    await Promise.all(
+      contenderContexts.map((contenderContext) => contenderContext.close()),
+    )
     await deleteJoinLinkFixture(fixture)
   }
 })
