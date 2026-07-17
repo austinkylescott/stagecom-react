@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TheaterTheaterSlugRouteImport } from './routes/theater.$theaterSlug'
 import { Route as OnboardingTheaterRouteImport } from './routes/onboarding.theater'
 import { Route as JoinInviteTokenRouteImport } from './routes/join.$inviteToken'
+import { Route as JoinLinkJoinTokenRouteImport } from './routes/join-link.$joinToken'
 import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppCallsheetRouteImport } from './routes/app.callsheet'
@@ -85,6 +86,11 @@ const OnboardingTheaterRoute = OnboardingTheaterRouteImport.update({
 const JoinInviteTokenRoute = JoinInviteTokenRouteImport.update({
   id: '/join/$inviteToken',
   path: '/join/$inviteToken',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinLinkJoinTokenRoute = JoinLinkJoinTokenRouteImport.update({
+  id: '/join-link/$joinToken',
+  path: '/join-link/$joinToken',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevComponentsRoute = DevComponentsRouteImport.update({
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/app/callsheet': typeof AppCallsheetRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
+  '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/app/callsheet': typeof AppCallsheetRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
+  '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/app/callsheet': typeof AppCallsheetRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
+  '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/app/callsheet'
     | '/auth/callback'
     | '/dev/components'
+    | '/join-link/$joinToken'
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/app/callsheet'
     | '/auth/callback'
     | '/dev/components'
+    | '/join-link/$joinToken'
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/app/callsheet'
     | '/auth/callback'
     | '/dev/components'
+    | '/join-link/$joinToken'
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
@@ -304,6 +316,7 @@ export interface RootRouteChildren {
   TheaterRoute: typeof TheaterRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   DevComponentsRoute: typeof DevComponentsRoute
+  JoinLinkJoinTokenRoute: typeof JoinLinkJoinTokenRoute
   JoinInviteTokenRoute: typeof JoinInviteTokenRoute
 }
 
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       path: '/join/$inviteToken'
       fullPath: '/join/$inviteToken'
       preLoaderRoute: typeof JoinInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join-link/$joinToken': {
+      id: '/join-link/$joinToken'
+      path: '/join-link/$joinToken'
+      fullPath: '/join-link/$joinToken'
+      preLoaderRoute: typeof JoinLinkJoinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/components': {
@@ -554,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   TheaterRoute: TheaterRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   DevComponentsRoute: DevComponentsRoute,
+  JoinLinkJoinTokenRoute: JoinLinkJoinTokenRoute,
   JoinInviteTokenRoute: JoinInviteTokenRoute,
 }
 export const routeTree = rootRouteImport
