@@ -928,6 +928,7 @@ export type Database = {
           name: string
           owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
           primary_venue_name: string | null
           producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
@@ -956,6 +957,7 @@ export type Database = {
           name: string
           owner_self_approval_enabled?: boolean
           postal_code?: string | null
+          primary_venue_id?: string
           primary_venue_name?: string | null
           producer_eligibility?: Database['public']['Enums']['producer_eligibility_policy']
           published_at?: string | null
@@ -984,6 +986,7 @@ export type Database = {
           name?: string
           owner_self_approval_enabled?: boolean
           postal_code?: string | null
+          primary_venue_id?: string
           primary_venue_name?: string | null
           producer_eligibility?: Database['public']['Enums']['producer_eligibility_policy']
           published_at?: string | null
@@ -1239,6 +1242,7 @@ export type Database = {
           name: string
           owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
           primary_venue_name: string | null
           producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
@@ -1299,6 +1303,7 @@ export type Database = {
           name: string
           owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
           primary_venue_name: string | null
           producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
@@ -1357,6 +1362,7 @@ export type Database = {
           name: string
           owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
           primary_venue_name: string | null
           producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
@@ -1394,6 +1400,7 @@ export type Database = {
           name: string
           owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
           primary_venue_name: string | null
           producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null

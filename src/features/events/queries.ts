@@ -1,6 +1,12 @@
-import { getCurrentUserFromRequest } from '@/server/auth/session'
+import {
+  getBearerTokenFromRequest,
+  getCurrentUserFromRequest,
+} from '@/server/auth/session'
 import { appError, err, ok } from '@/server/errors'
-import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
+import {
+  createSupabaseAnonClient,
+  createSupabaseServiceRoleClient,
+} from '@/server/supabase/client'
 
 import type { z } from 'zod'
 import type {
@@ -152,7 +158,13 @@ async function getTheaterAccess(theaterSlug: string) {
     return currentUser
   }
 
-  const supabase = createSupabaseServiceRoleClient()
+  const token = getBearerTokenFromRequest()
+
+  if (!token) {
+    return err(appError('unauthenticated', 'Sign in is required.'))
+  }
+
+  const supabase = createSupabaseAnonClient(token)
   const { data: theater, error: theaterError } = await supabase
     .from('theaters')
     .select('id, name, slug, producer_eligibility')

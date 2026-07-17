@@ -31,6 +31,13 @@ export async function createManagedEvent(
   }
 
   try {
+    await dependencies.persistence.authorizeCreation({
+      actorUserId: currentUser.data.id,
+      ...(input.directorUserId ? { directorUserId: input.directorUserId } : {}),
+      producerUserIds: input.producerUserIds,
+      theaterId: input.theaterId,
+    })
+
     return ok(
       await dependencies.persistence.create({
         actorUserId: currentUser.data.id,

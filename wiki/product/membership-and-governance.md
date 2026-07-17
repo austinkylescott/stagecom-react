@@ -53,7 +53,8 @@ Owner/Admin are always eligible. The policy governs the complete Producer workfl
 These rules are enforced transactionally when the initial Event leadership is
 assigned. A designated Proposer or Reviewer remains a base Theater Member; the
 capability does not add Admin authority. Governance and capability changes are
-recorded as durable Theater activity.
+recorded as durable Theater activity. Producer-only authorization re-checks
+active membership and current Theater policy on every action.
 
 ## Who Can Review?
 

@@ -10,6 +10,7 @@ const testEnv = loadEnv('development', process.cwd(), '')
 type Fixture = {
   admin: SupabaseClient<Database>
   anonKey: string
+  memberEmail: string
   memberUserId: string
   ownerEmail: string
   ownerPassword: string
@@ -103,6 +104,11 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
       .eq('theater_id', fixture.theaterId)
       .eq('slug', 'summer-hamlet')
       .single()
+    const { data: theater } = await fixture.admin
+      .from('theaters')
+      .select('primary_venue_id')
+      .eq('id', fixture.theaterId)
+      .single()
     const { data: leadership } = await fixture.admin
       .from('show_leadership')
       .select('user_id, role')
@@ -123,6 +129,7 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
       ])
 
     expect(eventError).toBeNull()
+    expect(theater?.primary_venue_id).toMatch(/^[0-9a-f-]{36}$/)
     expect(managedEvent).toMatchObject({
       lifecycle_status: 'draft',
       operational_health: 'on_track',
@@ -144,6 +151,42 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
         'event.role.assigned',
       ]),
     )
+
+    const memberAuth = createClient<Database>(
+      fixture.supabaseUrl,
+      fixture.anonKey,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+    const { error: memberSignInError } =
+      await memberAuth.auth.signInWithPassword({
+        email: fixture.memberEmail,
+        password: fixture.ownerPassword,
+      })
+    const { data: eligibleAuthority } = await memberAuth.rpc(
+      'is_show_producer',
+      { p_show_id: managedEvent!.id },
+    )
+
+    expect(memberSignInError).toBeNull()
+    expect(eligibleAuthority).toBe(true)
+
+    const { error: revokeError } = await fixture.admin.rpc(
+      'set_theater_member_capability',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_capability: 'proposer',
+        p_enabled: false,
+        p_theater_id: fixture.theaterId,
+        p_user_id: fixture.memberUserId,
+      },
+    )
+    const { data: revokedAuthority } = await memberAuth.rpc(
+      'is_show_producer',
+      { p_show_id: managedEvent!.id },
+    )
+
+    expect(revokeError).toBeNull()
+    expect(revokedAuthority).toBe(false)
   } finally {
     await deleteFixture(fixture)
   }
@@ -171,6 +214,7 @@ async function createFixture(
   )
   const suffix = crypto.randomUUID()
   const ownerEmail = `governance-owner-${suffix}@example.com`
+  const memberEmail = `governed-member-${suffix}@example.com`
   const ownerPassword = `Stagecom-${crypto.randomUUID()}`
   const theaterSlug = `governed-stage-${suffix}`
   const { data: owner, error: ownerError } = await admin.auth.admin.createUser({
@@ -181,7 +225,7 @@ async function createFixture(
   })
   const { data: member, error: memberError } =
     await admin.auth.admin.createUser({
-      email: `governed-member-${suffix}@example.com`,
+      email: memberEmail,
       email_confirm: true,
       password: ownerPassword,
       user_metadata: { full_name: 'Governed Member' },
@@ -214,6 +258,7 @@ async function createFixture(
   return {
     admin,
     anonKey: config.anonKey,
+    memberEmail,
     memberUserId: member.user!.id,
     ownerEmail,
     ownerPassword,

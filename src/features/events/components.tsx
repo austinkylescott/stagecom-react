@@ -2,6 +2,13 @@ import { useState } from 'react'
 
 import { createManagedEventFn } from './server-functions'
 
+import type { Database } from '@/server/db/database.types'
+
+type EventLeadershipRole = Database['public']['Enums']['event_leadership_role']
+type EventLifecycle = Database['public']['Enums']['show_lifecycle_status']
+type EventHealth = Database['public']['Enums']['show_operational_health']
+type EventPublication = Database['public']['Enums']['show_publication_status']
+
 type EventMember = {
   displayName: string
   isEligibleProducer: boolean
@@ -146,9 +153,9 @@ export function ManagedEventsPage({
 }: {
   events: Array<{
     id: string
-    lifecycle_status: string
-    operational_health: string
-    publication_status: string
+    lifecycle_status: EventLifecycle
+    operational_health: EventHealth
+    publication_status: EventPublication
     slug: string
     title: string
   }>
@@ -202,13 +209,13 @@ export function ManagedEventWorkspace({
   event,
 }: {
   event: {
-    lifecycle_status: string
-    operational_health: string
-    publication_status: string
+    lifecycle_status: EventLifecycle
+    operational_health: EventHealth
+    publication_status: EventPublication
     show_cast: Array<{ user_id: string }>
     show_leadership: Array<{
       profiles: { display_name: string }
-      role: string
+      role: EventLeadershipRole
       user_id: string
     }>
     title: string

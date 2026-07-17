@@ -98,8 +98,8 @@ and rotation emit Theater-local activity events.
 
 Theaters now persist one Producer eligibility policy (`all_members`,
 `designated_proposers`, or `admins_only`), audited Owner self-approval policy,
-the default Counteroffer response window, Primary Venue identity, and setup and
-turnover buffers. Narrow Proposer and Reviewer capabilities require active
+the default Counteroffer response window, a stable Primary Venue identifier and
+editable name, and setup and turnover buffers. Narrow Proposer and Reviewer capabilities require active
 membership and do not change Theater roles.
 
 Managed performance Event creation validates the actor and every co-Producer
@@ -107,7 +107,9 @@ against current policy in one transaction. Any active Theater Member may be the
 Director, including a Producer. Creation writes one `shows` record with
 independent draft, unpublished, and on-track state plus explicit
 `show_leadership` rows and durable activity events. It never creates a
-`show_cast` row.
+`show_cast` row. Producer authorization re-checks active membership and current
+Theater policy instead of treating a historical leadership row as permanent
+authority.
 
 ## Activity And Notifications
 

@@ -1,6 +1,12 @@
-import { getCurrentUserFromRequest } from '@/server/auth/session'
+import {
+  getBearerTokenFromRequest,
+  getCurrentUserFromRequest,
+} from '@/server/auth/session'
 import { appError, err, ok } from '@/server/errors'
-import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
+import {
+  createSupabaseAnonClient,
+  createSupabaseServiceRoleClient,
+} from '@/server/supabase/client'
 
 import type { z } from 'zod'
 import type { theaterGovernanceInputSchema } from './schemas'
@@ -14,11 +20,17 @@ export async function getTheaterGovernance(
     return currentUser
   }
 
-  const supabase = createSupabaseServiceRoleClient()
-  const { data: theater, error: theaterError } = await supabase
+  const token = getBearerTokenFromRequest()
+
+  if (!token) {
+    return err(appError('unauthenticated', 'Sign in is required.'))
+  }
+
+  const userSupabase = createSupabaseAnonClient(token)
+  const { data: theater, error: theaterError } = await userSupabase
     .from('theaters')
     .select(
-      'id, producer_eligibility, owner_self_approval_enabled, counteroffer_response_hours, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes',
+      'id, producer_eligibility, owner_self_approval_enabled, counteroffer_response_hours, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes',
     )
     .eq('slug', input.theaterSlug)
     .maybeSingle()
@@ -36,7 +48,7 @@ export async function getTheaterGovernance(
     return err(appError('not_found', 'Theater was not found.'))
   }
 
-  const { data: actorMembership, error: actorError } = await supabase
+  const { data: actorMembership, error: actorError } = await userSupabase
     .from('theater_memberships')
     .select('roles')
     .eq('theater_id', theater.id)
@@ -59,6 +71,7 @@ export async function getTheaterGovernance(
     return err(appError('forbidden', 'Owner or Admin access is required.'))
   }
 
+  const supabase = createSupabaseServiceRoleClient()
   const [
     { data: memberships, error: membershipError },
     { data: capabilities, error: capabilityError },
@@ -88,6 +101,7 @@ export async function getTheaterGovernance(
     governance: {
       counterofferResponseHours: theater.counteroffer_response_hours,
       ownerSelfApprovalEnabled: theater.owner_self_approval_enabled,
+      primaryVenueId: theater.primary_venue_id,
       primaryVenueName: theater.primary_venue_name ?? '',
       producerEligibility: theater.producer_eligibility,
       setupBufferMinutes: theater.setup_buffer_minutes,

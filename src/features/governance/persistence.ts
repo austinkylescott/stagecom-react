@@ -1,5 +1,9 @@
 import { appError } from '@/server/errors'
-import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
+import { getBearerTokenFromRequest } from '@/server/auth/session'
+import {
+  createSupabaseAnonClient,
+  createSupabaseServiceRoleClient,
+} from '@/server/supabase/client'
 
 export type ProducerEligibility =
   'all_members' | 'designated_proposers' | 'admins_only'
@@ -9,6 +13,7 @@ export type TheaterCapability = 'proposer' | 'reviewer'
 export type TheaterGovernance = {
   counterofferResponseHours: number
   ownerSelfApprovalEnabled: boolean
+  primaryVenueId: string
   primaryVenueName: string
   producerEligibility: ProducerEligibility
   setupBufferMinutes: number
@@ -17,6 +22,10 @@ export type TheaterGovernance = {
 }
 
 export type GovernancePersistence = {
+  authorizeManagement: (input: {
+    theaterId: string
+    userId: string
+  }) => Promise<boolean>
   setMemberCapability: (input: {
     actorUserId: string
     capability: TheaterCapability
@@ -25,12 +34,34 @@ export type GovernancePersistence = {
     userId: string
   }) => Promise<{ changed: boolean }>
   updateGovernance: (
-    input: TheaterGovernance & { actorUserId: string },
+    input: Omit<TheaterGovernance, 'primaryVenueId'> & { actorUserId: string },
   ) => Promise<TheaterGovernance>
 }
 
 export function createSupabaseGovernancePersistence(): GovernancePersistence {
   return {
+    async authorizeManagement(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase
+        .from('theater_memberships')
+        .select('roles')
+        .eq('theater_id', input.theaterId)
+        .eq('user_id', input.userId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Theater access could not be checked.',
+        )
+      }
+
+      return (
+        data?.roles.some((role) => role === 'owner' || role === 'admin') ??
+        false
+      )
+    },
     async setMemberCapability(input) {
       const supabase = createSupabaseServiceRoleClient()
       const { data, error } = await supabase.rpc(
@@ -101,6 +132,7 @@ export function createSupabaseGovernancePersistence(): GovernancePersistence {
       return {
         counterofferResponseHours: row.counteroffer_response_hours,
         ownerSelfApprovalEnabled: row.owner_self_approval_enabled,
+        primaryVenueId: row.primary_venue_id,
         primaryVenueName: row.primary_venue_name ?? '',
         producerEligibility: row.producer_eligibility,
         setupBufferMinutes: row.setup_buffer_minutes,
@@ -109,4 +141,14 @@ export function createSupabaseGovernancePersistence(): GovernancePersistence {
       }
     },
   }
+}
+
+function createAuthenticatedClient() {
+  const token = getBearerTokenFromRequest()
+
+  if (!token) {
+    throw appError('unauthenticated', 'Sign in is required.')
+  }
+
+  return createSupabaseAnonClient(token)
 }

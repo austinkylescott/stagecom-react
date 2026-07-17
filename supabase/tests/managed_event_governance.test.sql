@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(16);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -63,6 +63,12 @@ select is(
   (select count(*) from public.activity_events where action = 'theater.governance.updated'),
   1::bigint,
   'governance change emits one durable domain event'
+);
+
+select isnt(
+  (select primary_venue_id from public.theaters where slug = 'governed-stage'),
+  null::uuid,
+  'the Primary Venue has a stable identity independent of its name'
 );
 
 select throws_ok(
@@ -170,6 +176,35 @@ select results_eq(
   $$ values (1::bigint, 3::bigint) $$,
   'Event creation and every leadership assignment emit durable domain events'
 );
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '30000000-0000-0000-0000-000000000002';
+
+select ok(
+  public.is_show_producer((select id from public.shows where slug = 'summer-hamlet')),
+  'an active eligible co-Producer has Producer authority'
+);
+
+reset role;
+
+select public.set_theater_member_capability(
+  (select id from public.theaters where slug = 'governed-stage'),
+  '30000000-0000-0000-0000-000000000001',
+  '30000000-0000-0000-0000-000000000002',
+  'proposer',
+  false
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '30000000-0000-0000-0000-000000000002';
+
+select isnt(
+  public.is_show_producer((select id from public.shows where slug = 'summer-hamlet')),
+  true,
+  'Producer authority re-checks current Theater policy'
+);
+
+reset role;
 
 select * from finish();
 rollback;

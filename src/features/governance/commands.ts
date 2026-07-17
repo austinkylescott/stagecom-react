@@ -34,6 +34,15 @@ export async function updateTheaterGovernance(
   }
 
   try {
+    const authorized = await dependencies.persistence.authorizeManagement({
+      theaterId: input.theaterId,
+      userId: currentUser.data.id,
+    })
+
+    if (!authorized) {
+      return err(appError('forbidden', 'Owner or Admin access is required.'))
+    }
+
     const governance = await dependencies.persistence.updateGovernance({
       actorUserId: currentUser.data.id,
       counterofferResponseHours: input.counterofferResponseHours,
@@ -47,17 +56,9 @@ export async function updateTheaterGovernance(
 
     return ok(governance)
   } catch (error) {
-    const failure = toAppError(error)
-
-    if (failure.code !== 'internal_error') {
-      return err(failure)
-    }
-
-    return err(
-      appError(
-        'external_service_error',
-        'Theater governance could not be saved.',
-      ),
+    return governanceCommandFailure(
+      error,
+      'Theater governance could not be saved.',
     )
   }
 }
@@ -73,6 +74,15 @@ export async function setTheaterMemberCapability(
   }
 
   try {
+    const authorized = await dependencies.persistence.authorizeManagement({
+      theaterId: input.theaterId,
+      userId: currentUser.data.id,
+    })
+
+    if (!authorized) {
+      return err(appError('forbidden', 'Owner or Admin access is required.'))
+    }
+
     return ok(
       await dependencies.persistence.setMemberCapability({
         actorUserId: currentUser.data.id,
@@ -83,17 +93,17 @@ export async function setTheaterMemberCapability(
       }),
     )
   } catch (error) {
-    const failure = toAppError(error)
-
-    if (failure.code !== 'internal_error') {
-      return err(failure)
-    }
-
-    return err(
-      appError(
-        'external_service_error',
-        'Theater capability could not be saved.',
-      ),
+    return governanceCommandFailure(
+      error,
+      'Theater capability could not be saved.',
     )
   }
+}
+
+function governanceCommandFailure(error: unknown, message: string) {
+  const failure = toAppError(error)
+
+  return failure.code === 'internal_error'
+    ? err(appError('external_service_error', message))
+    : err(failure)
 }

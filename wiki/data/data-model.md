@@ -14,7 +14,8 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - Published Theater visibility depends on `theaters.status = published`.
 - Event lifecycle, Publication, and operational health are persisted independently on `shows`; the legacy Event status remains during expansion.
 - Theater Event governance stores Producer eligibility, Owner self-approval,
-  the Counteroffer response window, and Primary Venue setup/turnover buffers.
+  the Counteroffer response window, a stable Primary Venue identity and name,
+  and setup/turnover buffers.
 - `theater_member_capabilities` stores narrow Proposer and Reviewer grants;
   `show_leadership` stores explicit Producer and Director assignments.
 - Draft Theaters may keep public identity fields incomplete; a database constraint requires the complete identity before `published` state can be stored.
