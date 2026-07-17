@@ -8,9 +8,9 @@ import {
 } from './schemas'
 
 export const acceptTheaterInviteFn = createServerFn({ method: 'POST' })
-  .inputValidator(acceptTheaterInviteInputSchema)
+  .validator(acceptTheaterInviteInputSchema)
   .handler(async ({ data }) => acceptTheaterInvite(data))
 
 export const getTheaterMembershipFn = createServerFn({ method: 'GET' })
-  .inputValidator(getTheaterMembershipInputSchema)
+  .validator(getTheaterMembershipInputSchema)
   .handler(async ({ data }) => getTheaterMembership(data))

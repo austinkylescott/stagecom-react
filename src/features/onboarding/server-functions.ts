@@ -4,5 +4,5 @@ import { getOnboardingState } from './queries'
 import { getOnboardingStateInputSchema } from './schemas'
 
 export const getOnboardingStateFn = createServerFn({ method: 'GET' })
-  .inputValidator(getOnboardingStateInputSchema)
+  .validator(getOnboardingStateInputSchema)
   .handler(async () => getOnboardingState())
