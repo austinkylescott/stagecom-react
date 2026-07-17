@@ -51,6 +51,9 @@ selection, private preview, explicit Publication, anonymous published-only
 reads, durable creation and Publication events, and local migration/database
 verification.
 
-Membership acquisition and the multi-user Event workflow remain to be built.
-Detailed implementation tickets, acceptance criteria, and dependency
-relationships are tracked under STA-5 in Linear.
+Targeted Invitation membership acquisition is also implemented: Owner/Admin can
+create and revoke single-recipient links, authentication preserves invitation
+intent, and matching recipients receive idempotent base Member access through
+an atomic remote-backed acceptance flow. Reusable Join Links and the multi-user
+Event workflow remain to be built. Detailed implementation tickets, acceptance
+criteria, and dependency relationships are tracked under STA-5 in Linear.

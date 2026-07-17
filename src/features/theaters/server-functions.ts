@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 
 import {
   createDraftTheater,
-  createTheaterInvite,
   publishTheater,
   setDefaultTheater,
   updateTheaterSetup,
@@ -15,7 +14,6 @@ import {
 import { getMyTheaters, getTheaterPreview } from './queries'
 import {
   createDraftTheaterInputSchema,
-  createTheaterInviteInputSchema,
   publishedTheaterEventsInputSchema,
   publishTheaterInputSchema,
   setDefaultTheaterInputSchema,
@@ -43,10 +41,6 @@ export const publishTheaterFn = createServerFn({ method: 'POST' })
 export const setDefaultTheaterFn = createServerFn({ method: 'POST' })
   .validator(setDefaultTheaterInputSchema)
   .handler(async ({ data }) => setDefaultTheater(data))
-
-export const createTheaterInviteFn = createServerFn({ method: 'POST' })
-  .validator(createTheaterInviteInputSchema)
-  .handler(async ({ data }) => createTheaterInvite(data))
 
 export const getMyTheatersFn = createServerFn({ method: 'GET' }).handler(
   async () => getMyTheaters(),

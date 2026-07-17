@@ -26,13 +26,13 @@ The rebuild delta migrations add Theater publication state, branding/social meta
 
 Events now persist lifecycle (`draft`, `in_review`, `approved`, `cancelled`, `completed`), Publication (`unpublished`, `published`), and operational health (`on_track`, `at_risk`) independently while the legacy `shows.status` and `shows.is_public_listed` fields remain available during expansion. Existing rows and legacy writes use this explicit compatibility mapping:
 
-| Legacy status | Lifecycle | Publication | Operational health |
-| --- | --- | --- | --- |
-| `draft` | `draft` | `unpublished` | `on_track` |
-| `pending_review` | `in_review` | `unpublished` | `on_track` |
-| `approved` | `approved` | `published` only when `is_public_listed`; otherwise `unpublished` | `on_track` |
-| `rejected` | `cancelled` | `unpublished` | `on_track` |
-| `cancelled` | `cancelled` | `unpublished` | `on_track` |
+| Legacy status    | Lifecycle   | Publication                                                       | Operational health |
+| ---------------- | ----------- | ----------------------------------------------------------------- | ------------------ |
+| `draft`          | `draft`     | `unpublished`                                                     | `on_track`         |
+| `pending_review` | `in_review` | `unpublished`                                                     | `on_track`         |
+| `approved`       | `approved`  | `published` only when `is_public_listed`; otherwise `unpublished` | `on_track`         |
+| `rejected`       | `cancelled` | `unpublished`                                                     | `on_track`         |
+| `cancelled`      | `cancelled` | `unpublished`                                                     | `on_track`         |
 
 Legacy `rejected` remains distinguishable in `shows.status`; its lifecycle maps to `cancelled` rather than reviving a closed Event as a draft. No legacy field represents operational risk reliably, so migrated rows begin `on_track`. During expansion, legacy writes synchronize forward into the independent dimensions, while writes to the independent dimensions do not collapse back into the lossy legacy representation.
 
@@ -77,7 +77,17 @@ Public Theater and Event pages use anonymous-safe public queries. Draft, unpubli
 
 ## Invitations
 
-The current schema supports email-specific hashed Theater invitation tokens. The accepted target also requires Reusable Join Links whose possession grants immediate base membership. Link creation, revocation, rotation, expiration, limits, acceptance, membership writes, and activity events must be handled atomically by app commands.
+The current schema supports email-specific Targeted Invitations. Owner/Admin
+creation stores only a SHA-256 token hash and returns the shareable token once.
+Acceptance atomically validates the signed-in email, token, expiry, revocation,
+and prior use; creates or reactivates one base Member membership; records the
+accepting person and time; and emits Theater-local activity. Same-recipient
+retries are idempotent.
+
+The accepted target also requires Reusable Join Links whose possession grants
+immediate base membership. Reusable-link creation, revocation, rotation,
+expiration, limits, acceptance, membership writes, and activity events must be
+handled atomically by app commands.
 
 ## Activity And Notifications
 

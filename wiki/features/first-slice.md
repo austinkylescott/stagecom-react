@@ -32,7 +32,9 @@ The foundation slice proves the rebuilt app shape through auth, onboarding, Thea
 
 Database-backed Theater creation now atomically establishes the first Owner membership and factual creation event. Owners can persist the required public identity, preview the anonymous-safe result, publish explicitly, and choose a default Theater for navigation. The public Theater route now uses a published-only anonymous query rather than demo state, and Publication writes a durable factual event without duplicating it on retry.
 
-Targeted Invitation acceptance remains incomplete, so the broader foundation slice is still only partially implemented.
+Targeted Invitation creation, revocation, intent-preserving authentication, and
+idempotent base-Member acceptance are implemented. Reusable Join Links and the
+broader multi-user Event workflow remain outside this foundation slice.
 
 ## Acceptance Sources
 

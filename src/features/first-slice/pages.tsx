@@ -1,6 +1,5 @@
-import { Link } from '@tanstack/react-router'
-import { ArrowRight, Loader2, Mail, Theater, UserRound } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowRight, Loader2, Mail, UserRound } from 'lucide-react'
+import { useState } from 'react'
 
 import {
   resolveAuthRedirectFn,
@@ -200,52 +199,6 @@ export function CompleteProfilePage({ next }: { next?: string }) {
             </p>
           ) : null}
         </form>
-      </section>
-    </main>
-  )
-}
-
-export function JoinInvitePage({ inviteToken }: { inviteToken: string }) {
-  const tokenState = useMemo(() => {
-    if (inviteToken.length < 24) {
-      return {
-        title: 'Invite link is invalid',
-        copy: 'Ask the theater admin for a fresh invite link.',
-      }
-    }
-
-    return {
-      title: 'Join this theater',
-      copy: 'Invite acceptance will verify the token, signed-in email, expiration, and existing membership before creating access.',
-    }
-  }, [inviteToken])
-
-  return (
-    <main className="page-wrap grid min-h-[72vh] place-items-center py-10">
-      <section className="island-shell w-full max-w-xl rounded-lg px-6 py-7 sm:px-8">
-        <Theater className="size-7 text-[var(--palm)]" />
-        <h1 className="display-title mt-4 text-3xl font-bold text-[var(--sea-ink)]">
-          {tokenState.title}
-        </h1>
-        <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">
-          {tokenState.copy}
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-            search={{ inviteToken }}
-            to="/login"
-          >
-            Sign in to accept
-          </Link>
-          <Link
-            className="rounded-md border border-[var(--line)] px-4 py-3 font-extrabold no-underline"
-            search={{ inviteToken }}
-            to="/signup"
-          >
-            Create account
-          </Link>
-        </div>
       </section>
     </main>
   )

@@ -835,6 +835,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_targeted_theater_invitation: {
+        Args: {
+          p_actor_email: string
+          p_actor_user_id: string
+          p_token_hash: string
+        }
+        Returns: {
+          accepted_at: string
+          membership_created: boolean
+          result: string
+          theater_id: string
+          theater_name: string
+          theater_slug: string
+        }[]
+      }
       can_insert_show_cast: {
         Args: {
           p_show_id: string
@@ -872,6 +887,20 @@ export type Database = {
         Returns: boolean
       }
       can_view_show: { Args: { p_show_id: string }; Returns: boolean }
+      create_targeted_theater_invitation: {
+        Args: {
+          p_actor_user_id: string
+          p_email: string
+          p_expires_at?: string
+          p_theater_id: string
+          p_token_hash: string
+        }
+        Returns: {
+          expires_at: string
+          id: string
+          theater_id: string
+        }[]
+      }
       create_theater_with_owner: {
         Args: {
           p_actor_user_id: string
@@ -885,6 +914,13 @@ export type Database = {
           name: string
           slug: string
           status: Database['public']['Enums']['theater_status']
+        }[]
+      }
+      get_targeted_theater_invitation: {
+        Args: { p_token_hash: string }
+        Returns: {
+          result: string
+          theater_name: string
         }[]
       }
       is_active_member_of_theater: {
@@ -909,6 +945,17 @@ export type Database = {
           p_status: Database['public']['Enums']['show_status']
         }
         Returns: Database['public']['Enums']['show_publication_status']
+      }
+      list_targeted_theater_invitations: {
+        Args: { p_actor_user_id: string; p_theater_id: string }
+        Returns: {
+          accepted_at: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          status: Database['public']['Enums']['invite_status']
+        }[]
       }
       publish_theater: {
         Args: { p_actor_user_id: string; p_theater_id: string }
@@ -940,6 +987,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      revoke_targeted_theater_invitation: {
+        Args: { p_actor_user_id: string; p_invitation_id: string }
+        Returns: boolean
       }
       set_default_theater: {
         Args: { p_theater_id: string; p_user_id: string }

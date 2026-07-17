@@ -10,7 +10,6 @@ import type { AppResult } from '@/server/errors'
 import type { TheaterPersistence } from './persistence'
 import type {
   createDraftTheaterInputSchema,
-  createTheaterInviteInputSchema,
   publishTheaterInputSchema,
   setDefaultTheaterInputSchema,
   updateTheaterSetupInputSchema,
@@ -199,14 +198,6 @@ export async function publishTheater(
       appError('external_service_error', 'Theater could not be published.'),
     )
   }
-}
-
-export async function createTheaterInvite(
-  _input: z.infer<typeof createTheaterInviteInputSchema>,
-) {
-  return err(
-    appError('internal_error', 'createTheaterInvite is not implemented.'),
-  )
 }
 
 export async function setDefaultTheater(

@@ -10,7 +10,10 @@ A person may hold active membership in multiple Theaters and choose a default Th
 
 Persistent Theater creation currently grants the creator one active Owner
 membership atomically, and Members can choose one default Theater across
-multiple active memberships. Invitation-based membership, Event capabilities,
+multiple active memberships. Targeted Invitations now let Owner/Admin create a
+single-recipient link whose token is stored only as a cryptographic hash. A
+matching authenticated recipient can accept once to create or reactivate base
+Member access; retries are idempotent. Reusable Join Links, Event capabilities,
 and membership deactivation remain to be implemented.
 
 ## How Does Someone Join?
@@ -18,6 +21,11 @@ and membership deactivation remain to be implemented.
 - An Owner creates a Theater and receives its first membership.
 - A Targeted Invitation authorizes one intended recipient.
 - A Reusable Join Link grants immediate base `member` access to anyone who possesses it.
+
+Targeted Invitations validate the signed-in email, token hash, expiry,
+revocation, and prior use in one transaction. Creation, revocation, and
+acceptance are recorded as Theater-local activity events. The raw token is
+returned only when the invitation is created and is never listed again.
 
 Owner/Admin may create, revoke, and rotate Reusable Join Links. A link may have an expiration or use limit, or may intentionally be non-expiring. Link-created memberships are recorded in Theater activity history. Links grant only base membership, never Owner, Admin, Reviewer, or designated-Proposer authority.
 
