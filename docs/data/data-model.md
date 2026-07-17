@@ -84,10 +84,14 @@ and prior use; creates or reactivates one base Member membership; records the
 accepting person and time; and emits Theater-local activity. Same-recipient
 retries are idempotent.
 
-The accepted target also requires Reusable Join Links whose possession grants
-immediate base membership. Reusable-link creation, revocation, rotation,
-expiration, limits, acceptance, membership writes, and activity events must be
-handled atomically by app commands.
+Reusable Join Links now persist in `theater_join_links`. Creation returns the
+raw cryptographic token once while storing only its SHA-256 hash. Links may be
+non-expiring, expiring, use-limited, revoked, or rotated; rotations retain a
+self-referencing lineage and revoke the prior token atomically. Acceptance
+serializes on the token and accepting person, validates terminal state and
+limits, creates or reactivates base Member access only, and does not consume a
+use for an already-active Member. Creation, acceptance, exhaustion, revocation,
+and rotation emit Theater-local activity events.
 
 ## Activity And Notifications
 

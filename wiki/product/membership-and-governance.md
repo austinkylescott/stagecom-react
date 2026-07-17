@@ -13,8 +13,10 @@ membership atomically, and Members can choose one default Theater across
 multiple active memberships. Targeted Invitations now let Owner/Admin create a
 single-recipient link whose token is stored only as a cryptographic hash. A
 matching authenticated recipient can accept once to create or reactivate base
-Member access; retries are idempotent. Reusable Join Links, Event capabilities,
-and membership deactivation remain to be implemented.
+Member access; retries are idempotent. Reusable Join Links now grant immediate
+base Member access through governed hash-only links with optional expiration
+and use limits. Event capabilities and membership deactivation remain to be
+implemented.
 
 ## How Does Someone Join?
 
@@ -28,6 +30,11 @@ acceptance are recorded as Theater-local activity events. The raw token is
 returned only when the invitation is created and is never listed again.
 
 Owner/Admin may create, revoke, and rotate Reusable Join Links. A link may have an expiration or use limit, or may intentionally be non-expiring. Link-created memberships are recorded in Theater activity history. Links grant only base membership, never Owner, Admin, Reviewer, or designated-Proposer authority.
+
+Reusable-link acceptance is atomic under concurrent requests. Active Members
+may retry a still-valid link without consuming another use; revocation and
+expiry still make an old token unusable. Rotation revokes the prior token and
+retains lineage to the replacement.
 
 Until Stagecom has an application email provider, invitations are generated as links for the inviter to share through an external email, text, or messaging service.
 

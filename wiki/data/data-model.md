@@ -26,13 +26,13 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 
 The executable schema now stores Event lifecycle (`draft`, `in_review`, `approved`, `cancelled`, `completed`), Publication (`unpublished`, `published`), and operational health (`on_track`, `at_risk`) as separate enum-backed fields. Legacy rows map explicitly:
 
-| Legacy status | Lifecycle | Publication | Operational health |
-| --- | --- | --- | --- |
-| `draft` | `draft` | `unpublished` | `on_track` |
-| `pending_review` | `in_review` | `unpublished` | `on_track` |
-| `approved` | `approved` | `published` only when publicly listed; otherwise `unpublished` | `on_track` |
-| `rejected` | `cancelled` | `unpublished` | `on_track` |
-| `cancelled` | `cancelled` | `unpublished` | `on_track` |
+| Legacy status    | Lifecycle   | Publication                                                    | Operational health |
+| ---------------- | ----------- | -------------------------------------------------------------- | ------------------ |
+| `draft`          | `draft`     | `unpublished`                                                  | `on_track`         |
+| `pending_review` | `in_review` | `unpublished`                                                  | `on_track`         |
+| `approved`       | `approved`  | `published` only when publicly listed; otherwise `unpublished` | `on_track`         |
+| `rejected`       | `cancelled` | `unpublished`                                                  | `on_track`         |
+| `cancelled`      | `cancelled` | `unpublished`                                                  | `on_track`         |
 
 The retained `shows.status = rejected` value preserves the legacy distinction while its lifecycle maps to the terminal `cancelled` state. Migrated rows begin `on_track` because the legacy schema has no reliable operational-risk signal. Legacy writes synchronize forward during expansion; the independent dimensions do not collapse back into the lossy old status.
 
@@ -50,7 +50,8 @@ The existing schema does not yet express the agreed workflow completely. The tar
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
 - Theater proposal policy and explicit Proposer/Reviewer capabilities
-- Targeted Invitations and Reusable Join Links
+- Targeted Invitations and Reusable Join Links, including hash-only tokens,
+  optional expiry/use limits, revocation, and rotation lineage
 - explicit ticket Sales Channel and price
 
 These are specified product requirements, not claims about the executable schema. A future schema spec and forward migration must reconcile the current tables and enums with this model.

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { CheckCircle2, Copy, Loader2, MailPlus, Theater } from 'lucide-react'
 import { useState } from 'react'
 
+import { ReusableJoinLinksManager } from '@/features/join-links/components'
 import {
   acceptTargetedInvitationFn,
   createTargetedInvitationFn,
@@ -14,10 +15,12 @@ import type { TargetedInvitationView } from './queries'
 export function TargetedInvitationsPage({
   canManage,
   initialInvitations,
+  initialJoinLinks,
   theaterId,
 }: {
   canManage: boolean
   initialInvitations: TargetedInvitationListItem[]
+  initialJoinLinks: import('@/features/join-links/persistence').ReusableJoinLinkListItem[]
   theaterId: string
 }) {
   const [email, setEmail] = useState('')
@@ -196,6 +199,12 @@ export function TargetedInvitationsPage({
             )}
           </div>
         </section>
+      ) : null}
+      {canManage ? (
+        <ReusableJoinLinksManager
+          initialLinks={initialJoinLinks}
+          theaterId={theaterId}
+        />
       ) : null}
     </main>
   )

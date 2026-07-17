@@ -666,6 +666,70 @@ export type Database = {
           },
         ]
       }
+      theater_join_links: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          revoked_at: string | null
+          rotated_from_id: string | null
+          theater_id: string
+          token_hash: string
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          revoked_at?: string | null
+          rotated_from_id?: string | null
+          theater_id: string
+          token_hash: string
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          revoked_at?: string | null
+          rotated_from_id?: string | null
+          theater_id?: string
+          token_hash?: string
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'theater_join_links_created_by_user_id_fkey'
+            columns: ['created_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_join_links_rotated_from_id_fkey'
+            columns: ['rotated_from_id']
+            isOneToOne: true
+            referencedRelation: 'theater_join_links'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_join_links_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       theater_memberships: {
         Row: {
           created_at: string
@@ -835,6 +899,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_reusable_theater_join_link: {
+        Args: { p_actor_user_id: string; p_token_hash: string }
+        Returns: {
+          accepted_at: string
+          membership_created: boolean
+          result: string
+          theater_id: string
+          theater_name: string
+          theater_slug: string
+        }[]
+      }
       accept_targeted_theater_invitation: {
         Args: {
           p_actor_email: string
@@ -887,6 +962,22 @@ export type Database = {
         Returns: boolean
       }
       can_view_show: { Args: { p_show_id: string }; Returns: boolean }
+      create_reusable_theater_join_link: {
+        Args: {
+          p_actor_user_id: string
+          p_expires_at?: string
+          p_max_uses?: number
+          p_theater_id: string
+          p_token_hash: string
+        }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          max_uses: number
+          theater_id: string
+        }[]
+      }
       create_targeted_theater_invitation: {
         Args: {
           p_actor_user_id: string
@@ -914,6 +1005,13 @@ export type Database = {
           name: string
           slug: string
           status: Database['public']['Enums']['theater_status']
+        }[]
+      }
+      get_reusable_theater_join_link: {
+        Args: { p_token_hash: string }
+        Returns: {
+          result: string
+          theater_name: string
         }[]
       }
       get_targeted_theater_invitation: {
@@ -945,6 +1043,19 @@ export type Database = {
           p_status: Database['public']['Enums']['show_status']
         }
         Returns: Database['public']['Enums']['show_publication_status']
+      }
+      list_reusable_theater_join_links: {
+        Args: { p_actor_user_id: string; p_theater_id: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          max_uses: number
+          revoked_at: string
+          rotated_from_id: string
+          status: string
+          use_count: number
+        }[]
       }
       list_targeted_theater_invitations: {
         Args: { p_actor_user_id: string; p_theater_id: string }
@@ -988,9 +1099,28 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      revoke_reusable_theater_join_link: {
+        Args: { p_actor_user_id: string; p_join_link_id: string }
+        Returns: boolean
+      }
       revoke_targeted_theater_invitation: {
         Args: { p_actor_user_id: string; p_invitation_id: string }
         Returns: boolean
+      }
+      rotate_reusable_theater_join_link: {
+        Args: {
+          p_actor_user_id: string
+          p_join_link_id: string
+          p_token_hash: string
+        }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          max_uses: number
+          rotated_from_id: string
+          theater_id: string
+        }[]
       }
       set_default_theater: {
         Args: { p_theater_id: string; p_user_id: string }
