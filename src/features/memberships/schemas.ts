@@ -1,10 +1,6 @@
 import { z } from 'zod'
 
-import { inviteTokenSchema, slugSchema } from '@/server/schemas'
-
-export const acceptTheaterInviteInputSchema = z.object({
-  inviteToken: inviteTokenSchema,
-})
+import { slugSchema } from '@/server/schemas'
 
 export const getTheaterMembershipInputSchema = z.object({
   theaterSlug: slugSchema,

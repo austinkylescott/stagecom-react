@@ -1,20 +1,39 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { RoutePlaceholder } from '@/components/stage/route-placeholder'
+import { TargetedInvitationsPage } from '@/features/invitations/components'
+import { listTargetedInvitationsFn } from '@/features/invitations/server-functions'
+import { canManageTheater } from '@/features/theaters/permissions'
 
 export const Route = createFileRoute('/app/$theaterSlug/members')({
+  loader: async ({ context }) => {
+    const canManage = canManageTheater(context.membership.roles)
+
+    if (!canManage) {
+      return { canManage, invitations: [] }
+    }
+
+    const result = await listTargetedInvitationsFn({
+      data: { theaterId: context.theater.id },
+    })
+
+    if (!result.ok) {
+      throw result.error
+    }
+
+    return { canManage, invitations: result.data.invitations }
+  },
   component: TheaterMembersPage,
 })
 
 function TheaterMembersPage() {
-  const { theaterSlug } = Route.useParams()
+  const { theater } = Route.useRouteContext()
+  const { canManage, invitations } = Route.useLoaderData()
 
   return (
-    <RoutePlaceholder
-      eyebrow="Members"
-      title="Members and invites"
-      description="Theater membership, invite, and role management route."
-      details={[['Theater', theaterSlug]]}
+    <TargetedInvitationsPage
+      canManage={canManage}
+      initialInvitations={invitations}
+      theaterId={theater.id}
     />
   )
 }

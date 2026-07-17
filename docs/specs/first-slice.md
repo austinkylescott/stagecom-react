@@ -35,4 +35,6 @@ Use the design baseline in `docs/design/design-baseline.md`. Public pages should
 
 Persistent Theater creation, Owner membership, setup persistence, private preview, explicit Publication, default-Theater selection, and anonymous published-only rendering are implemented through the app-owned command/query boundary. Creation and Publication are idempotent transactional operations with factual activity events.
 
-Invitation acceptance remains incomplete and is the outstanding behavior in this foundation specification.
+Targeted Invitation creation, revocation, intent-preserving authentication, and
+idempotent base-Member acceptance are implemented through the app-owned
+command/query boundary. Reusable Join Links remain a later membership slice.

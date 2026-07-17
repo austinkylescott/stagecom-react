@@ -43,8 +43,9 @@ and Publication are idempotent transactional operations that emit durable
 factual events, and the complete migration chain has local database acceptance
 coverage.
 
-Membership through Targeted Invitations or Reusable Join Links and the managed
-Event workflow remain unimplemented or incomplete. The accepted product
-boundary lives in `docs/product/event-publication-milestone.md`; detailed
-implementation tickets and dependency relationships are tracked under STA-5 in
-Linear.
+Targeted Invitation membership is implemented through remote-backed atomic
+commands, explicit invalid-state handling, and working Owner/Admin and recipient
+screens. Reusable Join Links and the managed Event workflow remain unimplemented
+or incomplete. The accepted product boundary lives in
+`docs/product/event-publication-milestone.md`; detailed implementation tickets
+and dependency relationships are tracked under STA-5 in Linear.

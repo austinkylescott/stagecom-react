@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 import {
-  emailSchema,
   nonEmptyStringSchema,
   slugSchema,
   uuidSchema,
@@ -43,12 +42,6 @@ export const publishTheaterInputSchema = z.object({
 
 export const setDefaultTheaterInputSchema = z.object({
   theaterId: uuidSchema,
-})
-
-export const createTheaterInviteInputSchema = z.object({
-  theaterId: uuidSchema,
-  email: emailSchema,
-  role: z.enum(['owner', 'admin', 'member']).default('member'),
 })
 
 export const publishedTheaterEventsInputSchema = z.object({
