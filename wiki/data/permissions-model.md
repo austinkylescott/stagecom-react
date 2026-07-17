@@ -18,6 +18,10 @@ Legacy enum values from the old schema are not assigned by new UI.
 
 Each Theater allows the full Producer workflow for all Members, designated Proposers, or Admins only. Owner/Admin always qualify. Every co-Producer must satisfy the policy.
 
+The executable schema stores this choice on the Theater and stores Proposer and
+Reviewer capabilities separately from membership roles. Capability assignment
+requires current active membership and an Owner/Admin command.
+
 ## Event Roles
 
 - Producer: manages proposal details, logistics, public presentation, and submission.
@@ -25,6 +29,10 @@ Each Theater allows the full Producer workflow for all Members, designated Propo
 - staff assignment: one-off Event role assigned by Owner/Admin.
 - Cast Member: explicit, accepted Event participation only.
 - Reviewer: Owner/Admin by default or a Member with an explicit review capability.
+
+Managed Event leadership is persisted in `show_leadership`. One Event may have
+multiple Producers and at most one Director; the same active Member may hold
+both roles.
 
 ## Invariants
 

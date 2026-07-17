@@ -348,6 +348,52 @@ export type Database = {
           },
         ]
       }
+      show_leadership: {
+        Row: {
+          assigned_by_user_id: string | null
+          created_at: string
+          role: Database['public']['Enums']['event_leadership_role']
+          show_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by_user_id?: string | null
+          created_at?: string
+          role: Database['public']['Enums']['event_leadership_role']
+          show_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_by_user_id?: string | null
+          created_at?: string
+          role?: Database['public']['Enums']['event_leadership_role']
+          show_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_leadership_assigned_by_user_id_fkey'
+            columns: ['assigned_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_leadership_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_leadership_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_occurrences: {
         Row: {
           created_at: string
@@ -730,6 +776,52 @@ export type Database = {
           },
         ]
       }
+      theater_member_capabilities: {
+        Row: {
+          capability: Database['public']['Enums']['theater_capability']
+          created_at: string
+          granted_by_user_id: string | null
+          theater_id: string
+          user_id: string
+        }
+        Insert: {
+          capability: Database['public']['Enums']['theater_capability']
+          created_at?: string
+          granted_by_user_id?: string | null
+          theater_id: string
+          user_id: string
+        }
+        Update: {
+          capability?: Database['public']['Enums']['theater_capability']
+          created_at?: string
+          granted_by_user_id?: string | null
+          theater_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'theater_member_capabilities_granted_by_user_id_fkey'
+            columns: ['granted_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_member_capabilities_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_member_capabilities_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       theater_memberships: {
         Row: {
           created_at: string
@@ -828,13 +920,19 @@ export type Database = {
       theaters: {
         Row: {
           city: string | null
+          counteroffer_response_hours: number
           country: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
+          primary_venue_name: string | null
+          producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
+          setup_buffer_minutes: number
           slug: string
           social_links: Json
           state_region: string | null
@@ -843,6 +941,7 @@ export type Database = {
           tagline: string | null
           timezone: string | null
           timezone_source: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes: number
           upcoming_other_events_limit: number
           upcoming_shows_limit: number
           updated_at: string
@@ -850,13 +949,19 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          counteroffer_response_hours?: number
           country?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name: string
+          owner_self_approval_enabled?: boolean
           postal_code?: string | null
+          primary_venue_id?: string
+          primary_venue_name?: string | null
+          producer_eligibility?: Database['public']['Enums']['producer_eligibility_policy']
           published_at?: string | null
+          setup_buffer_minutes?: number
           slug: string
           social_links?: Json
           state_region?: string | null
@@ -865,6 +970,7 @@ export type Database = {
           tagline?: string | null
           timezone?: string | null
           timezone_source?: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes?: number
           upcoming_other_events_limit?: number
           upcoming_shows_limit?: number
           updated_at?: string
@@ -872,13 +978,19 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          counteroffer_response_hours?: number
           country?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name?: string
+          owner_self_approval_enabled?: boolean
           postal_code?: string | null
+          primary_venue_id?: string
+          primary_venue_name?: string | null
+          producer_eligibility?: Database['public']['Enums']['producer_eligibility_policy']
           published_at?: string | null
+          setup_buffer_minutes?: number
           slug?: string
           social_links?: Json
           state_region?: string | null
@@ -887,6 +999,7 @@ export type Database = {
           tagline?: string | null
           timezone?: string | null
           timezone_source?: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes?: number
           upcoming_other_events_limit?: number
           upcoming_shows_limit?: number
           updated_at?: string
@@ -962,6 +1075,47 @@ export type Database = {
         Returns: boolean
       }
       can_view_show: { Args: { p_show_id: string }; Returns: boolean }
+      create_managed_event: {
+        Args: {
+          p_actor_user_id: string
+          p_director_user_id?: string
+          p_producer_user_ids?: string[]
+          p_slug: string
+          p_theater_id: string
+          p_title: string
+        }
+        Returns: {
+          cast_max: number | null
+          cast_min: number | null
+          casting_mode: Database['public']['Enums']['casting_mode']
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          event_type: Database['public']['Enums']['event_type']
+          id: string
+          is_cast_finalized: boolean
+          is_public_listed: boolean
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          on_sale_at: string | null
+          operational_health: Database['public']['Enums']['show_operational_health']
+          poster_url: string | null
+          producer_note: string | null
+          publication_status: Database['public']['Enums']['show_publication_status']
+          slug: string
+          status: Database['public']['Enums']['show_status']
+          summary: string | null
+          theater_id: string
+          ticket_url: string | null
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'shows'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       create_reusable_theater_join_link: {
         Args: {
           p_actor_user_id: string
@@ -1025,6 +1179,14 @@ export type Database = {
         Args: { p_theater_id: string }
         Returns: boolean
       }
+      is_eligible_event_producer: {
+        Args: { p_theater_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_show_leader: {
+        Args: { p_show_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       is_show_producer: { Args: { p_show_id: string }; Returns: boolean }
       is_show_publicly_visible: {
         Args: { p_show_id: string }
@@ -1072,13 +1234,19 @@ export type Database = {
         Args: { p_actor_user_id: string; p_theater_id: string }
         Returns: {
           city: string | null
+          counteroffer_response_hours: number
           country: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
+          primary_venue_name: string | null
+          producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
+          setup_buffer_minutes: number
           slug: string
           social_links: Json
           state_region: string | null
@@ -1087,6 +1255,7 @@ export type Database = {
           tagline: string | null
           timezone: string | null
           timezone_source: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes: number
           upcoming_other_events_limit: number
           upcoming_shows_limit: number
           updated_at: string
@@ -1126,13 +1295,19 @@ export type Database = {
         Args: { p_theater_id: string; p_user_id: string }
         Returns: {
           city: string | null
+          counteroffer_response_hours: number
           country: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
+          primary_venue_name: string | null
+          producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
+          setup_buffer_minutes: number
           slug: string
           social_links: Json
           state_region: string | null
@@ -1141,6 +1316,7 @@ export type Database = {
           tagline: string | null
           timezone: string | null
           timezone_source: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes: number
           upcoming_other_events_limit: number
           upcoming_shows_limit: number
           updated_at: string
@@ -1153,19 +1329,44 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      set_theater_member_capability: {
+        Args: {
+          p_actor_user_id: string
+          p_capability: Database['public']['Enums']['theater_capability']
+          p_enabled: boolean
+          p_theater_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { '': string }; Returns: string[] }
-      update_theater_setup: {
-        Args: { p_actor_user_id: string; p_changes: Json; p_theater_id: string }
+      update_theater_governance: {
+        Args: {
+          p_actor_user_id: string
+          p_counteroffer_response_hours: number
+          p_owner_self_approval_enabled: boolean
+          p_primary_venue_name: string
+          p_producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
+          p_setup_buffer_minutes: number
+          p_theater_id: string
+          p_turnover_buffer_minutes: number
+        }
         Returns: {
           city: string | null
+          counteroffer_response_hours: number
           country: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          owner_self_approval_enabled: boolean
           postal_code: string | null
+          primary_venue_id: string
+          primary_venue_name: string | null
+          producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
           published_at: string | null
+          setup_buffer_minutes: number
           slug: string
           social_links: Json
           state_region: string | null
@@ -1174,6 +1375,45 @@ export type Database = {
           tagline: string | null
           timezone: string | null
           timezone_source: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes: number
+          upcoming_other_events_limit: number
+          upcoming_shows_limit: number
+          updated_at: string
+          website_url: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'theaters'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      update_theater_setup: {
+        Args: { p_actor_user_id: string; p_changes: Json; p_theater_id: string }
+        Returns: {
+          city: string | null
+          counteroffer_response_hours: number
+          country: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          owner_self_approval_enabled: boolean
+          postal_code: string | null
+          primary_venue_id: string
+          primary_venue_name: string | null
+          producer_eligibility: Database['public']['Enums']['producer_eligibility_policy']
+          published_at: string | null
+          setup_buffer_minutes: number
+          slug: string
+          social_links: Json
+          state_region: string | null
+          status: Database['public']['Enums']['theater_status']
+          street: string | null
+          tagline: string | null
+          timezone: string | null
+          timezone_source: Database['public']['Enums']['timezone_source']
+          turnover_buffer_minutes: number
           upcoming_other_events_limit: number
           upcoming_shows_limit: number
           updated_at: string
@@ -1191,10 +1431,13 @@ export type Database = {
       activity_visibility: 'admin_only' | 'member_visible' | 'self_only'
       casting_mode: 'direct_invite' | 'theater_casting' | 'public_casting'
       email_outbox_status: 'queued' | 'sent' | 'failed'
+      event_leadership_role: 'producer' | 'director'
       event_type: 'show' | 'practice' | 'meeting' | 'audition' | 'workshop'
       invite_status: 'pending' | 'accepted' | 'revoked' | 'expired'
       membership_status: 'active' | 'inactive'
       notification_entity: 'show' | 'occurrence' | 'cast'
+      producer_eligibility_policy:
+        'all_members' | 'designated_proposers' | 'admins_only'
       profile_visibility: 'public' | 'theater_only' | 'private'
       review_action: 'submitted' | 'approved' | 'rejected' | 'changes_requested'
       show_cast_source: 'invited' | 'requested'
@@ -1210,6 +1453,7 @@ export type Database = {
         'draft' | 'pending_review' | 'approved' | 'rejected' | 'cancelled'
       staff_slot_type:
         'lead' | 'front_of_house' | 'box_office' | 'bar' | 'tech' | 'other'
+      theater_capability: 'proposer' | 'reviewer'
       theater_role:
         'owner' | 'admin' | 'manager' | 'staff' | 'instructor' | 'member'
       theater_status: 'draft' | 'published' | 'archived'
@@ -1344,10 +1588,16 @@ export const Constants = {
       activity_visibility: ['admin_only', 'member_visible', 'self_only'],
       casting_mode: ['direct_invite', 'theater_casting', 'public_casting'],
       email_outbox_status: ['queued', 'sent', 'failed'],
+      event_leadership_role: ['producer', 'director'],
       event_type: ['show', 'practice', 'meeting', 'audition', 'workshop'],
       invite_status: ['pending', 'accepted', 'revoked', 'expired'],
       membership_status: ['active', 'inactive'],
       notification_entity: ['show', 'occurrence', 'cast'],
+      producer_eligibility_policy: [
+        'all_members',
+        'designated_proposers',
+        'admins_only',
+      ],
       profile_visibility: ['public', 'theater_only', 'private'],
       review_action: ['submitted', 'approved', 'rejected', 'changes_requested'],
       show_cast_source: ['invited', 'requested'],
@@ -1384,6 +1634,7 @@ export const Constants = {
         'tech',
         'other',
       ],
+      theater_capability: ['proposer', 'reviewer'],
       theater_role: [
         'owner',
         'admin',

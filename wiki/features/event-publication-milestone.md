@@ -45,7 +45,10 @@ coverage.
 
 Targeted Invitation membership is implemented through remote-backed atomic
 commands, explicit invalid-state handling, and working Owner/Admin and recipient
-screens. Reusable Join Links are implemented; the managed Event workflow
-remains unimplemented or incomplete. The accepted product boundary lives in
+screens. Reusable Join Links are implemented. Theater Event governance,
+Proposer/Reviewer capability assignment, managed performance Event creation,
+and explicit Producer/Director leadership are also implemented; Occurrences,
+casting, scheduling, review, and Event Publication remain incomplete. The
+accepted product boundary lives in
 `docs/product/event-publication-milestone.md`; detailed implementation tickets
 and dependency relationships are tracked under STA-5 in Linear.

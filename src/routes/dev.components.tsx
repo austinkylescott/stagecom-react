@@ -113,6 +113,25 @@ function DevComponentsPage() {
           </div>
         </Section>
 
+        <Section title="Event Governance And State">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <MetricCard label="Lifecycle" value="Draft" />
+            <MetricCard label="Publication" value="Unpublished" />
+            <MetricCard label="Operational health" value="On track" />
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <Field label="Primary Venue" value="Main Stage" />
+            <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
+              Producer eligibility
+              <select className="rounded-md border border-[var(--line)] bg-white px-4 py-3 font-medium outline-none focus:border-[var(--lagoon-deep)]">
+                <option>All active Members</option>
+                <option>Designated Proposers</option>
+                <option>Owners and Admins only</option>
+              </select>
+            </label>
+          </div>
+        </Section>
+
         <Section title="Alerts">
           <div className="grid gap-3">
             <Alert tone="success" text="Theater profile autosaved." />

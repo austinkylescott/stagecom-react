@@ -42,6 +42,10 @@ Theater creation is transactional across the Theater, first Owner membership, in
 
 - Theater roles assigned by rebuild UI: `owner`, `admin`, `member`
 - Current persisted Event role: `producer`
+- Managed Event leadership: explicit `producer` and `director` rows in
+  `show_leadership`
+- Theater capabilities: explicit `proposer` and `reviewer` rows in
+  `theater_member_capabilities`
 - Current cast relationship: `show_cast`
 - Current Event staffing relationship: `show_staff_assignments`
 
@@ -51,9 +55,6 @@ Legacy Theater enum values remain in migration history but should not be assigne
 
 The accepted product model in `docs/product/event-publication-milestone.md` requires schema work that has not yet been specified or migrated:
 
-- Director and Reviewer relationships/capabilities
-- Theater proposal policies and designated Proposers
-- Reusable Join Links with optional expiration and use limits
 - typed Rehearsal and Performance Occurrences
 - Candidate Slots separate from Confirmed Slots
 - per-Occurrence required, optional, and not-called cast assignments
@@ -92,6 +93,23 @@ serializes on the token and accepting person, validates terminal state and
 limits, creates or reactivates base Member access only, and does not consume a
 use for an already-active Member. Creation, acceptance, exhaustion, revocation,
 and rotation emit Theater-local activity events.
+
+## Managed Event Governance
+
+Theaters now persist one Producer eligibility policy (`all_members`,
+`designated_proposers`, or `admins_only`), audited Owner self-approval policy,
+the default Counteroffer response window, a stable Primary Venue identifier and
+editable name, and setup and turnover buffers. Narrow Proposer and Reviewer capabilities require active
+membership and do not change Theater roles.
+
+Managed performance Event creation validates the actor and every co-Producer
+against current policy in one transaction. Any active Theater Member may be the
+Director, including a Producer. Creation writes one `shows` record with
+independent draft, unpublished, and on-track state plus explicit
+`show_leadership` rows and durable activity events. It never creates a
+`show_cast` row. Producer authorization re-checks active membership and current
+Theater policy instead of treating a historical leadership row as permanent
+authority.
 
 ## Activity And Notifications
 

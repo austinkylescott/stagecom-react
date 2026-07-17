@@ -55,6 +55,12 @@ Targeted Invitation membership acquisition is also implemented: Owner/Admin can
 create and revoke single-recipient links, authentication preserves invitation
 intent, and matching recipients receive idempotent base Member access through
 an atomic remote-backed acceptance flow. Reusable Join Links now provide the
-same remote-backed membership boundary with governed rotation and limits. The
-multi-user Event workflow remains to be built. Detailed implementation tickets, acceptance
+same remote-backed membership boundary with governed rotation and limits.
+Theater governance and the managed Event-draft boundary are now implemented:
+Owner/Admin configures Producer and review policy, every Producer is checked
+independently, any active Member may direct, leadership remains separate from
+Cast, and creation persists one independently-stateful Event with durable
+history. The remaining multi-user workflow still needs Occurrences, casting,
+scheduling, review, and Event Publication. Detailed implementation tickets,
+acceptance
 criteria, and dependency relationships are tracked under STA-5 in Linear.
