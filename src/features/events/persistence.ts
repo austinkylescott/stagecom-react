@@ -22,6 +22,10 @@ export type ManagedEvent = {
 }
 
 export type EventPersistence = {
+  authorizeAvailabilityResponse: (input: {
+    actorUserId: string
+    candidateSlotId: string
+  }) => Promise<void>
   authorizeCreation: (input: {
     actorUserId: string
     directorUserId?: string
@@ -50,6 +54,10 @@ export type EventPersistence = {
     eventId: string
     response: 'accepted' | 'declined'
   }) => Promise<void>
+  authorizeOccurrenceCall: (input: {
+    actorUserId: string
+    occurrenceId: string
+  }) => Promise<void>
   inviteCastMember: (input: {
     actorUserId: string
     eventId: string
@@ -68,6 +76,21 @@ export type EventPersistence = {
     memberUserId: string
     status: 'accepted' | 'declined'
   }>
+  recordAvailabilityResponse: (input: {
+    actorUserId: string
+    candidateSlotId: string
+    commandId: string
+    expectedVersion: number | null
+    response: 'available' | 'unavailable' | 'uncertain'
+  }) => Promise<{
+    actorUserId: string
+    candidateSlotId: string
+    commandId: string
+    respondedAt: string
+    response: 'available' | 'unavailable' | 'uncertain'
+    userId: string
+    version: number
+  }>
   saveOperationalPlan: (input: {
     actorUserId: string
     eventId: string
@@ -81,10 +104,47 @@ export type EventPersistence = {
     occurrenceCount: number
     resourceRequestCount: number
   }>
+  setOccurrenceCall: (input: {
+    actorUserId: string
+    call: 'required' | 'optional' | 'not_called'
+    castMemberUserId: string
+    commandId: string
+    expectedVersion: number | null
+    occurrenceId: string
+  }) => Promise<{
+    actorUserId: string
+    assignedAt: string
+    call: 'required' | 'optional' | 'not_called'
+    commandId: string
+    occurrenceId: string
+    userId: string
+    version: number
+  }>
 }
 
 export function createSupabaseEventPersistence(): EventPersistence {
   return {
+    async authorizeAvailabilityResponse(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase.rpc(
+        'can_record_candidate_slot_availability',
+        { p_candidate_slot_id: input.candidateSlotId },
+      )
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Availability Response authorization could not be checked.',
+        )
+      }
+
+      if (!data) {
+        throw appError(
+          'forbidden',
+          'An active pending or accepted Cast invitation is required.',
+        )
+      }
+    },
     async authorizeCastInvitation(input) {
       const supabase = createAuthenticatedClient()
       const { data: event, error: eventError } = await supabase
@@ -166,6 +226,26 @@ export function createSupabaseEventPersistence(): EventPersistence {
         throw appError(
           'conflict',
           'This Cast invitation has already received a response.',
+        )
+      }
+    },
+    async authorizeOccurrenceCall(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase.rpc('can_assign_occurrence_call', {
+        p_occurrence_id: input.occurrenceId,
+      })
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Occurrence Call authorization could not be checked.',
+        )
+      }
+
+      if (!data) {
+        throw appError(
+          'forbidden',
+          'Active Event Director access is required to assign Occurrence Calls.',
         )
       }
     },
@@ -457,6 +537,44 @@ export function createSupabaseEventPersistence(): EventPersistence {
         status: input.response,
       }
     },
+    async recordAvailabilityResponse(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc(
+        'record_candidate_slot_availability',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_candidate_slot_id: input.candidateSlotId,
+          p_command_id: input.commandId,
+          p_expected_version: input.expectedVersion ?? undefined,
+          p_response: input.response,
+        },
+      )
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        if (error.code === '22023') {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Availability Response could not be saved.',
+        )
+      }
+
+      return {
+        actorUserId: data.actor_user_id,
+        candidateSlotId: data.candidate_slot_id,
+        commandId: data.last_command_id,
+        respondedAt: data.responded_at,
+        response: data.response,
+        userId: data.user_id,
+        version: data.version,
+      }
+    },
     async saveOperationalPlan(input) {
       const supabase = createSupabaseServiceRoleClient()
       const { data, error } = await supabase.rpc(
@@ -511,6 +629,42 @@ export function createSupabaseEventPersistence(): EventPersistence {
         eventId: String(data.eventId),
         occurrenceCount: Number(data.occurrenceCount),
         resourceRequestCount: Number(data.resourceRequestCount),
+      }
+    },
+    async setOccurrenceCall(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('set_occurrence_call', {
+        p_actor_user_id: input.actorUserId,
+        p_call: input.call,
+        p_cast_member_user_id: input.castMemberUserId,
+        p_command_id: input.commandId,
+        p_expected_version: input.expectedVersion ?? undefined,
+        p_occurrence_id: input.occurrenceId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        if (error.code === '22023') {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Occurrence Call could not be saved.',
+        )
+      }
+
+      return {
+        actorUserId: data.actor_user_id,
+        assignedAt: data.assigned_at,
+        call: data.call,
+        commandId: data.last_command_id,
+        occurrenceId: data.occurrence_id,
+        userId: data.user_id,
+        version: data.version,
       }
     },
   }

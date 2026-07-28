@@ -29,6 +29,21 @@ export const respondToEventCastInvitationInputSchema = z.object({
   response: z.enum(['accepted', 'declined']),
 })
 
+export const recordCandidateSlotAvailabilityInputSchema = z.object({
+  candidateSlotId: uuidSchema,
+  commandId: uuidSchema,
+  expectedVersion: z.number().int().positive().nullable(),
+  response: z.enum(['available', 'unavailable', 'uncertain']),
+})
+
+export const setOccurrenceCallInputSchema = z.object({
+  call: z.enum(['required', 'optional', 'not_called']),
+  castMemberUserId: uuidSchema,
+  commandId: uuidSchema,
+  expectedVersion: z.number().int().positive().nullable(),
+  occurrenceId: uuidSchema,
+})
+
 const localDateTimeSchema = z
   .string()
   .regex(

@@ -3,8 +3,10 @@ import { createServerFn } from '@tanstack/react-start'
 import {
   createManagedEvent,
   inviteEventCastMember,
+  recordCandidateSlotAvailability,
   respondToEventCastInvitation,
   saveEventOperationalPlan,
+  setOccurrenceCall,
 } from './commands'
 import {
   getEventCreationOptions,
@@ -15,8 +17,10 @@ import {
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
+  recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
   saveEventOperationalPlanInputSchema,
+  setOccurrenceCallInputSchema,
   theaterEventsInputSchema,
 } from './schemas'
 
@@ -47,3 +51,13 @@ export const inviteEventCastMemberFn = createServerFn({ method: 'POST' })
 export const respondToEventCastInvitationFn = createServerFn({ method: 'POST' })
   .validator(respondToEventCastInvitationInputSchema)
   .handler(async ({ data }) => respondToEventCastInvitation(data))
+
+export const recordCandidateSlotAvailabilityFn = createServerFn({
+  method: 'POST',
+})
+  .validator(recordCandidateSlotAvailabilityInputSchema)
+  .handler(async ({ data }) => recordCandidateSlotAvailability(data))
+
+export const setOccurrenceCallFn = createServerFn({ method: 'POST' })
+  .validator(setOccurrenceCallInputSchema)
+  .handler(async ({ data }) => setOccurrenceCall(data))

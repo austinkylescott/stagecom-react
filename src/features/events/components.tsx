@@ -3,8 +3,10 @@ import { useState } from 'react'
 import {
   createManagedEventFn,
   inviteEventCastMemberFn,
+  recordCandidateSlotAvailabilityFn,
   respondToEventCastInvitationFn,
   saveEventOperationalPlanFn,
+  setOccurrenceCallFn,
 } from './server-functions'
 
 import type { Database } from '@/server/db/database.types'
@@ -221,8 +223,10 @@ export function ManagedEventWorkspace({
   activeMembers: Array<{ displayName: string; userId: string }>
   actorUserId: string
   allowedActions: {
+    assignOccurrenceCalls: boolean
     editOperationalPlan: boolean
     inviteCast: boolean
+    respondToAvailability: boolean
     respondToInvitation: boolean
   }
   event: {
@@ -231,6 +235,14 @@ export function ManagedEventWorkspace({
     minimum_viable_cast: number | null
     operational_health: EventHealth
     publication_status: EventPublication
+    show_availability_responses: Array<{
+      actor_user_id: string
+      candidate_slot_id: string
+      responded_at: string
+      response: 'available' | 'unavailable' | 'uncertain'
+      user_id: string
+      version: number
+    }>
     show_cast: Array<{
       invited_at: string | null
       profiles: { display_name: string }
@@ -249,6 +261,14 @@ export function ManagedEventWorkspace({
       id: string
       occurrence_type: 'rehearsal' | 'performance'
       position: number
+      show_occurrence_calls: Array<{
+        actor_user_id: string
+        assigned_at: string
+        call: 'required' | 'optional' | 'not_called'
+        occurrence_id: string
+        user_id: string
+        version: number
+      }>
       show_candidate_slots: Array<{
         duration_minutes: number
         id: string
@@ -318,10 +338,31 @@ export function ManagedEventWorkspace({
   const [inviteeUserId, setInviteeUserId] = useState('')
   const [castingError, setCastingError] = useState<string | null>(null)
   const [isCasting, setIsCasting] = useState(false)
+  const [availabilityResponses, setAvailabilityResponses] = useState(
+    event.show_availability_responses,
+  )
+  const [occurrenceCalls, setOccurrenceCalls] = useState(() =>
+    event.show_occurrences.flatMap(
+      (occurrence) => occurrence.show_occurrence_calls,
+    ),
+  )
+  const [coordinationError, setCoordinationError] = useState<string | null>(
+    null,
+  )
+  const [savingCoordinationKey, setSavingCoordinationKey] = useState<
+    string | null
+  >(null)
   const timezoneName = theater.timezone ?? 'UTC'
   const venueName = theater.primary_venue_name ?? 'Primary Venue'
   const ownInvitation = cast.find(
     (castMember) => castMember.user_id === actorUserId,
+  )
+  const acceptedCast = cast.filter(({ status }) => status === 'accepted')
+  const candidateSlots = event.show_occurrences.flatMap((occurrence) =>
+    occurrence.show_candidate_slots.map((slot) => ({
+      occurrence,
+      slot,
+    })),
   )
 
   return (
@@ -496,6 +537,221 @@ export function ManagedEventWorkspace({
         ) : null}
         {castingError ? (
           <p className="mt-3 font-bold text-red-700">{castingError}</p>
+        ) : null}
+      </section>
+      <section className="island-shell mt-5 rounded-lg px-6 py-6">
+        <h2 className="text-2xl font-extrabold">
+          {view === 'pending_invitee'
+            ? 'Your Availability Responses'
+            : 'Collaborative availability matrix'}
+        </h2>
+        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+          Availability is recorded per Candidate Slot and never changes Event
+          participation.
+        </p>
+        <div className="mt-5 grid gap-4">
+          {candidateSlots.map(({ slot }, slotIndex) => {
+            const ownResponse = availabilityResponses.find(
+              (response) =>
+                response.candidate_slot_id === slot.id &&
+                response.user_id === actorUserId,
+            )
+            const coordinationKey = `availability-${slot.id}`
+
+            return (
+              <article
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                key={slot.id}
+              >
+                <h3 className="font-extrabold">
+                  Candidate Slot {slotIndex + 1}
+                </h3>
+                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                  {slot.local_starts_at.slice(0, 16).replace('T', ' ')} ·{' '}
+                  {slot.location_name}
+                </p>
+                {allowedActions.respondToAvailability ? (
+                  <label className="mt-3 grid max-w-sm gap-2 text-sm font-bold">
+                    Availability for Candidate Slot {slotIndex + 1}
+                    <select
+                      className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                      disabled={savingCoordinationKey === coordinationKey}
+                      onChange={async (change) => {
+                        const response = change.target.value as
+                          'available' | 'unavailable' | 'uncertain'
+                        setCoordinationError(null)
+                        setSavingCoordinationKey(coordinationKey)
+                        try {
+                          const result =
+                            await recordCandidateSlotAvailabilityFn({
+                              data: {
+                                candidateSlotId: slot.id,
+                                commandId: crypto.randomUUID(),
+                                expectedVersion: ownResponse?.version ?? null,
+                                response,
+                              },
+                            })
+                          if (!result.ok) {
+                            setCoordinationError(result.error.message)
+                            return
+                          }
+                          setAvailabilityResponses((current) => [
+                            ...current.filter(
+                              (item) =>
+                                !(
+                                  item.candidate_slot_id === slot.id &&
+                                  item.user_id === actorUserId
+                                ),
+                            ),
+                            {
+                              actor_user_id: result.data.actorUserId,
+                              candidate_slot_id: result.data.candidateSlotId,
+                              responded_at: result.data.respondedAt,
+                              response: result.data.response,
+                              user_id: result.data.userId,
+                              version: result.data.version,
+                            },
+                          ])
+                        } finally {
+                          setSavingCoordinationKey(null)
+                        }
+                      }}
+                      value={ownResponse?.response ?? ''}
+                    >
+                      <option disabled value="">
+                        Choose availability
+                      </option>
+                      <option value="available">Available</option>
+                      <option value="unavailable">Unavailable</option>
+                      <option value="uncertain">Uncertain</option>
+                    </select>
+                  </label>
+                ) : null}
+                {view !== 'pending_invitee' ? (
+                  <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {cast.map((castMember) => {
+                      const response = availabilityResponses.find(
+                        (item) =>
+                          item.candidate_slot_id === slot.id &&
+                          item.user_id === castMember.user_id,
+                      )
+                      return (
+                        <div
+                          className="rounded bg-[var(--sand)]/40 px-3 py-2"
+                          key={castMember.user_id}
+                        >
+                          <dt className="text-xs font-bold">
+                            {castMember.profiles.display_name}
+                          </dt>
+                          <dd className="text-sm capitalize">
+                            {response?.response ?? 'No response'}
+                          </dd>
+                        </div>
+                      )
+                    })}
+                  </dl>
+                ) : null}
+              </article>
+            )
+          })}
+        </div>
+        {view !== 'pending_invitee' ? (
+          <div className="mt-7">
+            <h3 className="text-xl font-extrabold">Occurrence Calls</h3>
+            <div className="mt-3 grid gap-4">
+              {event.show_occurrences.map((occurrence, occurrenceIndex) => (
+                <article
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                  key={occurrence.id}
+                >
+                  <h4 className="font-extrabold">
+                    Occurrence {occurrenceIndex + 1} ·{' '}
+                    <span className="capitalize">
+                      {occurrence.occurrence_type}
+                    </span>
+                  </h4>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {acceptedCast.map((castMember) => {
+                      const currentCall = occurrenceCalls.find(
+                        (call) =>
+                          call.occurrence_id === occurrence.id &&
+                          call.user_id === castMember.user_id,
+                      )
+                      const coordinationKey = `call-${occurrence.id}-${castMember.user_id}`
+                      return (
+                        <label
+                          className="grid gap-2 text-sm font-bold"
+                          key={castMember.user_id}
+                        >
+                          Call for {castMember.profiles.display_name},
+                          Occurrence {occurrenceIndex + 1}
+                          <select
+                            className="rounded-md border border-[var(--line)] bg-white px-3 py-2 capitalize"
+                            disabled={
+                              !allowedActions.assignOccurrenceCalls ||
+                              savingCoordinationKey === coordinationKey
+                            }
+                            onChange={async (change) => {
+                              const call = change.target.value as
+                                'required' | 'optional' | 'not_called'
+                              setCoordinationError(null)
+                              setSavingCoordinationKey(coordinationKey)
+                              try {
+                                const result = await setOccurrenceCallFn({
+                                  data: {
+                                    call,
+                                    castMemberUserId: castMember.user_id,
+                                    commandId: crypto.randomUUID(),
+                                    expectedVersion:
+                                      currentCall?.version ?? null,
+                                    occurrenceId: occurrence.id,
+                                  },
+                                })
+                                if (!result.ok) {
+                                  setCoordinationError(result.error.message)
+                                  return
+                                }
+                                setOccurrenceCalls((current) => [
+                                  ...current.filter(
+                                    (item) =>
+                                      !(
+                                        item.occurrence_id === occurrence.id &&
+                                        item.user_id === castMember.user_id
+                                      ),
+                                  ),
+                                  {
+                                    actor_user_id: result.data.actorUserId,
+                                    assigned_at: result.data.assignedAt,
+                                    call: result.data.call,
+                                    occurrence_id: result.data.occurrenceId,
+                                    user_id: result.data.userId,
+                                    version: result.data.version,
+                                  },
+                                ])
+                              } finally {
+                                setSavingCoordinationKey(null)
+                              }
+                            }}
+                            value={currentCall?.call ?? ''}
+                          >
+                            <option disabled value="">
+                              Choose call
+                            </option>
+                            <option value="required">Required</option>
+                            <option value="optional">Optional</option>
+                            <option value="not_called">Not called</option>
+                          </select>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {coordinationError ? (
+          <p className="mt-3 font-bold text-red-700">{coordinationError}</p>
         ) : null}
       </section>
       <section className="island-shell mt-5 rounded-lg px-6 py-6">

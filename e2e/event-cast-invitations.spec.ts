@@ -57,7 +57,9 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
           .getByRole('button', { name: 'Invite to Cast' })
           .click(),
       ])
-      await expect(directorPage.page.getByText(actor.name)).toBeVisible()
+      await expect(
+        directorPage.page.getByText(actor.name).first(),
+      ).toBeVisible()
     }
 
     const acceptedPage = await actorPage(browser, fixture, fixture.accepted)
@@ -69,13 +71,42 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await expect(
       acceptedPage.page.getByText('Your participation response is separate'),
     ).toBeVisible()
-    await expect(acceptedPage.page.getByText('Candidate Slot 1')).toBeVisible()
+    await expect(
+      acceptedPage.page.getByRole('heading', { name: 'Candidate Slot 1' }),
+    ).toBeVisible()
+    for (const [slotNumber, response] of [
+      [1, 'available'],
+      [2, 'unavailable'],
+      [3, 'uncertain'],
+    ] as const) {
+      await Promise.all([
+        acceptedPage.page.waitForResponse((serverResponse) =>
+          serverResponse.url().includes('/_serverFn/'),
+        ),
+        acceptedPage.page
+          .getByLabel(`Availability for Candidate Slot ${slotNumber}`)
+          .selectOption(response),
+      ])
+    }
+    await expect(
+      acceptedPage.page.getByText('Accepted Member').first().locator('..'),
+    ).toContainText('pending')
     await acceptedPage.page
       .getByRole('button', { name: 'Accept invitation' })
       .click()
     await expect(
-      acceptedPage.page.getByText('Accepted Member').locator('..'),
+      acceptedPage.page.getByText('Accepted Member').first().locator('..'),
     ).toContainText('accepted')
+
+    await directorPage.page.reload()
+    await Promise.all([
+      directorPage.page.waitForResponse((response) =>
+        response.url().includes('/_serverFn/'),
+      ),
+      directorPage.page
+        .getByLabel('Call for Accepted Member, Occurrence 1')
+        .selectOption('required'),
+    ])
 
     const declinedPage = await actorPage(browser, fixture, fixture.declined)
     contexts.push(declinedPage.context)
@@ -92,7 +123,21 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await pendingPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await expect(pendingPage.page.getByText('Candidate Slot 1')).toBeVisible()
+    await expect(
+      pendingPage.page.getByRole('heading', { name: 'Candidate Slot 1' }),
+    ).toBeVisible()
+    await expect(
+      pendingPage.page.getByRole('heading', { name: 'Candidate Slot 2' }),
+    ).toBeVisible()
+    await expect(
+      pendingPage.page.getByRole('heading', { name: 'Candidate Slot 3' }),
+    ).toBeVisible()
+    await expect(
+      pendingPage.page.getByRole('heading', {
+        name: 'Collaborative availability matrix',
+      }),
+    ).toHaveCount(0)
+    await expect(pendingPage.page.getByText('Occurrence Calls')).toHaveCount(0)
     await expect(pendingPage.page.getByText('Accepted Member')).toBeVisible()
     await expect(pendingPage.page.getByText('Pending Member')).toBeVisible()
     await expect(pendingPage.page.getByText('Declined Member')).toHaveCount(0)
@@ -102,8 +147,29 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     ).toHaveCount(0)
 
     await acceptedPage.page.reload()
-    await expect(acceptedPage.page.getByText('Pending Member')).toBeVisible()
-    await expect(acceptedPage.page.getByText('Declined Member')).toBeVisible()
+    await expect(
+      acceptedPage.page.getByRole('heading', {
+        name: 'Collaborative availability matrix',
+      }),
+    ).toBeVisible()
+    await expect(
+      acceptedPage.page.getByLabel('Availability for Candidate Slot 1'),
+    ).toHaveValue('available')
+    await expect(
+      acceptedPage.page.getByLabel('Availability for Candidate Slot 2'),
+    ).toHaveValue('unavailable')
+    await expect(
+      acceptedPage.page.getByLabel('Availability for Candidate Slot 3'),
+    ).toHaveValue('uncertain')
+    await expect(
+      acceptedPage.page.getByLabel('Call for Accepted Member, Occurrence 1'),
+    ).toHaveValue('required')
+    await expect(
+      acceptedPage.page.getByText('Pending Member').first(),
+    ).toBeVisible()
+    await expect(
+      acceptedPage.page.getByText('Declined Member').first(),
+    ).toBeVisible()
 
     const ownerPage = await actorPage(browser, fixture, fixture.owner)
     contexts.push(ownerPage.context)
@@ -113,8 +179,12 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await expect(
       ownerPage.page.getByRole('heading', { name: 'Requested resources' }),
     ).toBeVisible()
-    await expect(ownerPage.page.getByText('Pending Member')).toBeVisible()
-    await expect(ownerPage.page.getByText('Declined Member')).toBeVisible()
+    await expect(
+      ownerPage.page.getByText('Pending Member').first(),
+    ).toBeVisible()
+    await expect(
+      ownerPage.page.getByText('Declined Member').first(),
+    ).toBeVisible()
 
     const { data: activity } = await fixture.admin
       .from('activity_events')
@@ -124,6 +194,8 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
         'event.cast.invited',
         'event.cast.accepted',
         'event.cast.declined',
+        'event.availability.responded',
+        'event.occurrence_call.assigned',
       ])
     const { data: notifications } = await fixture.admin
       .from('notifications')
@@ -138,6 +210,8 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
       expect.arrayContaining([
         { action: 'event.cast.accepted' },
         { action: 'event.cast.declined' },
+        { action: 'event.availability.responded' },
+        { action: 'event.occurrence_call.assigned' },
       ]),
     )
     expect(notifications).toHaveLength(3)
@@ -234,21 +308,19 @@ async function createFixture(
     p_minimum_viable_cast: 1,
     p_occurrences: [
       {
-        candidateSlots: [
-          {
-            durationMinutes: 90,
-            id: crypto.randomUUID(),
-            localStartsAt: '2026-09-10T19:30',
-            locationKind: 'off_site',
-            locationName: 'Community Hall',
-            offSiteApproved: true,
-            position: 0,
-            startsAt: '2026-09-10T23:30:00.000Z',
-            timezoneName: 'America/New_York',
-            timezoneSource: 'manual',
-            utcOffsetMinutes: -240,
-          },
-        ],
+        candidateSlots: [0, 1, 2].map((position) => ({
+          durationMinutes: 90,
+          id: crypto.randomUUID(),
+          localStartsAt: `2026-09-${String(10 + position).padStart(2, '0')}T19:30`,
+          locationKind: 'off_site',
+          locationName: 'Community Hall',
+          offSiteApproved: true,
+          position,
+          startsAt: `2026-09-${String(10 + position).padStart(2, '0')}T23:30:00.000Z`,
+          timezoneName: 'America/New_York',
+          timezoneSource: 'manual',
+          utcOffsetMinutes: -240,
+        })),
         confirmedCandidateSlotId: null,
         id: crypto.randomUUID(),
         position: 0,

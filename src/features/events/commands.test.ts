@@ -3,19 +3,29 @@ import { describe, expect, it } from 'vitest'
 import {
   createManagedEvent,
   inviteEventCastMember,
+  recordCandidateSlotAvailability,
   respondToEventCastInvitation,
   saveEventOperationalPlan,
+  setOccurrenceCall,
 } from './commands'
 
 import type { EventCommandDependencies } from './commands'
 
 const unusedCastingPersistence = {
+  authorizeAvailabilityResponse: async () => undefined,
   authorizeCastInvitation: async () => undefined,
   authorizeCastResponse: async () => undefined,
+  authorizeOccurrenceCall: async () => undefined,
   inviteCastMember: async () => {
     throw new Error('must not run')
   },
+  recordAvailabilityResponse: async () => {
+    throw new Error('must not run')
+  },
   respondToCastInvitation: async () => {
+    throw new Error('must not run')
+  },
+  setOccurrenceCall: async () => {
     throw new Error('must not run')
   },
 }
@@ -330,10 +340,10 @@ describe('managed Event commands', () => {
     const dependencies: EventCommandDependencies = {
       getCurrentUser: async () => ({ ok: true, data: { id: 'director-1' } }),
       persistence: {
+        ...unusedCastingPersistence,
         authorizeCastInvitation: async () => {
           calls.push('authorize')
         },
-        authorizeCastResponse: async () => undefined,
         authorizeCreation: async () => undefined,
         authorizePlanEdit: async () => undefined,
         create: async () => {
@@ -346,9 +356,6 @@ describe('managed Event commands', () => {
             memberUserId: input.memberUserId,
             status: 'pending',
           }
-        },
-        respondToCastInvitation: async () => {
-          throw new Error('must not run')
         },
         saveOperationalPlan: async () => {
           throw new Error('must not run')
@@ -416,5 +423,120 @@ describe('managed Event commands', () => {
         response: 'accepted',
       },
     ])
+  })
+
+  it('authorizes before recording a versioned Availability Response', async () => {
+    const calls: string[] = []
+    const dependencies: EventCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'invitee-1' } }),
+      persistence: {
+        ...unusedCastingPersistence,
+        authorizeAvailabilityResponse: async () => {
+          calls.push('authorize')
+        },
+        authorizeCreation: async () => undefined,
+        authorizePlanEdit: async () => undefined,
+        create: async () => {
+          throw new Error('must not run')
+        },
+        recordAvailabilityResponse: async (input) => {
+          calls.push('record')
+          return {
+            actorUserId: input.actorUserId,
+            candidateSlotId: input.candidateSlotId,
+            commandId: input.commandId,
+            respondedAt: '2026-07-28T20:00:00.000Z',
+            response: input.response,
+            userId: input.actorUserId,
+            version: 1,
+          }
+        },
+        saveOperationalPlan: async () => {
+          throw new Error('must not run')
+        },
+      },
+    }
+
+    const result = await recordCandidateSlotAvailability(
+      {
+        candidateSlotId: '30000000-0000-0000-0000-000000000001',
+        commandId: '40000000-0000-0000-0000-000000000001',
+        expectedVersion: null,
+        response: 'available',
+      },
+      dependencies,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        actorUserId: 'invitee-1',
+        candidateSlotId: '30000000-0000-0000-0000-000000000001',
+        commandId: '40000000-0000-0000-0000-000000000001',
+        respondedAt: '2026-07-28T20:00:00.000Z',
+        response: 'available',
+        userId: 'invitee-1',
+        version: 1,
+      },
+    })
+    expect(calls).toEqual(['authorize', 'record'])
+  })
+
+  it('authorizes the Director before assigning a versioned Occurrence Call', async () => {
+    const calls: string[] = []
+    const dependencies: EventCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'director-1' } }),
+      persistence: {
+        ...unusedCastingPersistence,
+        authorizeCreation: async () => undefined,
+        authorizeOccurrenceCall: async () => {
+          calls.push('authorize')
+        },
+        authorizePlanEdit: async () => undefined,
+        create: async () => {
+          throw new Error('must not run')
+        },
+        saveOperationalPlan: async () => {
+          throw new Error('must not run')
+        },
+        setOccurrenceCall: async (input) => {
+          calls.push('set')
+          return {
+            actorUserId: input.actorUserId,
+            assignedAt: '2026-07-28T20:00:00.000Z',
+            call: input.call,
+            commandId: input.commandId,
+            occurrenceId: input.occurrenceId,
+            userId: input.castMemberUserId,
+            version: 1,
+          }
+        },
+      },
+    }
+
+    const result = await setOccurrenceCall(
+      {
+        call: 'required',
+        castMemberUserId: '20000000-0000-0000-0000-000000000001',
+        commandId: '40000000-0000-0000-0000-000000000002',
+        expectedVersion: null,
+        occurrenceId: '30000000-0000-0000-0000-000000000001',
+      },
+      dependencies,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        actorUserId: 'director-1',
+        assignedAt: '2026-07-28T20:00:00.000Z',
+        call: 'required',
+        commandId: '40000000-0000-0000-0000-000000000002',
+        occurrenceId: '30000000-0000-0000-0000-000000000001',
+        userId: '20000000-0000-0000-0000-000000000001',
+        version: 1,
+      },
+    })
+    expect(calls).toEqual(['authorize', 'set'])
   })
 })

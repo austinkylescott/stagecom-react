@@ -59,21 +59,26 @@ The retained `shows.status = rejected` value preserves the legacy distinction wh
 The existing schema does not yet express the agreed workflow completely. The remaining target model must support:
 
 - an Event that persists from draft through completion or cancellation
-- Event-wide cast membership with per-Occurrence required, optional, or not-called assignments
-- per-Candidate-Slot availability responses
+- Event-wide Proposed Cast selection from accepted Cast membership
 - immutable numbered Proposal Revisions
 - review decisions including Counteroffers and Denials
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
 - explicit ticket Sales Channel and price
 
-Cast participation invitation and response are executable. Participation does
-not write or imply Candidate Slot availability. Pending invitees receive only
-their own invitation plus accepted Cast names; accepted Cast Members receive
-the collaborative roster; Event leaders, Reviewers, and Owner/Admin receive the
-operational view.
+Cast participation, per-Candidate-Slot Availability Responses, and
+per-Occurrence Calls are executable. Participation does not write or imply
+Candidate Slot availability, and Availability Responses do not accept Event
+participation. Responses and Calls use optimistic versions plus durable command
+identities so stale edits conflict and retries do not duplicate activity facts.
+Pending invitees receive their own invitation, response form, and accepted Cast
+names without the collaborative matrix or Calls. Accepted Cast Members receive
+the collaborative roster, availability matrix, and Calls; Event leaders,
+Reviewers, and Owner/Admin receive the operational view. Only the active
+Director assigns required, optional, or not-called expectations to accepted
+Cast Members.
 
-These remaining items are specified product requirements, not claims about the executable schema. Future forward migrations must reconcile the current tables and enums with this model.
+The remaining items are specified product requirements, not claims about the executable schema. Future forward migrations must reconcile the current tables and enums with this model.
 
 Operational-plan edits replace the supplied plan shape transactionally while
 preserving supplied Occurrence, Candidate Slot, and resource-request

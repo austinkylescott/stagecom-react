@@ -10,8 +10,10 @@ import type { EventPersistence } from './persistence'
 import type {
   createManagedEventInputSchema,
   inviteEventCastMemberInputSchema,
+  recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
   saveEventOperationalPlanInputSchema,
+  setOccurrenceCallInputSchema,
 } from './schemas'
 
 export type EventCommandDependencies = {
@@ -183,6 +185,79 @@ export async function respondToEventCastInvitation(
           appError(
             'external_service_error',
             'Cast invitation response could not be saved.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function recordCandidateSlotAvailability(
+  input: z.infer<typeof recordCandidateSlotAvailabilityInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeAvailabilityResponse({
+      actorUserId: currentUser.data.id,
+      candidateSlotId: input.candidateSlotId,
+    })
+
+    return ok(
+      await dependencies.persistence.recordAvailabilityResponse({
+        actorUserId: currentUser.data.id,
+        candidateSlotId: input.candidateSlotId,
+        commandId: input.commandId,
+        expectedVersion: input.expectedVersion,
+        response: input.response,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Availability Response could not be saved.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function setOccurrenceCall(
+  input: z.infer<typeof setOccurrenceCallInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeOccurrenceCall({
+      actorUserId: currentUser.data.id,
+      occurrenceId: input.occurrenceId,
+    })
+
+    return ok(
+      await dependencies.persistence.setOccurrenceCall({
+        actorUserId: currentUser.data.id,
+        call: input.call,
+        castMemberUserId: input.castMemberUserId,
+        commandId: input.commandId,
+        expectedVersion: input.expectedVersion,
+        occurrenceId: input.occurrenceId,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Occurrence Call could not be saved.',
           ),
         )
       : err(failure)
