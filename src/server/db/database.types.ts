@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.1'
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -359,8 +354,11 @@ export type Database = {
         Row: {
           act_id: string | null
           created_at: string
+          invited_at: string | null
+          invited_by_user_id: string | null
           note: string | null
           program_order: number | null
+          responded_at: string | null
           show_id: string
           source: Database['public']['Enums']['show_cast_source']
           status: Database['public']['Enums']['show_cast_status']
@@ -369,8 +367,11 @@ export type Database = {
         Insert: {
           act_id?: string | null
           created_at?: string
+          invited_at?: string | null
+          invited_by_user_id?: string | null
           note?: string | null
           program_order?: number | null
+          responded_at?: string | null
           show_id: string
           source: Database['public']['Enums']['show_cast_source']
           status?: Database['public']['Enums']['show_cast_status']
@@ -379,8 +380,11 @@ export type Database = {
         Update: {
           act_id?: string | null
           created_at?: string
+          invited_at?: string | null
+          invited_by_user_id?: string | null
           note?: string | null
           program_order?: number | null
+          responded_at?: string | null
           show_id?: string
           source?: Database['public']['Enums']['show_cast_source']
           status?: Database['public']['Enums']['show_cast_status']
@@ -392,6 +396,13 @@ export type Database = {
             columns: ['act_id']
             isOneToOne: false
             referencedRelation: 'show_acts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_cast_invited_by_user_id_fkey'
+            columns: ['invited_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -1198,6 +1209,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_view_event_cast_row: {
+        Args: {
+          p_row_status: Database['public']['Enums']['show_cast_status']
+          p_row_user_id: string
+          p_show_id: string
+        }
+        Returns: boolean
+      }
       can_view_profile: {
         Args: {
           p_profile_id: string
@@ -1294,6 +1313,10 @@ export type Database = {
           status: Database['public']['Enums']['theater_status']
         }[]
       }
+      event_cast_status_for_actor: {
+        Args: { p_show_id: string; p_user_id?: string }
+        Returns: Database['public']['Enums']['show_cast_status']
+      }
       get_reusable_theater_join_link: {
         Args: { p_token_hash: string }
         Returns: {
@@ -1308,12 +1331,42 @@ export type Database = {
           theater_name: string
         }[]
       }
+      invite_event_cast_member: {
+        Args: {
+          p_actor_user_id: string
+          p_member_user_id: string
+          p_show_id: string
+        }
+        Returns: {
+          act_id: string | null
+          created_at: string
+          invited_at: string | null
+          invited_by_user_id: string | null
+          note: string | null
+          program_order: number | null
+          responded_at: string | null
+          show_id: string
+          source: Database['public']['Enums']['show_cast_source']
+          status: Database['public']['Enums']['show_cast_status']
+          user_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_cast'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_active_member_of_theater: {
         Args: { p_theater_id: string }
         Returns: boolean
       }
       is_eligible_event_producer: {
         Args: { p_theater_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_event_operational_viewer: {
+        Args: { p_show_id: string; p_user_id?: string }
         Returns: boolean
       }
       is_show_leader: {
@@ -1363,6 +1416,10 @@ export type Database = {
           status: Database['public']['Enums']['invite_status']
         }[]
       }
+      project_event_cast_invitation_notification: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
       publish_theater: {
         Args: { p_actor_user_id: string; p_theater_id: string }
         Returns: {
@@ -1399,6 +1456,32 @@ export type Database = {
           to: 'theaters'
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      respond_to_event_cast_invitation: {
+        Args: {
+          p_actor_user_id: string
+          p_response: Database['public']['Enums']['show_cast_status']
+          p_show_id: string
+        }
+        Returns: {
+          act_id: string | null
+          created_at: string
+          invited_at: string | null
+          invited_by_user_id: string | null
+          note: string | null
+          program_order: number | null
+          responded_at: string | null
+          show_id: string
+          source: Database['public']['Enums']['show_cast_source']
+          status: Database['public']['Enums']['show_cast_status']
+          user_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_cast'
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       revoke_reusable_theater_join_link: {

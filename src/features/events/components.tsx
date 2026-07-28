@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 import {
   createManagedEventFn,
+  inviteEventCastMemberFn,
+  respondToEventCastInvitationFn,
   saveEventOperationalPlanFn,
 } from './server-functions'
 
@@ -209,18 +211,34 @@ export function ManagedEventsPage({
 }
 
 export function ManagedEventWorkspace({
+  activeMembers,
+  actorUserId,
   allowedActions,
   event,
   theater,
+  view,
 }: {
-  allowedActions: { editOperationalPlan: boolean }
+  activeMembers: Array<{ displayName: string; userId: string }>
+  actorUserId: string
+  allowedActions: {
+    editOperationalPlan: boolean
+    inviteCast: boolean
+    respondToInvitation: boolean
+  }
   event: {
     id: string
     lifecycle_status: EventLifecycle
     minimum_viable_cast: number | null
     operational_health: EventHealth
     publication_status: EventPublication
-    show_cast: Array<{ user_id: string }>
+    show_cast: Array<{
+      invited_at: string | null
+      profiles: { display_name: string }
+      responded_at: string | null
+      source: 'invited' | 'requested'
+      status: 'pending' | 'accepted' | 'declined' | 'withdrawn' | 'removed'
+      user_id: string
+    }>
     show_leadership: Array<{
       profiles: { display_name: string }
       role: EventLeadershipRole
@@ -261,6 +279,7 @@ export function ManagedEventWorkspace({
     timezone: string | null
     timezone_source: 'unknown' | 'inferred' | 'manual'
   }
+  view: 'operational' | 'accepted_cast' | 'pending_invitee'
 }) {
   const [plan, setPlan] = useState(() => ({
     minimumViableCast: event.minimum_viable_cast ?? 1,
@@ -295,8 +314,15 @@ export function ManagedEventWorkspace({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [cast, setCast] = useState(event.show_cast)
+  const [inviteeUserId, setInviteeUserId] = useState('')
+  const [castingError, setCastingError] = useState<string | null>(null)
+  const [isCasting, setIsCasting] = useState(false)
   const timezoneName = theater.timezone ?? 'UTC'
   const venueName = theater.primary_venue_name ?? 'Primary Venue'
+  const ownInvitation = cast.find(
+    (castMember) => castMember.user_id === actorUserId,
+  )
 
   return (
     <main className="page-wrap py-8 sm:py-12">
@@ -314,19 +340,163 @@ export function ManagedEventWorkspace({
           value={event.operational_health}
         />
       </div>
+      {event.show_leadership.length > 0 ? (
+        <section className="island-shell mt-5 rounded-lg px-6 py-6">
+          <h2 className="text-2xl font-extrabold">Leadership</h2>
+          <ul className="mt-3 grid gap-2">
+            {event.show_leadership.map((leader) => (
+              <li key={`${leader.role}-${leader.user_id}`}>
+                {leader.profiles.display_name} · {leader.role}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 text-sm font-semibold text-[var(--sea-ink-soft)]">
+            Accepted Cast Members:{' '}
+            {cast.filter(({ status }) => status === 'accepted').length}.
+            Leadership never creates Cast membership; casting begins with a
+            separate invitation and acceptance.
+          </p>
+        </section>
+      ) : null}
       <section className="island-shell mt-5 rounded-lg px-6 py-6">
-        <h2 className="text-2xl font-extrabold">Leadership</h2>
-        <ul className="mt-3 grid gap-2">
-          {event.show_leadership.map((leader) => (
-            <li key={`${leader.role}-${leader.user_id}`}>
-              {leader.profiles.display_name} · {leader.role}
-            </li>
+        <h2 className="text-2xl font-extrabold">Cast participation</h2>
+        {view === 'pending_invitee' ? (
+          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+            Your participation response is separate from every Candidate Slot
+            Availability Response.
+          </p>
+        ) : null}
+        <div className="mt-4 grid gap-2">
+          {cast.map((castMember) => (
+            <div
+              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+              key={castMember.user_id}
+            >
+              <span className="font-bold">
+                {castMember.profiles.display_name}
+              </span>
+              <span className="text-sm font-semibold capitalize text-[var(--sea-ink-soft)]">
+                {castMember.status}
+              </span>
+            </div>
           ))}
-        </ul>
-        <p className="mt-5 text-sm font-semibold text-[var(--sea-ink-soft)]">
-          Cast Members: {event.show_cast.length}. Leadership never creates Cast
-          membership; casting begins with a separate invitation and acceptance.
-        </p>
+          {cast.length === 0 ? (
+            <p className="text-sm text-[var(--sea-ink-soft)]">
+              No Cast invitations yet.
+            </p>
+          ) : null}
+        </div>
+        {allowedActions.inviteCast ? (
+          <div className="mt-5 flex flex-wrap items-end gap-3">
+            <label className="grid min-w-64 gap-2 text-sm font-bold">
+              Active Theater Member
+              <select
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                onChange={(change) => setInviteeUserId(change.target.value)}
+                value={inviteeUserId}
+              >
+                <option value="">Choose a Member</option>
+                {activeMembers
+                  .filter(
+                    (member) =>
+                      !cast.some(
+                        (castMember) => castMember.user_id === member.userId,
+                      ),
+                  )
+                  .map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.displayName}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <button
+              className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              disabled={!inviteeUserId || isCasting}
+              onClick={async () => {
+                setCastingError(null)
+                setIsCasting(true)
+                try {
+                  const result = await inviteEventCastMemberFn({
+                    data: { eventId: event.id, memberUserId: inviteeUserId },
+                  })
+                  if (!result.ok) {
+                    setCastingError(result.error.message)
+                    return
+                  }
+                  const member = activeMembers.find(
+                    ({ userId }) => userId === inviteeUserId,
+                  )
+                  if (member) {
+                    setCast((current) => [
+                      ...current,
+                      {
+                        invited_at: new Date().toISOString(),
+                        profiles: { display_name: member.displayName },
+                        responded_at: null,
+                        source: 'invited',
+                        status: 'pending',
+                        user_id: member.userId,
+                      },
+                    ])
+                  }
+                  setInviteeUserId('')
+                } finally {
+                  setIsCasting(false)
+                }
+              }}
+              type="button"
+            >
+              {isCasting ? 'Inviting…' : 'Invite to Cast'}
+            </button>
+          </div>
+        ) : null}
+        {allowedActions.respondToInvitation &&
+        ownInvitation?.status === 'pending' ? (
+          <div className="mt-5 flex flex-wrap gap-3">
+            {(['accepted', 'declined'] as const).map((response) => (
+              <button
+                className="rounded-md border border-[var(--line)] bg-white px-5 py-3 font-extrabold capitalize disabled:opacity-60"
+                disabled={isCasting}
+                key={response}
+                onClick={async () => {
+                  setCastingError(null)
+                  setIsCasting(true)
+                  try {
+                    const result = await respondToEventCastInvitationFn({
+                      data: { eventId: event.id, response },
+                    })
+                    if (!result.ok) {
+                      setCastingError(result.error.message)
+                      return
+                    }
+                    setCast((current) =>
+                      current.map((castMember) =>
+                        castMember.user_id === actorUserId
+                          ? {
+                              ...castMember,
+                              responded_at: new Date().toISOString(),
+                              status: response,
+                            }
+                          : castMember,
+                      ),
+                    )
+                  } finally {
+                    setIsCasting(false)
+                  }
+                }}
+                type="button"
+              >
+                {response === 'accepted'
+                  ? 'Accept invitation'
+                  : 'Decline invitation'}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {castingError ? (
+          <p className="mt-3 font-bold text-red-700">{castingError}</p>
+        ) : null}
       </section>
       <section className="island-shell mt-5 rounded-lg px-6 py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -337,7 +507,7 @@ export function ManagedEventWorkspace({
               plus its local-time provenance.
             </p>
           </div>
-          {!allowedActions.editOperationalPlan ? (
+          {!allowedActions.editOperationalPlan && view === 'operational' ? (
             <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">
               Only an eligible Producer can edit a draft plan.
             </p>
@@ -611,7 +781,9 @@ export function ManagedEventWorkspace({
           </button>
         ) : null}
 
-        <h3 className="mt-8 text-xl font-extrabold">Requested resources</h3>
+        {view === 'operational' ? (
+          <h3 className="mt-8 text-xl font-extrabold">Requested resources</h3>
+        ) : null}
         <div className="mt-4 grid gap-3">
           {plan.resourceRequests.map((request, requestIndex) => (
             <div

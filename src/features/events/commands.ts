@@ -9,6 +9,8 @@ import type { AppResult } from '@/server/errors'
 import type { EventPersistence } from './persistence'
 import type {
   createManagedEventInputSchema,
+  inviteEventCastMemberInputSchema,
+  respondToEventCastInvitationInputSchema,
   saveEventOperationalPlanInputSchema,
 } from './schemas'
 
@@ -114,5 +116,75 @@ export async function saveEventOperationalPlan(
         'Event operational plan could not be saved.',
       ),
     )
+  }
+}
+
+export async function inviteEventCastMember(
+  input: z.infer<typeof inviteEventCastMemberInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeCastInvitation({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+      memberUserId: input.memberUserId,
+    })
+
+    return ok(
+      await dependencies.persistence.inviteCastMember({
+        actorUserId: currentUser.data.id,
+        eventId: input.eventId,
+        memberUserId: input.memberUserId,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Cast invitation could not be created.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function respondToEventCastInvitation(
+  input: z.infer<typeof respondToEventCastInvitationInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeCastResponse({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+      response: input.response,
+    })
+
+    return ok(
+      await dependencies.persistence.respondToCastInvitation({
+        actorUserId: currentUser.data.id,
+        eventId: input.eventId,
+        response: input.response,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Cast invitation response could not be saved.',
+          ),
+        )
+      : err(failure)
   }
 }

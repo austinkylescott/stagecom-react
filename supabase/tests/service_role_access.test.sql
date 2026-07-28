@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(7);
 
 select ok(
   has_table_privilege('service_role', 'public.profiles', 'select'),
@@ -30,6 +30,11 @@ select ok(
 select ok(
   has_table_privilege('service_role', 'public.theater_memberships', 'select'),
   'service_role can read memberships after application authorization'
+);
+
+select ok(
+  has_column_privilege('authenticated', 'public.theater_invites', 'id', 'select'),
+  'authenticated Owner/Admin may establish RLS-scoped invitation access before revocation'
 );
 
 select * from finish();

@@ -46,6 +46,14 @@ source, and UTC offset. Its location is either the Theater's stable Primary
 Venue resource or approved off-site text. Events also store target and Minimum
 Viable Cast values plus ordered staff, equipment, and other resource requests.
 
+Event Cast invitations are explicit `show_cast` rows with inviter, invitation,
+response, source, and participation-status facts. Only a current active Event
+leader may invite an active Member. Accepting or declining changes only Event
+participation; Candidate Slot Availability Responses remain a separate model.
+Each invitation and response writes a durable `activity_events` domain fact in
+the same transaction. Invitation notifications are projected from that fact
+with a per-recipient dedupe key.
+
 Theater creation is transactional across the Theater, first Owner membership, initial default selection, and factual creation event. Publication is an idempotent transaction that writes the published state and factual Publication event once. Active memberships have at most one default Theater per person, and changing that default updates the legacy profile pointer in the same transaction.
 
 ## Current Role Model
@@ -124,6 +132,13 @@ independent draft, unpublished, and on-track state plus explicit
 `show_cast` row. Producer authorization re-checks active membership and current
 Theater policy instead of treating a historical leadership row as permanent
 authority.
+
+Private Event reads now select an explicit disclosure view. Pending invitees
+receive the Event summary, Candidate Slots, their own invitation, and accepted
+Cast names; accepted Cast Members receive the collaborative roster; Event
+leaders, Reviewers, and Owner/Admin receive the operational view. Database RLS
+also prevents a pending invitee from selecting other pending or declined Cast
+rows.
 
 ## Activity And Notifications
 

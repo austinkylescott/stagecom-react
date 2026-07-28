@@ -35,6 +35,10 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - Event staff defaults are separate from per-Event staff assignments.
 - `show_acts` supports simple public grouping and running order.
 - Public media uses the `theater-assets` storage bucket.
+- `show_cast` stores explicit private Event invitations and participation
+  responses, including inviter and response timestamps. Invitation and response
+  facts are durable activity events; in-app invitation notifications are
+  deduplicated projections of those events.
 
 ## Event State Expansion
 
@@ -62,6 +66,12 @@ The existing schema does not yet express the agreed workflow completely. The rem
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
 - explicit ticket Sales Channel and price
+
+Cast participation invitation and response are executable. Participation does
+not write or imply Candidate Slot availability. Pending invitees receive only
+their own invitation plus accepted Cast names; accepted Cast Members receive
+the collaborative roster; Event leaders, Reviewers, and Owner/Admin receive the
+operational view.
 
 These remaining items are specified product requirements, not claims about the executable schema. Future forward migrations must reconcile the current tables and enums with this model.
 

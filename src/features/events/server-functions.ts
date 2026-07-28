@@ -1,6 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { createManagedEvent, saveEventOperationalPlan } from './commands'
+import {
+  createManagedEvent,
+  inviteEventCastMember,
+  respondToEventCastInvitation,
+  saveEventOperationalPlan,
+} from './commands'
 import {
   getEventCreationOptions,
   getManagedEventWorkspace,
@@ -9,6 +14,8 @@ import {
 import {
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
+  inviteEventCastMemberInputSchema,
+  respondToEventCastInvitationInputSchema,
   saveEventOperationalPlanInputSchema,
   theaterEventsInputSchema,
 } from './schemas'
@@ -32,3 +39,11 @@ export const getManagedEventWorkspaceFn = createServerFn({ method: 'GET' })
 export const saveEventOperationalPlanFn = createServerFn({ method: 'POST' })
   .validator(saveEventOperationalPlanInputSchema)
   .handler(async ({ data }) => saveEventOperationalPlan(data))
+
+export const inviteEventCastMemberFn = createServerFn({ method: 'POST' })
+  .validator(inviteEventCastMemberInputSchema)
+  .handler(async ({ data }) => inviteEventCastMember(data))
+
+export const respondToEventCastInvitationFn = createServerFn({ method: 'POST' })
+  .validator(respondToEventCastInvitationInputSchema)
+  .handler(async ({ data }) => respondToEventCastInvitation(data))
