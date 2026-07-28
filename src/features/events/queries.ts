@@ -119,57 +119,11 @@ export async function getManagedEventWorkspace(
     return access
   }
 
-  const authenticated = createSupabaseAnonClient(access.data.bearerToken)
-  const { data: visibleEvent, error: visibilityError } = await authenticated
-    .from('shows')
-    .select('id')
-    .eq('theater_id', access.data.theater.id)
-    .eq('slug', input.eventSlug)
-    .maybeSingle()
-
-  if (visibilityError) {
-    return err(appError('external_service_error', 'Event could not be loaded.'))
-  }
-
-  if (!visibleEvent) {
-    return err(appError('not_found', 'Event was not found.'))
-  }
-
-  const canManage = access.data.membership.roles.some(
-    (role) => role === 'owner' || role === 'admin',
-  )
-  let isEventLeader = false
-
-  if (!canManage) {
-    const { data: leadership, error: leadershipError } = await authenticated
-      .from('show_leadership')
-      .select('user_id')
-      .eq('show_id', visibleEvent.id)
-      .eq('user_id', access.data.actorUserId)
-      .limit(1)
-
-    if (leadershipError) {
-      return err(
-        appError('external_service_error', 'Event could not be loaded.'),
-      )
-    }
-
-    isEventLeader = leadership.length > 0
-
-    if (!isEventLeader) {
-      return err(
-        appError('forbidden', 'Event collaborator access is required.'),
-      )
-    }
-  }
-
-  // The actor is now explicitly authorized as Theater staff or Event
-  // leadership, so the detailed cross-table workspace read may elevate.
   const supabase = createSupabaseServiceRoleClient()
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -183,18 +137,81 @@ export async function getManagedEventWorkspace(
     return err(appError('not_found', 'Event was not found.'))
   }
 
+  const [capabilityResult, membersResult] = await Promise.all([
+    supabase
+      .from('theater_member_capabilities')
+      .select('capability')
+      .eq('theater_id', access.data.theater.id)
+      .eq('user_id', access.data.actorUserId),
+    supabase
+      .from('theater_memberships')
+      .select('user_id, profiles!inner(display_name)')
+      .eq('theater_id', access.data.theater.id)
+      .eq('status', 'active')
+      .order('created_at'),
+  ])
+
+  if (capabilityResult.error || membersResult.error) {
+    return err(appError('external_service_error', 'Event could not be loaded.'))
+  }
+
+  const actorLeadership = managedEvent.show_leadership.filter(
+    (leader) => leader.user_id === access.data.actorUserId,
+  )
+  const actorCast = managedEvent.show_cast.find(
+    (castMember) => castMember.user_id === access.data.actorUserId,
+  )
+  const isTheaterAdmin = access.data.membership.roles.some(
+    (role) => role === 'owner' || role === 'admin',
+  )
+  const isReviewer = capabilityResult.data.some(
+    ({ capability }) => capability === 'reviewer',
+  )
+  const hasOperationalView =
+    isTheaterAdmin || isReviewer || actorLeadership.length > 0
+  const view = hasOperationalView
+    ? ('operational' as const)
+    : actorCast?.status === 'accepted'
+      ? ('accepted_cast' as const)
+      : actorCast?.status === 'pending' && actorCast.source === 'invited'
+        ? ('pending_invitee' as const)
+        : null
+
+  if (!view) {
+    return err(appError('forbidden', 'Event collaborator access is required.'))
+  }
+
   const canEditOperationalPlan =
     managedEvent.lifecycle_status === 'draft' &&
-    managedEvent.show_leadership.some(
-      (leader) =>
-        leader.user_id === access.data.actorUserId &&
-        leader.role === 'producer',
+    actorLeadership.some((leader) => leader.role === 'producer')
+
+  const visibleCast = managedEvent.show_cast.filter((castMember) => {
+    if (view !== 'pending_invitee') return true
+    return (
+      castMember.user_id === access.data.actorUserId ||
+      castMember.status === 'accepted'
     )
+  })
 
   return ok({
-    allowedActions: { editOperationalPlan: canEditOperationalPlan },
+    activeMembers:
+      view === 'operational'
+        ? membersResult.data.map((membership) => ({
+            displayName: membership.profiles.display_name,
+            userId: membership.user_id,
+          }))
+        : [],
+    actorUserId: access.data.actorUserId,
+    allowedActions: {
+      editOperationalPlan: canEditOperationalPlan,
+      inviteCast: actorLeadership.length > 0,
+      respondToInvitation: view === 'pending_invitee',
+    },
     event: {
       ...managedEvent,
+      show_cast: visibleCast,
+      show_leadership:
+        view === 'pending_invitee' ? [] : managedEvent.show_leadership,
       show_occurrences: managedEvent.show_occurrences
         .sort((left, right) => left.position - right.position)
         .map((occurrence) => ({
@@ -203,11 +220,15 @@ export async function getManagedEventWorkspace(
             (left, right) => left.position - right.position,
           ),
         })),
-      show_resource_requests: managedEvent.show_resource_requests.sort(
-        (left, right) => left.position - right.position,
-      ),
+      show_resource_requests:
+        view === 'operational'
+          ? managedEvent.show_resource_requests.sort(
+              (left, right) => left.position - right.position,
+            )
+          : [],
     },
     theater: access.data.theater,
+    view,
   })
 }
 
@@ -227,9 +248,7 @@ async function getTheaterAccess(theaterSlug: string) {
   const supabase = createSupabaseAnonClient(token)
   const { data: theater, error: theaterError } = await supabase
     .from('theaters')
-    .select(
-      'id, name, slug, producer_eligibility, primary_venue_id, primary_venue_name, timezone, timezone_source',
-    )
+    .select('id, name, slug, timezone')
     .eq('slug', theaterSlug)
     .maybeSingle()
 
@@ -261,10 +280,28 @@ async function getTheaterAccess(theaterSlug: string) {
     return err(appError('forbidden', 'Active Theater membership is required.'))
   }
 
+  // Active membership is established with the actor-scoped client before
+  // operational Theater configuration is read through the app-owned boundary.
+  const serviceRole = createSupabaseServiceRoleClient()
+  const { data: operationalTheater, error: operationalTheaterError } =
+    await serviceRole
+      .from('theaters')
+      .select(
+        'id, name, slug, producer_eligibility, primary_venue_id, primary_venue_name, timezone, timezone_source',
+      )
+      .eq('id', theater.id)
+      .single()
+
+  if (operationalTheaterError) {
+    return err(
+      appError('external_service_error', 'Theater could not be loaded.'),
+    )
+  }
+
   return ok({
     actorUserId: currentUser.data.id,
     bearerToken: token,
     membership,
-    theater,
+    theater: operationalTheater,
   })
 }

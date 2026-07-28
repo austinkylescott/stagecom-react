@@ -34,6 +34,11 @@ Managed Event leadership is persisted in `show_leadership`. One Event may have
 multiple Producers and at most one Director; the same active Member may hold
 both roles.
 
+Any current active Event leader may create a private Cast invitation; Theater
+Owner/Admin operational visibility alone does not grant invitation authority.
+Pending invitees, accepted Cast Members, Reviewers, and operational actors
+receive distinct private Event read models.
+
 ## Invariants
 
 - Producers are never assumed to be cast.

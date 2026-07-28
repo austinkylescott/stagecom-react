@@ -40,6 +40,34 @@ export type EventPersistence = {
     actorUserId: string
     eventId: string
   }) => Promise<void>
+  authorizeCastInvitation: (input: {
+    actorUserId: string
+    eventId: string
+    memberUserId: string
+  }) => Promise<void>
+  authorizeCastResponse: (input: {
+    actorUserId: string
+    eventId: string
+    response: 'accepted' | 'declined'
+  }) => Promise<void>
+  inviteCastMember: (input: {
+    actorUserId: string
+    eventId: string
+    memberUserId: string
+  }) => Promise<{
+    eventId: string
+    memberUserId: string
+    status: 'pending'
+  }>
+  respondToCastInvitation: (input: {
+    actorUserId: string
+    eventId: string
+    response: 'accepted' | 'declined'
+  }) => Promise<{
+    eventId: string
+    memberUserId: string
+    status: 'accepted' | 'declined'
+  }>
   saveOperationalPlan: (input: {
     actorUserId: string
     eventId: string
@@ -57,6 +85,90 @@ export type EventPersistence = {
 
 export function createSupabaseEventPersistence(): EventPersistence {
   return {
+    async authorizeCastInvitation(input) {
+      const supabase = createAuthenticatedClient()
+      const { data: event, error: eventError } = await supabase
+        .from('shows')
+        .select('id, theater_id')
+        .eq('id', input.eventId)
+        .maybeSingle()
+
+      if (eventError) {
+        throw appError(
+          'external_service_error',
+          'Cast invitation authorization could not be checked.',
+        )
+      }
+
+      if (!event) {
+        throw appError('not_found', 'Event was not found.')
+      }
+
+      const [
+        { data: isEventLeader, error: leadershipError },
+        { data: membership, error: membershipError },
+      ] = await Promise.all([
+        supabase.rpc('is_show_leader', {
+          p_show_id: input.eventId,
+          p_user_id: input.actorUserId,
+        }),
+        supabase
+          .from('theater_memberships')
+          .select('user_id')
+          .eq('theater_id', event.theater_id)
+          .eq('user_id', input.memberUserId)
+          .eq('status', 'active')
+          .limit(1),
+      ])
+
+      if (leadershipError || membershipError) {
+        throw appError(
+          'external_service_error',
+          'Cast invitation authorization could not be checked.',
+        )
+      }
+
+      if (!isEventLeader) {
+        throw appError(
+          'forbidden',
+          'Active Event leader access is required to invite Cast Members.',
+        )
+      }
+
+      if (!membership.some((row) => row.user_id === input.memberUserId)) {
+        throw appError(
+          'validation_error',
+          'The invitee must be an active Theater Member.',
+        )
+      }
+    },
+    async authorizeCastResponse(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase
+        .from('show_cast')
+        .select('source, status')
+        .eq('show_id', input.eventId)
+        .eq('user_id', input.actorUserId)
+        .maybeSingle()
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Cast invitation response authorization could not be checked.',
+        )
+      }
+
+      if (!data || data.source !== 'invited') {
+        throw appError('not_found', 'Cast invitation was not found.')
+      }
+
+      if (data.status !== 'pending' && data.status !== input.response) {
+        throw appError(
+          'conflict',
+          'This Cast invitation has already received a response.',
+        )
+      }
+    },
     async authorizePlanEdit(input) {
       const supabase = createAuthenticatedClient()
       const [{ data: event, error: eventError }, { data: isProducer, error }] =
@@ -98,7 +210,7 @@ export function createSupabaseEventPersistence(): EventPersistence {
       const supabase = createAuthenticatedClient()
       const { data: theater, error: theaterError } = await supabase
         .from('theaters')
-        .select('producer_eligibility')
+        .select('id')
         .eq('id', input.theaterId)
         .maybeSingle()
 
@@ -119,25 +231,53 @@ export function createSupabaseEventPersistence(): EventPersistence {
       const collaboratorUserIds = input.directorUserId
         ? [...new Set([...producerUserIds, input.directorUserId])]
         : producerUserIds
+
+      const { data: actorMembership, error: actorMembershipError } =
+        await supabase
+          .from('theater_memberships')
+          .select('user_id')
+          .eq('theater_id', input.theaterId)
+          .eq('user_id', input.actorUserId)
+          .eq('status', 'active')
+          .maybeSingle()
+
+      if (actorMembershipError) {
+        throw appError(
+          'external_service_error',
+          'Event authorization could not be checked.',
+        )
+      }
+
+      if (!actorMembership) {
+        throw appError('forbidden', 'Active Theater membership is required.')
+      }
+
+      const serviceRole = createSupabaseServiceRoleClient()
       const [
         { data: memberships, error: membershipError },
         { data: capabilities, error: capabilityError },
+        { data: governance, error: governanceError },
       ] = await Promise.all([
-        supabase
+        serviceRole
           .from('theater_memberships')
           .select('user_id, roles')
           .eq('theater_id', input.theaterId)
           .eq('status', 'active')
           .in('user_id', collaboratorUserIds),
-        supabase
+        serviceRole
           .from('theater_member_capabilities')
           .select('user_id, capability')
           .eq('theater_id', input.theaterId)
           .eq('capability', 'proposer')
           .in('user_id', producerUserIds),
+        serviceRole
+          .from('theaters')
+          .select('producer_eligibility')
+          .eq('id', input.theaterId)
+          .single(),
       ])
 
-      if (membershipError || capabilityError) {
+      if (membershipError || capabilityError || governanceError) {
         throw appError(
           'external_service_error',
           'Event authorization could not be checked.',
@@ -154,8 +294,8 @@ export function createSupabaseEventPersistence(): EventPersistence {
           (membership.roles.some(
             (role) => role === 'owner' || role === 'admin',
           ) ||
-            theater.producer_eligibility === 'all_members' ||
-            (theater.producer_eligibility === 'designated_proposers' &&
+            governance.producer_eligibility === 'all_members' ||
+            (governance.producer_eligibility === 'designated_proposers' &&
               capabilities.some(
                 (capability) => capability.user_id === userId,
               ))),
@@ -249,6 +389,72 @@ export function createSupabaseEventPersistence(): EventPersistence {
         slug: row.slug,
         theaterId: row.theater_id,
         title: row.title,
+      }
+    },
+    async inviteCastMember(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('invite_event_cast_member', {
+        p_actor_user_id: input.actorUserId,
+        p_member_user_id: input.memberUserId,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === '42501') {
+          throw appError('forbidden', error.message)
+        }
+        if (error.code === 'P0002') {
+          throw appError('not_found', 'Event was not found.')
+        }
+        if (error.code === '22023') {
+          throw appError('validation_error', error.message)
+        }
+        if (error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Cast invitation could not be created.',
+        )
+      }
+
+      return {
+        eventId: data.show_id,
+        memberUserId: data.user_id,
+        status: 'pending',
+      }
+    },
+    async respondToCastInvitation(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc(
+        'respond_to_event_cast_invitation',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_response: input.response,
+          p_show_id: input.eventId,
+        },
+      )
+
+      if (error) {
+        if (error.code === 'P0002') {
+          throw appError('not_found', error.message)
+        }
+        if (error.code === '55000') {
+          throw appError('conflict', error.message)
+        }
+        if (error.code === '22023') {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Cast invitation response could not be saved.',
+        )
+      }
+
+      return {
+        eventId: data.show_id,
+        memberUserId: data.user_id,
+        status: input.response,
       }
     },
     async saveOperationalPlan(input) {

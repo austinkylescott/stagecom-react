@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { createManagedEvent, saveEventOperationalPlan } from './commands'
+import {
+  createManagedEvent,
+  inviteEventCastMember,
+  respondToEventCastInvitation,
+  saveEventOperationalPlan,
+} from './commands'
 
 import type { EventCommandDependencies } from './commands'
+
+const unusedCastingPersistence = {
+  authorizeCastInvitation: async () => undefined,
+  authorizeCastResponse: async () => undefined,
+  inviteCastMember: async () => {
+    throw new Error('must not run')
+  },
+  respondToCastInvitation: async () => {
+    throw new Error('must not run')
+  },
+}
 
 describe('managed Event commands', () => {
   it('does not elevate to service role before app authorization succeeds', async () => {
@@ -10,6 +26,7 @@ describe('managed Event commands', () => {
     const dependencies: EventCommandDependencies = {
       getCurrentUser: async () => ({ ok: true, data: { id: 'member-1' } }),
       persistence: {
+        ...unusedCastingPersistence,
         authorizePlanEdit: async () => undefined,
         authorizeCreation: async () => {
           throw {
@@ -56,6 +73,7 @@ describe('managed Event commands', () => {
     const dependencies: EventCommandDependencies = {
       getCurrentUser: async () => ({ ok: true, data: { id: 'producer-1' } }),
       persistence: {
+        ...unusedCastingPersistence,
         authorizePlanEdit: async () => undefined,
         authorizeCreation: async () => undefined,
         create: async (input) => {
@@ -125,6 +143,7 @@ describe('managed Event commands', () => {
     const dependencies: EventCommandDependencies = {
       getCurrentUser: async () => ({ ok: true, data: { id: 'member-1' } }),
       persistence: {
+        ...unusedCastingPersistence,
         authorizeCreation: async () => undefined,
         authorizePlanEdit: async () => {
           throw {
@@ -170,6 +189,7 @@ describe('managed Event commands', () => {
     const dependencies: EventCommandDependencies = {
       getCurrentUser: async () => ({ ok: true, data: { id: 'producer-1' } }),
       persistence: {
+        ...unusedCastingPersistence,
         authorizeCreation: async () => undefined,
         authorizePlanEdit: async () => undefined,
         create: async () => {
@@ -250,6 +270,7 @@ describe('managed Event commands', () => {
     const dependencies: EventCommandDependencies = {
       getCurrentUser: async () => ({ ok: true, data: { id: 'producer-1' } }),
       persistence: {
+        ...unusedCastingPersistence,
         authorizeCreation: async () => undefined,
         authorizePlanEdit: async () => undefined,
         create: async () => {
@@ -302,5 +323,98 @@ describe('managed Event commands', () => {
         status: 400,
       },
     })
+  })
+
+  it('authorizes before creating a pending Cast invitation', async () => {
+    const calls: string[] = []
+    const dependencies: EventCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'director-1' } }),
+      persistence: {
+        authorizeCastInvitation: async () => {
+          calls.push('authorize')
+        },
+        authorizeCastResponse: async () => undefined,
+        authorizeCreation: async () => undefined,
+        authorizePlanEdit: async () => undefined,
+        create: async () => {
+          throw new Error('must not run')
+        },
+        inviteCastMember: async (input) => {
+          calls.push('invite')
+          return {
+            eventId: input.eventId,
+            memberUserId: input.memberUserId,
+            status: 'pending',
+          }
+        },
+        respondToCastInvitation: async () => {
+          throw new Error('must not run')
+        },
+        saveOperationalPlan: async () => {
+          throw new Error('must not run')
+        },
+      },
+    }
+
+    const result = await inviteEventCastMember(
+      {
+        eventId: '10000000-0000-0000-0000-000000000001',
+        memberUserId: '20000000-0000-0000-0000-000000000001',
+      },
+      dependencies,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        eventId: '10000000-0000-0000-0000-000000000001',
+        memberUserId: '20000000-0000-0000-0000-000000000001',
+        status: 'pending',
+      },
+    })
+    expect(calls).toEqual(['authorize', 'invite'])
+  })
+
+  it('records participation without changing Candidate Slot availability', async () => {
+    const responses: unknown[] = []
+    const dependencies: EventCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'invitee-1' } }),
+      persistence: {
+        ...unusedCastingPersistence,
+        authorizeCreation: async () => undefined,
+        authorizePlanEdit: async () => undefined,
+        create: async () => {
+          throw new Error('must not run')
+        },
+        respondToCastInvitation: async (input) => {
+          responses.push(input)
+          return {
+            eventId: input.eventId,
+            memberUserId: input.actorUserId,
+            status: input.response,
+          }
+        },
+        saveOperationalPlan: async () => {
+          throw new Error('must not run')
+        },
+      },
+    }
+
+    const result = await respondToEventCastInvitation(
+      {
+        eventId: '10000000-0000-0000-0000-000000000001',
+        response: 'accepted',
+      },
+      dependencies,
+    )
+
+    expect(result.ok).toBe(true)
+    expect(responses).toEqual([
+      {
+        actorUserId: 'invitee-1',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        response: 'accepted',
+      },
+    ])
   })
 })

@@ -2,13 +2,19 @@
 
 Documentation status: active
 
-Implementation status: specified, not implemented
+Implementation status: participation invitations and disclosure implemented;
+Availability Responses and Occurrence Calls not implemented
 
 ## Who Can Be Cast?
 
 Only active Theater Members may participate in an Event's cast in the first meaningful milestone. Guest cast and public or Theater-wide casting calls are deferred. Producers and Directors invite Members directly.
 
 Producers are never assumed to be cast. Cast membership requires an explicit invitation and acceptance.
+
+The executable workflow lets a current active Event leader invite an active
+Theater Member. The invitee explicitly accepts or declines through the Event
+workspace. Each action is transactional and emits a durable domain fact;
+invitation notifications are projected from that fact with dedupe keys.
 
 ## Who Manages Casting?
 
@@ -32,6 +38,10 @@ An accepted invitation means willingness to participate; it does not mean uncond
 - Public visitors see only confirmed Cast Members who permit public credit for that Event.
 
 Each accepted Cast Member has a per-Event public-credit setting initialized from their profile preference.
+
+The executable read model enforces the first three private disclosure levels.
+Occurrence Calls, Availability Responses, and per-Event public credit remain
+future slices.
 
 ## How Is Participation Assigned?
 

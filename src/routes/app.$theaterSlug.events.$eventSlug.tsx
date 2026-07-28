@@ -27,9 +27,12 @@ function EventWorkspacePage() {
 
   return (
     <ManagedEventWorkspace
+      activeMembers={data.activeMembers}
+      actorUserId={data.actorUserId}
       allowedActions={data.allowedActions}
       event={data.event}
       theater={data.theater}
+      view={data.view}
     />
   )
 }

@@ -19,6 +19,16 @@ export const eventWorkspaceInputSchema = z.object({
   theaterSlug: slugSchema,
 })
 
+export const inviteEventCastMemberInputSchema = z.object({
+  eventId: uuidSchema,
+  memberUserId: uuidSchema,
+})
+
+export const respondToEventCastInvitationInputSchema = z.object({
+  eventId: uuidSchema,
+  response: z.enum(['accepted', 'declined']),
+})
+
 const localDateTimeSchema = z
   .string()
   .regex(

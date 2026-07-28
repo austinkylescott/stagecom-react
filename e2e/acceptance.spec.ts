@@ -358,7 +358,7 @@ test('Owner creates and revokes a Targeted Invitation from the Members screen', 
 
     const secondRecipient = `second-${crypto.randomUUID()}@example.com`
     await page.goto(`/app/${fixture.theaterSlug}/members`)
-    await page.waitForTimeout(250)
+    await page.waitForTimeout(500)
     await page.getByLabel('Recipient email').fill(secondRecipient)
     await page.getByRole('button', { name: /create invitation/i }).click()
 

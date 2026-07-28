@@ -29,9 +29,7 @@ export async function getTheaterGovernance(
   const userSupabase = createSupabaseAnonClient(token)
   const { data: theater, error: theaterError } = await userSupabase
     .from('theaters')
-    .select(
-      'id, producer_eligibility, owner_self_approval_enabled, counteroffer_response_hours, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes',
-    )
+    .select('id')
     .eq('slug', input.theaterSlug)
     .maybeSingle()
 
@@ -73,9 +71,17 @@ export async function getTheaterGovernance(
 
   const supabase = createSupabaseServiceRoleClient()
   const [
+    { data: operationalTheater, error: operationalTheaterError },
     { data: memberships, error: membershipError },
     { data: capabilities, error: capabilityError },
   ] = await Promise.all([
+    supabase
+      .from('theaters')
+      .select(
+        'id, producer_eligibility, owner_self_approval_enabled, counteroffer_response_hours, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes',
+      )
+      .eq('id', theater.id)
+      .single(),
     supabase
       .from('theater_memberships')
       .select('user_id, roles, profiles!inner(display_name)')
@@ -88,7 +94,7 @@ export async function getTheaterGovernance(
       .eq('theater_id', theater.id),
   ])
 
-  if (membershipError || capabilityError) {
+  if (operationalTheaterError || membershipError || capabilityError) {
     return err(
       appError(
         'external_service_error',
@@ -99,14 +105,14 @@ export async function getTheaterGovernance(
 
   return ok({
     governance: {
-      counterofferResponseHours: theater.counteroffer_response_hours,
-      ownerSelfApprovalEnabled: theater.owner_self_approval_enabled,
-      primaryVenueId: theater.primary_venue_id,
-      primaryVenueName: theater.primary_venue_name ?? '',
-      producerEligibility: theater.producer_eligibility,
-      setupBufferMinutes: theater.setup_buffer_minutes,
-      theaterId: theater.id,
-      turnoverBufferMinutes: theater.turnover_buffer_minutes,
+      counterofferResponseHours: operationalTheater.counteroffer_response_hours,
+      ownerSelfApprovalEnabled: operationalTheater.owner_self_approval_enabled,
+      primaryVenueId: operationalTheater.primary_venue_id,
+      primaryVenueName: operationalTheater.primary_venue_name ?? '',
+      producerEligibility: operationalTheater.producer_eligibility,
+      setupBufferMinutes: operationalTheater.setup_buffer_minutes,
+      theaterId: operationalTheater.id,
+      turnoverBufferMinutes: operationalTheater.turnover_buffer_minutes,
     },
     members: memberships.map((membership) => ({
       capabilities: capabilities
