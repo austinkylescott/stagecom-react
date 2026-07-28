@@ -5,6 +5,8 @@ import {
   createSupabaseServiceRoleClient,
 } from '@/server/supabase/client'
 
+import type { Json } from '@/server/db/database.types'
+
 export type ManagedEvent = {
   castMemberCount: number
   directorUserId: string | null
@@ -34,10 +36,64 @@ export type EventPersistence = {
     theaterId: string
     title: string
   }) => Promise<ManagedEvent>
+  authorizePlanEdit: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  saveOperationalPlan: (input: {
+    actorUserId: string
+    eventId: string
+    minimumViableCast: number
+    occurrences: Json
+    resourceRequests: Json
+    targetCastSize: number
+  }) => Promise<{
+    candidateSlotCount: number
+    eventId: string
+    occurrenceCount: number
+    resourceRequestCount: number
+  }>
 }
 
 export function createSupabaseEventPersistence(): EventPersistence {
   return {
+    async authorizePlanEdit(input) {
+      const supabase = createAuthenticatedClient()
+      const [{ data: event, error: eventError }, { data: isProducer, error }] =
+        await Promise.all([
+          supabase
+            .from('shows')
+            .select('id, lifecycle_status')
+            .eq('id', input.eventId)
+            .maybeSingle(),
+          supabase.rpc('is_show_producer', { p_show_id: input.eventId }),
+        ])
+
+      if (eventError || error) {
+        throw appError(
+          'external_service_error',
+          'Event plan authorization could not be checked.',
+        )
+      }
+
+      if (!event) {
+        throw appError('not_found', 'Event was not found.')
+      }
+
+      if (!isProducer) {
+        throw appError(
+          'forbidden',
+          'Eligible Event Producer access is required.',
+        )
+      }
+
+      if (event.lifecycle_status !== 'draft') {
+        throw appError(
+          'conflict',
+          'The operational plan is editable only while the Event is a draft.',
+        )
+      }
+    },
     async authorizeCreation(input) {
       const supabase = createAuthenticatedClient()
       const { data: theater, error: theaterError } = await supabase
@@ -193,6 +249,62 @@ export function createSupabaseEventPersistence(): EventPersistence {
         slug: row.slug,
         theaterId: row.theater_id,
         title: row.title,
+      }
+    },
+    async saveOperationalPlan(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc(
+        'save_event_operational_plan',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_minimum_viable_cast: input.minimumViableCast,
+          p_occurrences: input.occurrences,
+          p_resource_requests: input.resourceRequests,
+          p_show_id: input.eventId,
+          p_target_cast_size: input.targetCastSize,
+        },
+      )
+
+      if (error) {
+        if (error.code === '42501') {
+          throw appError('forbidden', error.message)
+        }
+
+        if (error.code === 'P0002') {
+          throw appError('not_found', 'Event was not found.')
+        }
+
+        if (error.code === '55000') {
+          throw appError('conflict', error.message)
+        }
+
+        if (
+          error.code === '22023' ||
+          error.code === '23502' ||
+          error.code === '23505' ||
+          error.code === '23514'
+        ) {
+          throw appError('validation_error', error.message)
+        }
+
+        throw appError(
+          'external_service_error',
+          'Event operational plan could not be saved.',
+        )
+      }
+
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw appError(
+          'external_service_error',
+          'Event operational plan could not be loaded after saving.',
+        )
+      }
+
+      return {
+        candidateSlotCount: Number(data.candidateSlotCount),
+        eventId: String(data.eventId),
+        occurrenceCount: Number(data.occurrenceCount),
+        resourceRequestCount: Number(data.resourceRequestCount),
       }
     },
   }

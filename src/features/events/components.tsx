@@ -1,6 +1,9 @@
 import { useState } from 'react'
 
-import { createManagedEventFn } from './server-functions'
+import {
+  createManagedEventFn,
+  saveEventOperationalPlanFn,
+} from './server-functions'
 
 import type { Database } from '@/server/db/database.types'
 
@@ -206,10 +209,15 @@ export function ManagedEventsPage({
 }
 
 export function ManagedEventWorkspace({
+  allowedActions,
   event,
+  theater,
 }: {
+  allowedActions: { editOperationalPlan: boolean }
   event: {
+    id: string
     lifecycle_status: EventLifecycle
+    minimum_viable_cast: number | null
     operational_health: EventHealth
     publication_status: EventPublication
     show_cast: Array<{ user_id: string }>
@@ -218,9 +226,78 @@ export function ManagedEventWorkspace({
       role: EventLeadershipRole
       user_id: string
     }>
+    show_occurrences: Array<{
+      confirmed_candidate_slot_id: string | null
+      id: string
+      occurrence_type: 'rehearsal' | 'performance'
+      position: number
+      show_candidate_slots: Array<{
+        duration_minutes: number
+        id: string
+        local_starts_at: string
+        location_kind: 'primary_venue' | 'off_site'
+        location_name: string
+        off_site_approved: boolean
+        position: number
+        resource_id: string | null
+        timezone_name: string
+        timezone_source: 'unknown' | 'inferred' | 'manual'
+      }>
+      visibility: 'public' | 'internal'
+    }>
+    show_resource_requests: Array<{
+      id: string
+      label: string
+      position: number
+      quantity: number
+      resource_type: 'staff' | 'equipment' | 'other'
+    }>
+    target_cast_size: number | null
     title: string
   }
+  theater: {
+    primary_venue_id: string
+    primary_venue_name: string | null
+    timezone: string | null
+    timezone_source: 'unknown' | 'inferred' | 'manual'
+  }
 }) {
+  const [plan, setPlan] = useState(() => ({
+    minimumViableCast: event.minimum_viable_cast ?? 1,
+    occurrences: event.show_occurrences.map((occurrence) => ({
+      candidateSlots: occurrence.show_candidate_slots.map((slot) => ({
+        durationMinutes: slot.duration_minutes,
+        id: slot.id,
+        localStartsAt: slot.local_starts_at.slice(0, 16),
+        locationKind: slot.location_kind,
+        locationName: slot.location_name,
+        offSiteApproved: slot.off_site_approved,
+        position: slot.position,
+        ...(slot.resource_id ? { resourceId: slot.resource_id } : {}),
+        timezoneName: slot.timezone_name,
+        timezoneSource: slot.timezone_source,
+      })),
+      confirmedCandidateSlotId: occurrence.confirmed_candidate_slot_id,
+      id: occurrence.id,
+      position: occurrence.position,
+      type: occurrence.occurrence_type,
+      visibility: occurrence.visibility,
+    })),
+    resourceRequests: event.show_resource_requests.map((request) => ({
+      id: request.id,
+      label: request.label,
+      position: request.position,
+      quantity: request.quantity,
+      type: request.resource_type,
+    })),
+    targetCastSize: event.target_cast_size ?? 1,
+  }))
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const timezoneName = theater.timezone ?? 'UTC'
+  const venueName = theater.primary_venue_name ?? 'Primary Venue'
+
   return (
     <main className="page-wrap py-8 sm:py-12">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
@@ -251,8 +328,630 @@ export function ManagedEventWorkspace({
           membership; casting begins with a separate invitation and acceptance.
         </p>
       </section>
+      <section className="island-shell mt-5 rounded-lg px-6 py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-extrabold">Operational plan</h2>
+            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+              Candidate Slots use {timezoneName} and preserve the exact instant
+              plus its local-time provenance.
+            </p>
+          </div>
+          {!allowedActions.editOperationalPlan ? (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">
+              Only an eligible Producer can edit a draft plan.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <NumberField
+            disabled={!allowedActions.editOperationalPlan}
+            label="Target cast size"
+            onChange={(targetCastSize) =>
+              setPlan((current) => ({ ...current, targetCastSize }))
+            }
+            value={plan.targetCastSize}
+          />
+          <NumberField
+            disabled={!allowedActions.editOperationalPlan}
+            label="Minimum Viable Cast"
+            onChange={(minimumViableCast) =>
+              setPlan((current) => ({ ...current, minimumViableCast }))
+            }
+            value={plan.minimumViableCast}
+          />
+        </div>
+
+        <div className="mt-7 grid gap-5">
+          {plan.occurrences.map((occurrence, occurrenceIndex) => (
+            <article
+              className="rounded-lg border border-[var(--line)] bg-white px-5 py-5"
+              key={occurrence.id}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-xl font-extrabold">
+                  Occurrence {occurrenceIndex + 1}
+                </h3>
+                {allowedActions.editOperationalPlan ? (
+                  <div className="flex flex-wrap gap-2">
+                    <SmallButton
+                      disabled={occurrenceIndex === 0}
+                      onClick={() =>
+                        setPlan((current) => ({
+                          ...current,
+                          occurrences: moveItem(
+                            current.occurrences,
+                            occurrenceIndex,
+                            occurrenceIndex - 1,
+                          ),
+                        }))
+                      }
+                    >
+                      Move up
+                    </SmallButton>
+                    <SmallButton
+                      disabled={occurrenceIndex === plan.occurrences.length - 1}
+                      onClick={() =>
+                        setPlan((current) => ({
+                          ...current,
+                          occurrences: moveItem(
+                            current.occurrences,
+                            occurrenceIndex,
+                            occurrenceIndex + 1,
+                          ),
+                        }))
+                      }
+                    >
+                      Move down
+                    </SmallButton>
+                    <SmallButton
+                      onClick={() =>
+                        setPlan((current) => ({
+                          ...current,
+                          occurrences: current.occurrences.filter(
+                            ({ id }) => id !== occurrence.id,
+                          ),
+                        }))
+                      }
+                    >
+                      Remove
+                    </SmallButton>
+                  </div>
+                ) : null}
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <SelectField
+                  disabled={!allowedActions.editOperationalPlan}
+                  label={`Occurrence ${occurrenceIndex + 1} type`}
+                  onChange={(type) =>
+                    updateOccurrence(setPlan, occurrence.id, { type })
+                  }
+                  options={['rehearsal', 'performance']}
+                  value={occurrence.type}
+                />
+                <SelectField
+                  disabled={!allowedActions.editOperationalPlan}
+                  label={`Occurrence ${occurrenceIndex + 1} visibility`}
+                  onChange={(visibility) =>
+                    updateOccurrence(setPlan, occurrence.id, { visibility })
+                  }
+                  options={['public', 'internal']}
+                  value={occurrence.visibility}
+                />
+              </div>
+
+              <div className="mt-5 grid gap-4">
+                {occurrence.candidateSlots.map((slot, slotIndex) => (
+                  <fieldset
+                    className="grid gap-4 rounded-md bg-[var(--sand)]/40 px-4 py-4 sm:grid-cols-2"
+                    key={slot.id}
+                  >
+                    <legend className="px-1 text-sm font-extrabold">
+                      Candidate Slot {slotIndex + 1}
+                    </legend>
+                    <label className="grid gap-2 text-sm font-bold">
+                      Local date and time
+                      <input
+                        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                        disabled={!allowedActions.editOperationalPlan}
+                        onChange={(change) =>
+                          updateSlot(setPlan, occurrence.id, slot.id, {
+                            localStartsAt: change.target.value,
+                          })
+                        }
+                        type="datetime-local"
+                        value={slot.localStartsAt}
+                      />
+                    </label>
+                    <NumberField
+                      disabled={!allowedActions.editOperationalPlan}
+                      label="Duration (minutes)"
+                      max={1440}
+                      min={15}
+                      onChange={(durationMinutes) =>
+                        updateSlot(setPlan, occurrence.id, slot.id, {
+                          durationMinutes,
+                        })
+                      }
+                      value={slot.durationMinutes}
+                    />
+                    <SelectField
+                      disabled={!allowedActions.editOperationalPlan}
+                      label="Location type"
+                      onChange={(locationKind) =>
+                        updateSlot(setPlan, occurrence.id, slot.id, {
+                          locationKind,
+                          locationName:
+                            locationKind === 'primary_venue' ? venueName : '',
+                          offSiteApproved: locationKind === 'off_site',
+                          ...(locationKind === 'primary_venue'
+                            ? { resourceId: theater.primary_venue_id }
+                            : { resourceId: undefined }),
+                        })
+                      }
+                      options={['primary_venue', 'off_site']}
+                      value={slot.locationKind}
+                    />
+                    <label className="grid gap-2 text-sm font-bold">
+                      Location
+                      <input
+                        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                        disabled={
+                          !allowedActions.editOperationalPlan ||
+                          slot.locationKind === 'primary_venue'
+                        }
+                        onChange={(change) =>
+                          updateSlot(setPlan, occurrence.id, slot.id, {
+                            locationName: change.target.value,
+                          })
+                        }
+                        value={slot.locationName}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
+                      <input
+                        checked={
+                          occurrence.confirmedCandidateSlotId === slot.id
+                        }
+                        disabled={!allowedActions.editOperationalPlan}
+                        name={`confirmed-${occurrence.id}`}
+                        onChange={() =>
+                          updateOccurrence(setPlan, occurrence.id, {
+                            confirmedCandidateSlotId:
+                              occurrence.confirmedCandidateSlotId === slot.id
+                                ? null
+                                : slot.id,
+                          })
+                        }
+                        type="checkbox"
+                      />
+                      Confirm this Slot
+                    </label>
+                    {allowedActions.editOperationalPlan ? (
+                      <SmallButton
+                        onClick={() =>
+                          setPlan((current) => ({
+                            ...current,
+                            occurrences: current.occurrences.map((item) =>
+                              item.id === occurrence.id
+                                ? {
+                                    ...item,
+                                    candidateSlots: item.candidateSlots.filter(
+                                      ({ id }) => id !== slot.id,
+                                    ),
+                                    confirmedCandidateSlotId:
+                                      item.confirmedCandidateSlotId === slot.id
+                                        ? null
+                                        : item.confirmedCandidateSlotId,
+                                  }
+                                : item,
+                            ),
+                          }))
+                        }
+                      >
+                        Remove Candidate Slot
+                      </SmallButton>
+                    ) : null}
+                  </fieldset>
+                ))}
+              </div>
+              {allowedActions.editOperationalPlan ? (
+                <button
+                  className="mt-4 text-sm font-extrabold text-[var(--coral-deep)]"
+                  onClick={() =>
+                    setPlan((current) => ({
+                      ...current,
+                      occurrences: current.occurrences.map((item) =>
+                        item.id === occurrence.id
+                          ? {
+                              ...item,
+                              candidateSlots: [
+                                ...item.candidateSlots,
+                                newCandidateSlot(
+                                  item.candidateSlots.length,
+                                  theater,
+                                ),
+                              ],
+                            }
+                          : item,
+                      ),
+                    }))
+                  }
+                  type="button"
+                >
+                  Add Candidate Slot
+                </button>
+              ) : null}
+            </article>
+          ))}
+        </div>
+        {allowedActions.editOperationalPlan ? (
+          <button
+            className="mt-5 rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold"
+            onClick={() =>
+              setPlan((current) => ({
+                ...current,
+                occurrences: [
+                  ...current.occurrences,
+                  {
+                    candidateSlots: [],
+                    confirmedCandidateSlotId: null,
+                    id: crypto.randomUUID(),
+                    position: current.occurrences.length,
+                    type: 'rehearsal' as const,
+                    visibility: 'internal' as const,
+                  },
+                ],
+              }))
+            }
+            type="button"
+          >
+            Add Occurrence
+          </button>
+        ) : null}
+
+        <h3 className="mt-8 text-xl font-extrabold">Requested resources</h3>
+        <div className="mt-4 grid gap-3">
+          {plan.resourceRequests.map((request, requestIndex) => (
+            <div
+              className="grid gap-3 rounded-md border border-[var(--line)] px-4 py-4 sm:grid-cols-[10rem_1fr_7rem_auto]"
+              key={request.id}
+            >
+              <SelectField
+                disabled={!allowedActions.editOperationalPlan}
+                label={`Resource ${requestIndex + 1} type`}
+                onChange={(type) =>
+                  updateResource(setPlan, request.id, { type })
+                }
+                options={['staff', 'equipment', 'other']}
+                value={request.type}
+              />
+              <label className="grid gap-2 text-sm font-bold">
+                Requested resource
+                <input
+                  className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                  disabled={!allowedActions.editOperationalPlan}
+                  onChange={(change) =>
+                    updateResource(setPlan, request.id, {
+                      label: change.target.value,
+                    })
+                  }
+                  value={request.label}
+                />
+              </label>
+              <NumberField
+                disabled={!allowedActions.editOperationalPlan}
+                label="Quantity"
+                onChange={(quantity) =>
+                  updateResource(setPlan, request.id, { quantity })
+                }
+                value={request.quantity}
+              />
+              {allowedActions.editOperationalPlan ? (
+                <SmallButton
+                  onClick={() =>
+                    setPlan((current) => ({
+                      ...current,
+                      resourceRequests: current.resourceRequests.filter(
+                        ({ id }) => id !== request.id,
+                      ),
+                    }))
+                  }
+                >
+                  Remove
+                </SmallButton>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        {allowedActions.editOperationalPlan ? (
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <button
+              className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold"
+              onClick={() =>
+                setPlan((current) => ({
+                  ...current,
+                  resourceRequests: [
+                    ...current.resourceRequests,
+                    {
+                      id: crypto.randomUUID(),
+                      label: '',
+                      position: current.resourceRequests.length,
+                      quantity: 1,
+                      type: 'staff' as const,
+                    },
+                  ],
+                }))
+              }
+              type="button"
+            >
+              Add requested resource
+            </button>
+            <button
+              className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              disabled={isSaving}
+              onClick={async () => {
+                setSaveError(null)
+                setSaved(false)
+                setIsSaving(true)
+
+                try {
+                  const result = await saveEventOperationalPlanFn({
+                    data: normalizePlan(event.id, plan),
+                  })
+
+                  if (!result.ok) {
+                    setSaveError(result.error.message)
+                    return
+                  }
+
+                  setPlan((current) => normalizePositions(current))
+                  setSaved(true)
+                } catch (error) {
+                  setSaveError(
+                    error instanceof Error
+                      ? error.message
+                      : 'Operational plan could not be saved.',
+                  )
+                } finally {
+                  setIsSaving(false)
+                }
+              }}
+              type="button"
+            >
+              {isSaving ? 'Saving…' : 'Save operational plan'}
+            </button>
+            {saved ? (
+              <p className="font-bold text-emerald-800">Plan saved.</p>
+            ) : null}
+            {saveError ? (
+              <p className="font-bold text-red-700">{saveError}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
     </main>
   )
+}
+
+type OperationalPlan = Parameters<typeof normalizePositions>[0]
+
+function NumberField({
+  disabled,
+  label,
+  max = 500,
+  min = 1,
+  onChange,
+  value,
+}: {
+  disabled: boolean
+  label: string
+  max?: number
+  min?: number
+  onChange: (value: number) => void
+  value: number
+}) {
+  return (
+    <label className="grid gap-2 text-sm font-bold">
+      {label}
+      <input
+        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        disabled={disabled}
+        max={max}
+        min={min}
+        onChange={(event) => onChange(event.target.valueAsNumber)}
+        type="number"
+        value={value}
+      />
+    </label>
+  )
+}
+
+function SelectField<T extends string>({
+  disabled,
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  disabled: boolean
+  label: string
+  onChange: (value: T) => void
+  options: T[]
+  value: T
+}) {
+  return (
+    <label className="grid gap-2 text-sm font-bold">
+      {label}
+      <select
+        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as T)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option.replace('_', ' ')}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function SmallButton({
+  children,
+  disabled = false,
+  onClick,
+}: {
+  children: React.ReactNode
+  disabled?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      className="self-end rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-extrabold disabled:opacity-40"
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
+  )
+}
+
+function newCandidateSlot(
+  position: number,
+  theater: {
+    primary_venue_id: string
+    primary_venue_name: string | null
+    timezone: string | null
+    timezone_source: 'unknown' | 'inferred' | 'manual'
+  },
+) {
+  return {
+    durationMinutes: 120,
+    id: crypto.randomUUID(),
+    localStartsAt: '',
+    locationKind: 'primary_venue' as const,
+    locationName: theater.primary_venue_name ?? 'Primary Venue',
+    offSiteApproved: false,
+    position,
+    resourceId: theater.primary_venue_id,
+    timezoneName: theater.timezone ?? 'UTC',
+    timezoneSource: theater.timezone_source,
+  }
+}
+
+function moveItem<T>(items: T[], from: number, to: number) {
+  const next = [...items]
+  const [item] = next.splice(from, 1)
+
+  if (item !== undefined) next.splice(to, 0, item)
+  return next
+}
+
+function updateOccurrence(
+  setPlan: React.Dispatch<React.SetStateAction<OperationalPlan>>,
+  occurrenceId: string,
+  update: Partial<OperationalPlan['occurrences'][number]>,
+) {
+  setPlan((current) => ({
+    ...current,
+    occurrences: current.occurrences.map((occurrence) =>
+      occurrence.id === occurrenceId
+        ? { ...occurrence, ...update }
+        : occurrence,
+    ),
+  }))
+}
+
+function updateSlot(
+  setPlan: React.Dispatch<React.SetStateAction<OperationalPlan>>,
+  occurrenceId: string,
+  slotId: string,
+  update: Partial<
+    OperationalPlan['occurrences'][number]['candidateSlots'][number]
+  >,
+) {
+  setPlan((current) => ({
+    ...current,
+    occurrences: current.occurrences.map((occurrence) =>
+      occurrence.id === occurrenceId
+        ? {
+            ...occurrence,
+            candidateSlots: occurrence.candidateSlots.map((slot) =>
+              slot.id === slotId ? { ...slot, ...update } : slot,
+            ),
+          }
+        : occurrence,
+    ),
+  }))
+}
+
+function updateResource(
+  setPlan: React.Dispatch<React.SetStateAction<OperationalPlan>>,
+  requestId: string,
+  update: Partial<OperationalPlan['resourceRequests'][number]>,
+) {
+  setPlan((current) => ({
+    ...current,
+    resourceRequests: current.resourceRequests.map((request) =>
+      request.id === requestId ? { ...request, ...update } : request,
+    ),
+  }))
+}
+
+function normalizePositions(plan: {
+  minimumViableCast: number
+  occurrences: Array<{
+    candidateSlots: Array<{
+      durationMinutes: number
+      id: string
+      localStartsAt: string
+      locationKind: 'primary_venue' | 'off_site'
+      locationName: string
+      offSiteApproved: boolean
+      position: number
+      resourceId?: string
+      timezoneName: string
+      timezoneSource: 'unknown' | 'inferred' | 'manual'
+    }>
+    confirmedCandidateSlotId: string | null
+    id: string
+    position: number
+    type: 'rehearsal' | 'performance'
+    visibility: 'public' | 'internal'
+  }>
+  resourceRequests: Array<{
+    id: string
+    label: string
+    position: number
+    quantity: number
+    type: 'staff' | 'equipment' | 'other'
+  }>
+  targetCastSize: number
+}) {
+  return {
+    ...plan,
+    occurrences: plan.occurrences.map((occurrence, position) => ({
+      ...occurrence,
+      candidateSlots: occurrence.candidateSlots.map((slot, slotPosition) => ({
+        ...slot,
+        position: slotPosition,
+      })),
+      position,
+    })),
+    resourceRequests: plan.resourceRequests.map((request, position) => ({
+      ...request,
+      position,
+    })),
+  }
+}
+
+function normalizePlan(eventId: string, plan: OperationalPlan) {
+  return { eventId, ...normalizePositions(plan) }
 }
 
 function StateCard({ label, value }: { label: string; value: string }) {

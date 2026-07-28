@@ -47,8 +47,11 @@ Targeted Invitation membership is implemented through remote-backed atomic
 commands, explicit invalid-state handling, and working Owner/Admin and recipient
 screens. Reusable Join Links are implemented. Theater Event governance,
 Proposer/Reviewer capability assignment, managed performance Event creation,
-and explicit Producer/Director leadership are also implemented; Occurrences,
-casting, scheduling, review, and Event Publication remain incomplete. The
-accepted product boundary lives in
+explicit Producer/Director leadership, and the editable operational plan are
+also implemented. Producers can persist ordered Rehearsal and Performance
+Occurrences, Candidate and optional Confirmed Slots, cast thresholds, and
+requested resources through one transactional command. Casting responses,
+schedule conflict handling, review, and Event Publication remain incomplete.
+The accepted product boundary lives in
 `docs/product/event-publication-milestone.md`; detailed implementation tickets
 and dependency relationships are tracked under STA-5 in Linear.

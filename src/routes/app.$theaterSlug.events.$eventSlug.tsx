@@ -23,5 +23,13 @@ export const Route = createFileRoute('/app/$theaterSlug/events/$eventSlug')({
 })
 
 function EventWorkspacePage() {
-  return <ManagedEventWorkspace event={Route.useLoaderData().event} />
+  const data = Route.useLoaderData()
+
+  return (
+    <ManagedEventWorkspace
+      allowedActions={data.allowedActions}
+      event={data.event}
+      theater={data.theater}
+    />
+  )
 }

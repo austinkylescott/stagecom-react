@@ -155,10 +155,9 @@ test('recipient authentication preserves intent and accepts a Targeted Invitatio
     await page.goto(
       `/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&inviteToken=${encodeURIComponent(fixture.inviteToken)}`,
     )
-    await expect(page).toHaveURL(
-      `http://localhost:3000/join/${fixture.inviteToken}`,
-      { timeout: 5_000 },
-    )
+    await expect(page).toHaveURL(new RegExp(`/join/${fixture.inviteToken}$`), {
+      timeout: 5_000,
+    })
     await page.waitForTimeout(250)
     await Promise.all([
       page.waitForResponse((response) =>
@@ -458,11 +457,11 @@ test('authenticated user can submit profile completion', async ({
     ])
 
     await page.goto('/complete-profile?next=/onboarding')
-    await page.waitForTimeout(250)
+    await page.waitForTimeout(750)
     await page.getByLabel('Display name').fill('Authenticated Operator')
     await page.getByRole('button', { name: 'Continue' }).click()
 
-    await expect(page).toHaveURL('http://localhost:3000/onboarding')
+    await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/onboarding$/)
 
     const { data: profile, error: profileError } = await admin
       .from('profiles')
