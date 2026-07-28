@@ -73,8 +73,6 @@ Legacy Theater enum values remain in migration history but should not be assigne
 
 The accepted product model in `docs/product/event-publication-milestone.md` still requires schema work for:
 
-- per-Occurrence required, optional, and not-called cast assignments
-- per-Candidate-Slot availability responses
 - immutable numbered Proposal Revisions
 - approve, deny, request-edits, and Counteroffer decisions
 - exclusive Counteroffer holds and response deadlines
@@ -84,6 +82,16 @@ The accepted product model in `docs/product/event-publication-milestone.md` stil
 
 Do not treat current generic JSON availability or the retained compatibility
 `show_status` enum as satisfying these remaining requirements.
+
+`show_availability_responses` stores one versioned available, unavailable, or
+uncertain fact per invited Member and Candidate Slot. It retains the responding
+actor, response timestamp, optimistic-concurrency version, and last command
+identity. `show_occurrence_calls` stores one versioned required, optional, or
+not-called expectation per accepted Cast Member and Occurrence with the
+assigning Director and timestamp. Each command identity is also the durable
+activity-event identity, making safe retries idempotent while stale versions
+return conflicts. Participation remains exclusively on `show_cast`; neither
+coordination table writes or infers the other concept.
 
 Operational-plan saves use one service-role-only transaction after explicit
 application authorization. They preserve supplied stable child identifiers,
@@ -142,7 +150,7 @@ rows.
 
 ## Activity And Notifications
 
-Activity history uses explicit domain events with appropriate visibility. Notifications must originate from domain events; UI code must not create notification rows directly. The first Event-publication milestone delivers workflow notifications in-app only.
+Activity history uses explicit domain events with appropriate visibility. Availability and Occurrence Call changes emit `event.availability.responded` and `event.occurrence_call.assigned` facts in the same transaction as their state changes. Notifications must originate from domain events; UI code must not create notification rows directly. The first Event-publication milestone delivers workflow notifications in-app only.
 
 ## Generated Types
 

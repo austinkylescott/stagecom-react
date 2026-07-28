@@ -288,6 +288,58 @@ export type Database = {
           },
         ]
       }
+      show_availability_responses: {
+        Row: {
+          actor_user_id: string
+          candidate_slot_id: string
+          last_command_id: string
+          responded_at: string
+          response: Database['public']['Enums']['availability_response']
+          user_id: string
+          version: number
+        }
+        Insert: {
+          actor_user_id: string
+          candidate_slot_id: string
+          last_command_id: string
+          responded_at?: string
+          response: Database['public']['Enums']['availability_response']
+          user_id: string
+          version?: number
+        }
+        Update: {
+          actor_user_id?: string
+          candidate_slot_id?: string
+          last_command_id?: string
+          responded_at?: string
+          response?: Database['public']['Enums']['availability_response']
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_availability_responses_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_availability_responses_candidate_slot_id_fkey'
+            columns: ['candidate_slot_id']
+            isOneToOne: false
+            referencedRelation: 'show_candidate_slots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_availability_responses_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_candidate_slots: {
         Row: {
           created_at: string
@@ -460,6 +512,75 @@ export type Database = {
           },
           {
             foreignKeyName: 'show_leadership_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_occurrence_calls: {
+        Row: {
+          actor_user_id: string
+          assigned_at: string
+          call: Database['public']['Enums']['occurrence_call']
+          last_command_id: string
+          occurrence_id: string
+          show_id: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          actor_user_id: string
+          assigned_at?: string
+          call: Database['public']['Enums']['occurrence_call']
+          last_command_id: string
+          occurrence_id: string
+          show_id: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          actor_user_id?: string
+          assigned_at?: string
+          call?: Database['public']['Enums']['occurrence_call']
+          last_command_id?: string
+          occurrence_id?: string
+          show_id?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_occurrence_calls_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_occurrence_calls_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_occurrence_calls_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_occurrence_calls_show_id_user_id_fkey'
+            columns: ['show_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'show_cast'
+            referencedColumns: ['show_id', 'user_id']
+          },
+          {
+            foreignKeyName: 'show_occurrence_calls_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
@@ -1180,6 +1301,10 @@ export type Database = {
           theater_slug: string
         }[]
       }
+      can_assign_occurrence_call: {
+        Args: { p_occurrence_id: string }
+        Returns: boolean
+      }
       can_insert_show_cast: {
         Args: {
           p_show_id: string
@@ -1197,6 +1322,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_record_candidate_slot_availability: {
+        Args: { p_candidate_slot_id: string }
+        Returns: boolean
+      }
       can_update_show_cast: {
         Args: {
           p_act_id: string
@@ -1209,12 +1338,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_view_candidate_slot_coordination: {
+        Args: { p_actor_user_id: string; p_candidate_slot_id: string }
+        Returns: boolean
+      }
       can_view_event_cast_row: {
         Args: {
           p_row_status: Database['public']['Enums']['show_cast_status']
           p_row_user_id: string
           p_show_id: string
         }
+        Returns: boolean
+      }
+      can_view_event_coordination: {
+        Args: { p_actor_user_id: string; p_show_id: string }
         Returns: boolean
       }
       can_view_profile: {
@@ -1458,6 +1595,30 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      record_candidate_slot_availability: {
+        Args: {
+          p_actor_user_id: string
+          p_candidate_slot_id: string
+          p_command_id: string
+          p_expected_version?: number
+          p_response: Database['public']['Enums']['availability_response']
+        }
+        Returns: {
+          actor_user_id: string
+          candidate_slot_id: string
+          last_command_id: string
+          responded_at: string
+          response: Database['public']['Enums']['availability_response']
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_availability_responses'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       respond_to_event_cast_invitation: {
         Args: {
           p_actor_user_id: string
@@ -1554,6 +1715,32 @@ export type Database = {
           to: 'theaters'
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      set_occurrence_call: {
+        Args: {
+          p_actor_user_id: string
+          p_call: Database['public']['Enums']['occurrence_call']
+          p_cast_member_user_id: string
+          p_command_id: string
+          p_expected_version?: number
+          p_occurrence_id: string
+        }
+        Returns: {
+          actor_user_id: string
+          assigned_at: string
+          call: Database['public']['Enums']['occurrence_call']
+          last_command_id: string
+          occurrence_id: string
+          show_id: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_occurrence_calls'
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       set_theater_member_capability: {
@@ -1656,6 +1843,7 @@ export type Database = {
     }
     Enums: {
       activity_visibility: 'admin_only' | 'member_visible' | 'self_only'
+      availability_response: 'available' | 'unavailable' | 'uncertain'
       casting_mode: 'direct_invite' | 'theater_casting' | 'public_casting'
       email_outbox_status: 'queued' | 'sent' | 'failed'
       event_leadership_role: 'producer' | 'director'
@@ -1664,6 +1852,7 @@ export type Database = {
       invite_status: 'pending' | 'accepted' | 'revoked' | 'expired'
       membership_status: 'active' | 'inactive'
       notification_entity: 'show' | 'occurrence' | 'cast'
+      occurrence_call: 'required' | 'optional' | 'not_called'
       occurrence_type: 'rehearsal' | 'performance'
       occurrence_visibility: 'public' | 'internal'
       producer_eligibility_policy:
@@ -1817,6 +2006,7 @@ export const Constants = {
   public: {
     Enums: {
       activity_visibility: ['admin_only', 'member_visible', 'self_only'],
+      availability_response: ['available', 'unavailable', 'uncertain'],
       casting_mode: ['direct_invite', 'theater_casting', 'public_casting'],
       email_outbox_status: ['queued', 'sent', 'failed'],
       event_leadership_role: ['producer', 'director'],
@@ -1825,6 +2015,7 @@ export const Constants = {
       invite_status: ['pending', 'accepted', 'revoked', 'expired'],
       membership_status: ['active', 'inactive'],
       notification_entity: ['show', 'occurrence', 'cast'],
+      occurrence_call: ['required', 'optional', 'not_called'],
       occurrence_type: ['rehearsal', 'performance'],
       occurrence_visibility: ['public', 'internal'],
       producer_eligibility_policy: [

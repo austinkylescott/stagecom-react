@@ -184,6 +184,12 @@ export async function getManagedEventWorkspace(
   const canEditOperationalPlan =
     managedEvent.lifecycle_status === 'draft' &&
     actorLeadership.some((leader) => leader.role === 'producer')
+  const canAssignOccurrenceCalls = actorLeadership.some(
+    (leader) => leader.role === 'director',
+  )
+  const canRespondToAvailability =
+    actorCast?.source === 'invited' &&
+    (actorCast.status === 'pending' || actorCast.status === 'accepted')
 
   const visibleCast = managedEvent.show_cast.filter((castMember) => {
     if (view !== 'pending_invitee') return true
@@ -192,6 +198,42 @@ export async function getManagedEventWorkspace(
       castMember.status === 'accepted'
     )
   })
+
+  const candidateSlotIds = managedEvent.show_occurrences.flatMap((occurrence) =>
+    occurrence.candidate_slots.map((slot) => slot.id),
+  )
+  const occurrenceIds = managedEvent.show_occurrences.map(
+    (occurrence) => occurrence.id,
+  )
+  const [availabilityResult, callsResult] = await Promise.all([
+    candidateSlotIds.length > 0
+      ? supabase
+          .from('show_availability_responses')
+          .select(
+            'candidate_slot_id, user_id, response, actor_user_id, responded_at, version',
+          )
+          .in('candidate_slot_id', candidateSlotIds)
+      : Promise.resolve({ data: [], error: null }),
+    view !== 'pending_invitee' && occurrenceIds.length > 0
+      ? supabase
+          .from('show_occurrence_calls')
+          .select(
+            'occurrence_id, user_id, call, actor_user_id, assigned_at, version',
+          )
+          .in('occurrence_id', occurrenceIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+
+  if (availabilityResult.error || callsResult.error) {
+    return err(appError('external_service_error', 'Event could not be loaded.'))
+  }
+
+  const visibleAvailability =
+    view === 'pending_invitee'
+      ? availabilityResult.data.filter(
+          (response) => response.user_id === access.data.actorUserId,
+        )
+      : availabilityResult.data
 
   return ok({
     activeMembers:
@@ -203,12 +245,15 @@ export async function getManagedEventWorkspace(
         : [],
     actorUserId: access.data.actorUserId,
     allowedActions: {
+      assignOccurrenceCalls: canAssignOccurrenceCalls,
       editOperationalPlan: canEditOperationalPlan,
       inviteCast: actorLeadership.length > 0,
+      respondToAvailability: canRespondToAvailability,
       respondToInvitation: view === 'pending_invitee',
     },
     event: {
       ...managedEvent,
+      show_availability_responses: visibleAvailability,
       show_cast: visibleCast,
       show_leadership:
         view === 'pending_invitee' ? [] : managedEvent.show_leadership,
@@ -216,6 +261,9 @@ export async function getManagedEventWorkspace(
         .sort((left, right) => left.position - right.position)
         .map((occurrence) => ({
           ...occurrence,
+          show_occurrence_calls: callsResult.data.filter(
+            (call) => call.occurrence_id === occurrence.id,
+          ),
           show_candidate_slots: occurrence.candidate_slots.sort(
             (left, right) => left.position - right.position,
           ),
