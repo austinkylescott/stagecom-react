@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
+import type { BrowserContext } from '@playwright/test'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../src/server/db/database.types'
 
@@ -85,8 +86,9 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     await page.getByRole('button', { name: 'Create Event draft' }).click()
 
     await expect(page).toHaveURL(
-      `http://localhost:3000/app/${fixture.theaterSlug}/events/summer-hamlet`,
+      new RegExp(`/app/${fixture.theaterSlug}/events/summer-hamlet$`),
     )
+    await page.waitForTimeout(500)
     await expect(page.getByText('Cast Members: 0.')).toBeVisible()
     await expect(page.getByText('Lifecycle').locator('..')).toContainText(
       'draft',
@@ -97,6 +99,36 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     await expect(
       page.getByText('Operational health').locator('..'),
     ).toContainText('on_track')
+
+    await page.getByLabel('Target cast size').fill('8')
+    await page.getByLabel('Minimum Viable Cast').fill('5')
+    await expect(page.getByLabel('Target cast size')).toHaveValue('8')
+    await expect(page.getByLabel('Minimum Viable Cast')).toHaveValue('5')
+    await page.getByRole('button', { name: 'Add Occurrence' }).click()
+    await page.getByLabel('Occurrence 1 type').selectOption('performance')
+    await page.getByLabel('Occurrence 1 visibility').selectOption('public')
+    await page.getByRole('button', { name: 'Add Candidate Slot' }).click()
+    await page.getByLabel('Local date and time').fill('2026-08-15T19:30')
+    await page.getByLabel('Duration (minutes)').fill('90')
+    await page.getByLabel('Confirm this Slot').check()
+    await page.getByRole('button', { name: 'Add Candidate Slot' }).click()
+    await page.getByLabel('Local date and time').nth(1).fill('2026-08-16T19:30')
+    await page.getByLabel('Location type').nth(1).selectOption('off_site')
+    await page
+      .getByLabel('Location', { exact: true })
+      .nth(1)
+      .fill('Community Hall')
+    await page.getByRole('button', { name: 'Add requested resource' }).click()
+    await page.getByLabel('Resource 1 type').selectOption('equipment')
+    await page.getByLabel('Requested resource').fill('Wireless microphones')
+    await page.getByLabel('Quantity').fill('4')
+    await Promise.all([
+      page.waitForResponse((response) =>
+        response.url().includes('/_serverFn/'),
+      ),
+      page.getByRole('button', { name: 'Save operational plan' }).click(),
+    ])
+    await expect(page.getByText('Plan saved.')).toBeVisible()
 
     const { data: managedEvent, error: eventError } = await fixture.admin
       .from('shows')
@@ -113,6 +145,16 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
       .from('show_leadership')
       .select('user_id, role')
       .eq('show_id', managedEvent!.id)
+    const { data: occurrences } = await fixture.admin
+      .from('show_occurrences')
+      .select(
+        'occurrence_type, visibility, confirmed_candidate_slot_id, show_candidate_slots!show_candidate_slots_occurrence_id_fkey(starts_at, duration_minutes, timezone_name, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved)',
+      )
+      .eq('show_id', managedEvent!.id)
+    const { data: resourceRequests } = await fixture.admin
+      .from('show_resource_requests')
+      .select('resource_type, label, quantity')
+      .eq('show_id', managedEvent!.id)
     const { count: castCount } = await fixture.admin
       .from('show_cast')
       .select('*', { count: 'exact', head: true })
@@ -126,6 +168,7 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
         'theater.capability.granted',
         'event.created',
         'event.role.assigned',
+        'event.operational_plan.updated',
       ])
 
     expect(eventError).toBeNull()
@@ -143,12 +186,43 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
       ]),
     )
     expect(castCount).toBe(0)
+    expect(occurrences).toHaveLength(1)
+    expect(occurrences?.[0]).toMatchObject({
+      occurrence_type: 'performance',
+      visibility: 'public',
+    })
+    expect(occurrences?.[0]?.confirmed_candidate_slot_id).toBeTruthy()
+    expect(occurrences?.[0]?.show_candidate_slots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          duration_minutes: 90,
+          location_kind: 'primary_venue',
+          resource_id: theater?.primary_venue_id,
+          timezone_name: 'America/New_York',
+          utc_offset_minutes: -240,
+        }),
+        expect.objectContaining({
+          location_kind: 'off_site',
+          location_name: 'Community Hall',
+          off_site_approved: true,
+          resource_id: null,
+        }),
+      ]),
+    )
+    expect(resourceRequests).toEqual([
+      {
+        label: 'Wireless microphones',
+        quantity: 4,
+        resource_type: 'equipment',
+      },
+    ])
     expect(activity?.map(({ action }) => action)).toEqual(
       expect.arrayContaining([
         'theater.governance.updated',
         'theater.capability.granted',
         'event.created',
         'event.role.assigned',
+        'event.operational_plan.updated',
       ]),
     )
 
@@ -269,10 +343,7 @@ async function createFixture(
   }
 }
 
-async function signInBrowser(
-  context: import('@playwright/test').BrowserContext,
-  fixture: Fixture,
-) {
+async function signInBrowser(context: BrowserContext, fixture: Fixture) {
   const browserAuth = createClient<Database>(
     fixture.supabaseUrl,
     fixture.anonKey,

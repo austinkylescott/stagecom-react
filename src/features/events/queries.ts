@@ -138,6 +138,7 @@ export async function getManagedEventWorkspace(
   const canManage = access.data.membership.roles.some(
     (role) => role === 'owner' || role === 'admin',
   )
+  let isEventLeader = false
 
   if (!canManage) {
     const { data: leadership, error: leadershipError } = await authenticated
@@ -153,7 +154,9 @@ export async function getManagedEventWorkspace(
       )
     }
 
-    if (leadership.length === 0) {
+    isEventLeader = leadership.length > 0
+
+    if (!isEventLeader) {
       return err(
         appError('forbidden', 'Event collaborator access is required.'),
       )
@@ -166,7 +169,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -180,7 +183,32 @@ export async function getManagedEventWorkspace(
     return err(appError('not_found', 'Event was not found.'))
   }
 
-  return ok({ event: managedEvent, theater: access.data.theater })
+  const canEditOperationalPlan =
+    managedEvent.lifecycle_status === 'draft' &&
+    managedEvent.show_leadership.some(
+      (leader) =>
+        leader.user_id === access.data.actorUserId &&
+        leader.role === 'producer',
+    )
+
+  return ok({
+    allowedActions: { editOperationalPlan: canEditOperationalPlan },
+    event: {
+      ...managedEvent,
+      show_occurrences: managedEvent.show_occurrences
+        .sort((left, right) => left.position - right.position)
+        .map((occurrence) => ({
+          ...occurrence,
+          show_candidate_slots: occurrence.candidate_slots.sort(
+            (left, right) => left.position - right.position,
+          ),
+        })),
+      show_resource_requests: managedEvent.show_resource_requests.sort(
+        (left, right) => left.position - right.position,
+      ),
+    },
+    theater: access.data.theater,
+  })
 }
 
 async function getTheaterAccess(theaterSlug: string) {
@@ -199,7 +227,9 @@ async function getTheaterAccess(theaterSlug: string) {
   const supabase = createSupabaseAnonClient(token)
   const { data: theater, error: theaterError } = await supabase
     .from('theaters')
-    .select('id, name, slug, producer_eligibility')
+    .select(
+      'id, name, slug, producer_eligibility, primary_venue_id, primary_venue_name, timezone, timezone_source',
+    )
     .eq('slug', theaterSlug)
     .maybeSingle()
 

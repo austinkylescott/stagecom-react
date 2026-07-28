@@ -293,6 +293,68 @@ export type Database = {
           },
         ]
       }
+      show_candidate_slots: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          local_starts_at: string
+          location_kind: Database['public']['Enums']['slot_location_kind']
+          location_name: string
+          occurrence_id: string
+          off_site_approved: boolean
+          position: number
+          resource_id: string | null
+          starts_at: string
+          timezone_name: string
+          timezone_source: Database['public']['Enums']['timezone_source']
+          updated_at: string
+          utc_offset_minutes: number
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          local_starts_at: string
+          location_kind: Database['public']['Enums']['slot_location_kind']
+          location_name: string
+          occurrence_id: string
+          off_site_approved?: boolean
+          position?: number
+          resource_id?: string | null
+          starts_at: string
+          timezone_name: string
+          timezone_source?: Database['public']['Enums']['timezone_source']
+          updated_at?: string
+          utc_offset_minutes: number
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          local_starts_at?: string
+          location_kind?: Database['public']['Enums']['slot_location_kind']
+          location_name?: string
+          occurrence_id?: string
+          off_site_approved?: boolean
+          position?: number
+          resource_id?: string | null
+          starts_at?: string
+          timezone_name?: string
+          timezone_source?: Database['public']['Enums']['timezone_source']
+          updated_at?: string
+          utc_offset_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_candidate_slots_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_cast: {
         Row: {
           act_id: string | null
@@ -396,32 +458,95 @@ export type Database = {
       }
       show_occurrences: {
         Row: {
+          confirmed_candidate_slot_id: string | null
           created_at: string
           ends_at: string | null
           id: string
+          occurrence_type: Database['public']['Enums']['occurrence_type']
+          position: number
           show_id: string
-          starts_at: string
+          starts_at: string | null
           status: Database['public']['Enums']['show_occurrence_status']
+          updated_at: string
+          visibility: Database['public']['Enums']['occurrence_visibility']
         }
         Insert: {
+          confirmed_candidate_slot_id?: string | null
           created_at?: string
           ends_at?: string | null
           id?: string
+          occurrence_type?: Database['public']['Enums']['occurrence_type']
+          position?: number
           show_id: string
-          starts_at: string
+          starts_at?: string | null
           status?: Database['public']['Enums']['show_occurrence_status']
+          updated_at?: string
+          visibility?: Database['public']['Enums']['occurrence_visibility']
         }
         Update: {
+          confirmed_candidate_slot_id?: string | null
           created_at?: string
           ends_at?: string | null
           id?: string
+          occurrence_type?: Database['public']['Enums']['occurrence_type']
+          position?: number
           show_id?: string
-          starts_at?: string
+          starts_at?: string | null
           status?: Database['public']['Enums']['show_occurrence_status']
+          updated_at?: string
+          visibility?: Database['public']['Enums']['occurrence_visibility']
         }
         Relationships: [
           {
+            foreignKeyName: 'show_occurrences_confirmed_candidate_slot_id_fkey'
+            columns: ['confirmed_candidate_slot_id']
+            isOneToOne: false
+            referencedRelation: 'show_candidate_slots'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'show_occurrences_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_resource_requests: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          position: number
+          quantity: number
+          resource_type: Database['public']['Enums']['event_resource_type']
+          show_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          position?: number
+          quantity?: number
+          resource_type: Database['public']['Enums']['event_resource_type']
+          show_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          quantity?: number
+          resource_type?: Database['public']['Enums']['event_resource_type']
+          show_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_resource_requests_show_id_fkey'
             columns: ['show_id']
             isOneToOne: false
             referencedRelation: 'shows'
@@ -565,6 +690,7 @@ export type Database = {
           is_cast_finalized: boolean
           is_public_listed: boolean
           lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast: number | null
           on_sale_at: string | null
           operational_health: Database['public']['Enums']['show_operational_health']
           poster_url: string | null
@@ -573,6 +699,7 @@ export type Database = {
           slug: string
           status: Database['public']['Enums']['show_status']
           summary: string | null
+          target_cast_size: number | null
           theater_id: string
           ticket_url: string | null
           title: string
@@ -590,6 +717,7 @@ export type Database = {
           is_cast_finalized?: boolean
           is_public_listed?: boolean
           lifecycle_status?: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast?: number | null
           on_sale_at?: string | null
           operational_health?: Database['public']['Enums']['show_operational_health']
           poster_url?: string | null
@@ -598,6 +726,7 @@ export type Database = {
           slug: string
           status?: Database['public']['Enums']['show_status']
           summary?: string | null
+          target_cast_size?: number | null
           theater_id: string
           ticket_url?: string | null
           title: string
@@ -615,6 +744,7 @@ export type Database = {
           is_cast_finalized?: boolean
           is_public_listed?: boolean
           lifecycle_status?: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast?: number | null
           on_sale_at?: string | null
           operational_health?: Database['public']['Enums']['show_operational_health']
           poster_url?: string | null
@@ -623,6 +753,7 @@ export type Database = {
           slug?: string
           status?: Database['public']['Enums']['show_status']
           summary?: string | null
+          target_cast_size?: number | null
           theater_id?: string
           ticket_url?: string | null
           title?: string
@@ -1096,6 +1227,7 @@ export type Database = {
           is_cast_finalized: boolean
           is_public_listed: boolean
           lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast: number | null
           on_sale_at: string | null
           operational_health: Database['public']['Enums']['show_operational_health']
           poster_url: string | null
@@ -1104,6 +1236,7 @@ export type Database = {
           slug: string
           status: Database['public']['Enums']['show_status']
           summary: string | null
+          target_cast_size: number | null
           theater_id: string
           ticket_url: string | null
           title: string
@@ -1291,6 +1424,17 @@ export type Database = {
           theater_id: string
         }[]
       }
+      save_event_operational_plan: {
+        Args: {
+          p_actor_user_id: string
+          p_minimum_viable_cast: number
+          p_occurrences: Json
+          p_resource_requests: Json
+          p_show_id: string
+          p_target_cast_size: number
+        }
+        Returns: Json
+      }
       set_default_theater: {
         Args: { p_theater_id: string; p_user_id: string }
         Returns: {
@@ -1432,10 +1576,13 @@ export type Database = {
       casting_mode: 'direct_invite' | 'theater_casting' | 'public_casting'
       email_outbox_status: 'queued' | 'sent' | 'failed'
       event_leadership_role: 'producer' | 'director'
+      event_resource_type: 'staff' | 'equipment' | 'other'
       event_type: 'show' | 'practice' | 'meeting' | 'audition' | 'workshop'
       invite_status: 'pending' | 'accepted' | 'revoked' | 'expired'
       membership_status: 'active' | 'inactive'
       notification_entity: 'show' | 'occurrence' | 'cast'
+      occurrence_type: 'rehearsal' | 'performance'
+      occurrence_visibility: 'public' | 'internal'
       producer_eligibility_policy:
         'all_members' | 'designated_proposers' | 'admins_only'
       profile_visibility: 'public' | 'theater_only' | 'private'
@@ -1451,6 +1598,7 @@ export type Database = {
       show_role: 'producer'
       show_status:
         'draft' | 'pending_review' | 'approved' | 'rejected' | 'cancelled'
+      slot_location_kind: 'primary_venue' | 'off_site'
       staff_slot_type:
         'lead' | 'front_of_house' | 'box_office' | 'bar' | 'tech' | 'other'
       theater_capability: 'proposer' | 'reviewer'
@@ -1589,10 +1737,13 @@ export const Constants = {
       casting_mode: ['direct_invite', 'theater_casting', 'public_casting'],
       email_outbox_status: ['queued', 'sent', 'failed'],
       event_leadership_role: ['producer', 'director'],
+      event_resource_type: ['staff', 'equipment', 'other'],
       event_type: ['show', 'practice', 'meeting', 'audition', 'workshop'],
       invite_status: ['pending', 'accepted', 'revoked', 'expired'],
       membership_status: ['active', 'inactive'],
       notification_entity: ['show', 'occurrence', 'cast'],
+      occurrence_type: ['rehearsal', 'performance'],
+      occurrence_visibility: ['public', 'internal'],
       producer_eligibility_policy: [
         'all_members',
         'designated_proposers',
@@ -1626,6 +1777,7 @@ export const Constants = {
         'rejected',
         'cancelled',
       ],
+      slot_location_kind: ['primary_venue', 'off_site'],
       staff_slot_type: [
         'lead',
         'front_of_house',

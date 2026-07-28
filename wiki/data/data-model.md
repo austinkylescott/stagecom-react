@@ -18,6 +18,13 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
   and setup/turnover buffers.
 - `theater_member_capabilities` stores narrow Proposer and Reviewer grants;
   `show_leadership` stores explicit Producer and Director assignments.
+- `show_occurrences` stores ordered Rehearsal and Performance children with
+  public/internal visibility and an optional Confirmed Slot reference.
+- `show_candidate_slots` stores each exact instant, duration, local timestamp,
+  IANA timezone, timezone provenance, UTC offset, and either the stable Primary
+  Venue resource or an explicitly approved off-site location.
+- Event-wide cast thresholds live on `shows`; `show_resource_requests` stores
+  ordered staff, equipment, and other limited-resource requests.
 - Draft Theaters may keep public identity fields incomplete; a database constraint requires the complete identity before `published` state can be stored.
 - Theater creation atomically writes the Theater, first Owner membership, default-membership choice when applicable, and creation event.
 - Publication and default-Theater changes use transactional database functions, and active membership permits at most one default Theater per person.
@@ -45,11 +52,9 @@ The retained `shows.status = rejected` value preserves the legacy distinction wh
 
 ## Target Event Model
 
-The existing schema does not yet express the agreed workflow completely. The target model must support:
+The existing schema does not yet express the agreed workflow completely. The remaining target model must support:
 
 - an Event that persists from draft through completion or cancellation
-- typed Rehearsal and Performance Occurrences
-- multiple Candidate Slots per Occurrence and one Confirmed Slot
 - Event-wide cast membership with per-Occurrence required, optional, or not-called assignments
 - per-Candidate-Slot availability responses
 - immutable numbered Proposal Revisions
@@ -59,6 +64,12 @@ The existing schema does not yet express the agreed workflow completely. The tar
 - explicit ticket Sales Channel and price
 
 These remaining items are specified product requirements, not claims about the executable schema. Future forward migrations must reconcile the current tables and enums with this model.
+
+Operational-plan edits replace the supplied plan shape transactionally while
+preserving supplied Occurrence, Candidate Slot, and resource-request
+identifiers. Omitted children are removed, ordering is explicit, and every
+successful save emits `event.operational_plan.updated`. Only a currently
+eligible assigned Producer may save while the Event is a draft.
 
 ## Active Sources
 

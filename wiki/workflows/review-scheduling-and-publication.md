@@ -2,11 +2,18 @@
 
 Documentation status: active
 
-Implementation status: specified, not implemented
+Implementation status: planning implemented; review and reservations not implemented
 
 ## What Does Management Review?
 
 Operational review answers whether the Theater accepts an Event's schedule, Minimum Viable Cast, requested resources, and public/internal Occurrence plan. It does not freeze ordinary public copy or every named Cast Member.
+
+The editable draft plan is executable: a Producer can order Rehearsal and
+Performance Occurrences, enter multiple timezone-safe Candidate Slots, mark an
+optional Confirmed Slot, distinguish Primary Venue use from approved off-site
+text, declare cast thresholds, and request staff, equipment, or other limited
+resources. Proposal Revision snapshots, conflict detection, Counteroffers, and
+approval remain future steps in this workflow.
 
 Each submission creates an immutable, numbered Proposal Revision so the decision history always identifies exactly what was reviewed.
 

@@ -15,6 +15,8 @@ The relevant tables include:
 - `shows`
 - `show_roles`
 - `show_occurrences`
+- `show_candidate_slots`
+- `show_resource_requests`
 - `show_cast`
 - `show_review_events`
 - `show_staff_assignments`
@@ -36,6 +38,14 @@ Events now persist lifecycle (`draft`, `in_review`, `approved`, `cancelled`, `co
 
 Legacy `rejected` remains distinguishable in `shows.status`; its lifecycle maps to `cancelled` rather than reviving a closed Event as a draft. No legacy field represents operational risk reliably, so migrated rows begin `on_track`. During expansion, legacy writes synchronize forward into the independent dimensions, while writes to the independent dimensions do not collapse back into the lossy legacy representation.
 
+The executable Event plan stores ordered typed Rehearsal and Performance
+Occurrences with public/internal visibility. Each Occurrence owns Candidate
+Slots and may reference one of them as its Confirmed Slot. A slot persists a
+canonical instant, duration, entered local timestamp, IANA timezone, timezone
+source, and UTC offset. Its location is either the Theater's stable Primary
+Venue resource or approved off-site text. Events also store target and Minimum
+Viable Cast values plus ordered staff, equipment, and other resource requests.
+
 Theater creation is transactional across the Theater, first Owner membership, initial default selection, and factual creation event. Publication is an idempotent transaction that writes the published state and factual Publication event once. Active memberships have at most one default Theater per person, and changing that default updates the legacy profile pointer in the same transaction.
 
 ## Current Role Model
@@ -53,10 +63,8 @@ Legacy Theater enum values remain in migration history but should not be assigne
 
 ## Target Event-Publication Model
 
-The accepted product model in `docs/product/event-publication-milestone.md` requires schema work that has not yet been specified or migrated:
+The accepted product model in `docs/product/event-publication-milestone.md` still requires schema work for:
 
-- typed Rehearsal and Performance Occurrences
-- Candidate Slots separate from Confirmed Slots
 - per-Occurrence required, optional, and not-called cast assignments
 - per-Candidate-Slot availability responses
 - immutable numbered Proposal Revisions
@@ -66,7 +74,13 @@ The accepted product model in `docs/product/event-publication-milestone.md` requ
 - explicit ticket Sales Channel and price
 - per-Event public cast-credit preference
 
-Do not treat current generic JSON availability, the single scheduled `show_occurrences` timestamp, or the retained compatibility `show_status` enum as satisfying these requirements.
+Do not treat current generic JSON availability or the retained compatibility
+`show_status` enum as satisfying these remaining requirements.
+
+Operational-plan saves use one service-role-only transaction after explicit
+application authorization. They preserve supplied stable child identifiers,
+remove omitted plan children, validate draft state and current Producer
+eligibility, and emit one durable `event.operational_plan.updated` fact.
 
 ## Events Naming
 
