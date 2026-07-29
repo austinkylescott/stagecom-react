@@ -97,6 +97,9 @@ _Avoid_: Publication
 The act of making an approved Theater or Event visible to the public.
 _Avoid_: Approval
 
+**Public Content Revision**:
+A numbered snapshot of an Event's public copy, admission, and permitted Cast credits. It is either the unpublished working presentation or the exact presentation selected for Publication.
+
 **At Risk**:
 An operational health condition requiring human management because an approved Event no longer satisfies a commitment such as its Minimum Viable Cast.
 _Avoid_: Failed, cancelled
@@ -111,5 +114,5 @@ A revocable link whose possession authorizes immediate base membership in a Thea
 _Avoid_: Public application
 
 **Sales Channel**:
-The explicit way audience admission is handled: Stagecom, an external provider, or no advance ticketing.
+The explicit way audience admission is handled: an external provider or no advance ticketing. Native Stagecom ticketing is not an initial Sales Channel.
 _Avoid_: Admission type

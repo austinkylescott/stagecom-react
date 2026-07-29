@@ -1,7 +1,10 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import { ManagedEventWorkspace } from '@/features/events/components'
-import { getManagedEventWorkspaceFn } from '@/features/events/server-functions'
+import {
+  getEventPublicContentReadinessFn,
+  getManagedEventWorkspaceFn,
+} from '@/features/events/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/events/$eventSlug')({
   loader: async ({ params }) => {
@@ -17,7 +20,24 @@ export const Route = createFileRoute('/app/$theaterSlug/events/$eventSlug')({
       throw result.error
     }
 
-    return result.data
+    const publicContentResult =
+      result.data.view === 'operational'
+        ? await getEventPublicContentReadinessFn({
+            data: {
+              eventSlug: params.eventSlug,
+              theaterSlug: params.theaterSlug,
+            },
+          })
+        : null
+
+    if (publicContentResult && !publicContentResult.ok) {
+      throw publicContentResult.error
+    }
+
+    return {
+      ...result.data,
+      publicContent: publicContentResult?.data ?? null,
+    }
   },
   component: EventWorkspacePage,
 })
@@ -31,6 +51,7 @@ function EventWorkspacePage() {
       actorUserId={data.actorUserId}
       allowedActions={data.allowedActions}
       event={data.event}
+      publicContent={data.publicContent}
       theater={data.theater}
       view={data.view}
     />

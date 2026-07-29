@@ -5,6 +5,7 @@ import {
   inviteEventCastMember,
   recordCandidateSlotAvailability,
   respondToEventCastInvitation,
+  saveEventPublicContent,
   saveEventOperationalPlan,
   setOccurrenceCall,
 } from './commands'
@@ -13,12 +14,15 @@ import {
   getManagedEventWorkspace,
   listManagedEvents,
 } from './queries'
+import { getEventPublicContentReadiness } from './public-content-queries'
+import { getPublishedEventBySlug } from './public-queries'
 import {
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
+  saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
   theaterEventsInputSchema,
@@ -40,9 +44,23 @@ export const getManagedEventWorkspaceFn = createServerFn({ method: 'GET' })
   .validator(eventWorkspaceInputSchema)
   .handler(async ({ data }) => getManagedEventWorkspace(data))
 
+export const getEventPublicContentReadinessFn = createServerFn({
+  method: 'GET',
+})
+  .validator(eventWorkspaceInputSchema)
+  .handler(async ({ data }) => getEventPublicContentReadiness(data))
+
+export const getPublishedEventBySlugFn = createServerFn({ method: 'GET' })
+  .validator(eventWorkspaceInputSchema)
+  .handler(async ({ data }) => getPublishedEventBySlug(data))
+
 export const saveEventOperationalPlanFn = createServerFn({ method: 'POST' })
   .validator(saveEventOperationalPlanInputSchema)
   .handler(async ({ data }) => saveEventOperationalPlan(data))
+
+export const saveEventPublicContentFn = createServerFn({ method: 'POST' })
+  .validator(saveEventPublicContentInputSchema)
+  .handler(async ({ data }) => saveEventPublicContent(data))
 
 export const inviteEventCastMemberFn = createServerFn({ method: 'POST' })
   .validator(inviteEventCastMemberInputSchema)

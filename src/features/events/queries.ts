@@ -280,7 +280,7 @@ export async function getManagedEventWorkspace(
   })
 }
 
-async function getTheaterAccess(theaterSlug: string) {
+export async function getTheaterAccess(theaterSlug: string) {
   const currentUser = await getCurrentUserFromRequest()
 
   if (!currentUser.ok) {
@@ -335,7 +335,7 @@ async function getTheaterAccess(theaterSlug: string) {
     await serviceRole
       .from('theaters')
       .select(
-        'id, name, slug, producer_eligibility, primary_venue_id, primary_venue_name, timezone, timezone_source',
+        'id, name, slug, status, producer_eligibility, primary_venue_id, primary_venue_name, timezone, timezone_source',
       )
       .eq('id', theater.id)
       .single()
