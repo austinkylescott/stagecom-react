@@ -2,8 +2,9 @@
 
 Documentation status: active
 
-Implementation status: participation invitations and disclosure implemented;
-Availability Responses and Occurrence Calls not implemented
+Implementation status: participation invitations, disclosure, Availability
+Responses, Occurrence Calls, Proposed Cast selection, and submission viability
+implemented
 
 ## Who Can Be Cast?
 
@@ -40,8 +41,7 @@ An accepted invitation means willingness to participate; it does not mean uncond
 Each accepted Cast Member has a per-Event public-credit setting initialized from their profile preference.
 
 The executable read model enforces the first three private disclosure levels.
-Occurrence Calls, Availability Responses, and per-Event public credit remain
-future slices.
+Per-Event public credit is implemented through versioned public content.
 
 ## How Is Participation Assigned?
 
@@ -66,5 +66,11 @@ Individual substitutions after approval do not require resubmission while these 
 ## How Does Stagecom Help Choose Dates?
 
 Stagecom may rank Candidate Slots using required-attendee responses, Minimum Viable Cast, and venue conflicts. Recommendations must explain their evidence. The Producer chooses the preferred plan, and management makes all schedule commitments.
+
+The executable recommendation read model ranks each Occurrence's Candidate
+Slots deterministically. It reports required confirmations, available called
+Cast against Minimum Viable Cast, and Primary Venue conflicts including setup
+and turnover buffer. Ranking is read-only: it never changes a Confirmed Slot or
+creates a hold.
 
 When management counteroffers a new slot, the entire Proposed Cast receives an in-app availability request. The Producer cannot accept until the confirmed available cast meets the approved minimum.

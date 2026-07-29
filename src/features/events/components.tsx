@@ -7,8 +7,11 @@ import {
   respondToEventCastInvitationFn,
   saveEventPublicContentFn,
   saveEventOperationalPlanFn,
+  saveEventProposedCastFn,
   setOccurrenceCallFn,
+  submitEventProposalRevisionFn,
 } from './server-functions'
+import { rankCandidateSlots } from './proposal-recommendations'
 
 import type { Database } from '@/server/db/database.types'
 
@@ -219,6 +222,8 @@ export function ManagedEventWorkspace({
   allowedActions,
   event,
   publicContent,
+  primaryVenueCommitments,
+  recommendations,
   theater,
   view,
 }: {
@@ -230,6 +235,8 @@ export function ManagedEventWorkspace({
     inviteCast: boolean
     respondToAvailability: boolean
     respondToInvitation: boolean
+    selectProposedCast: boolean
+    submitProposalRevision: boolean
   }
   event: {
     id: string
@@ -280,6 +287,7 @@ export function ManagedEventWorkspace({
         off_site_approved: boolean
         position: number
         resource_id: string | null
+        starts_at: string
         timezone_name: string
         timezone_source: 'unknown' | 'inferred' | 'manual'
       }>
@@ -292,6 +300,21 @@ export function ManagedEventWorkspace({
       quantity: number
       resource_type: 'staff' | 'equipment' | 'other'
     }>
+    show_proposal_revisions: Array<{
+      command_id: string
+      decision_state:
+        | 'pending'
+        | 'changes_requested'
+        | 'counteroffered'
+        | 'approved'
+        | 'denied'
+      id: string
+      revision_number: number
+      snapshot: Database['public']['Tables']['show_proposal_revisions']['Row']['snapshot']
+      submitted_at: string
+      submitted_by: string
+    }>
+    show_proposed_cast: Array<{ user_id: string }>
     target_cast_size: number | null
     title: string
   }
@@ -320,11 +343,30 @@ export function ManagedEventWorkspace({
     }
     publishedRevisionId: string | null
   } | null
+  primaryVenueCommitments: Array<{
+    durationMinutes: number
+    startsAt: string
+  }>
+  recommendations: Array<{
+    availableCalledCastCount: number
+    evidence: Array<{ code: string; message: string }>
+    hasPrimaryVenueConflict: boolean
+    isViable: boolean
+    minimumViableCast: number
+    occurrenceId: string
+    rank: number
+    requiredAvailableCount: number
+    requiredCount: number
+    requiredUnconfirmedCount: number
+    slotId: string
+  }>
   theater: {
     primary_venue_id: string
     primary_venue_name: string | null
+    setup_buffer_minutes: number
     timezone: string | null
     timezone_source: 'unknown' | 'inferred' | 'manual'
+    turnover_buffer_minutes: number
   }
   view: 'operational' | 'accepted_cast' | 'pending_invitee'
 }) {
@@ -385,6 +427,20 @@ export function ManagedEventWorkspace({
   )
   const [publicContentSaved, setPublicContentSaved] = useState(false)
   const [isSavingPublicContent, setIsSavingPublicContent] = useState(false)
+  const [proposedCastUserIds, setProposedCastUserIds] = useState(
+    event.show_proposed_cast.map(({ user_id }) => user_id),
+  )
+  const [proposalError, setProposalError] = useState<string | null>(null)
+  const [proposalBlockers, setProposalBlockers] = useState<
+    Array<{ code: string; message: string }>
+  >([])
+  const [proposedCastSaved, setProposedCastSaved] = useState(false)
+  const [submittedRevision, setSubmittedRevision] = useState<number | null>(
+    null,
+  )
+  const [isSavingProposal, setIsSavingProposal] = useState(false)
+  const [candidateRecommendations, setCandidateRecommendations] =
+    useState(recommendations)
   const timezoneName = theater.timezone ?? 'UTC'
   const venueName = theater.primary_venue_name ?? 'Primary Venue'
   const ownInvitation = cast.find(
@@ -827,6 +883,261 @@ export function ManagedEventWorkspace({
           <p className="mt-3 font-bold text-red-700">{castingError}</p>
         ) : null}
       </section>
+      {view === 'operational' ? (
+        <section className="island-shell mt-5 rounded-lg px-6 py-6">
+          <h2 className="text-2xl font-extrabold">Proposal Revision</h2>
+          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+            Select accepted Cast Members deliberately, compare the evidence,
+            save the preferred Confirmed Slots in the operational plan, then
+            submit one immutable snapshot for review.
+          </p>
+
+          <fieldset className="mt-5 grid gap-2">
+            <legend className="font-extrabold">Proposed Cast</legend>
+            {acceptedCast.map((castMember) => (
+              <label
+                className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                key={castMember.user_id}
+              >
+                <input
+                  checked={proposedCastUserIds.includes(castMember.user_id)}
+                  disabled={!allowedActions.selectProposedCast}
+                  onChange={(change) =>
+                    setProposedCastUserIds((current) =>
+                      change.target.checked
+                        ? [...current, castMember.user_id]
+                        : current.filter(
+                            (userId) => userId !== castMember.user_id,
+                          ),
+                    )
+                  }
+                  type="checkbox"
+                />
+                {castMember.profiles.display_name}
+              </label>
+            ))}
+            {acceptedCast.length === 0 ? (
+              <p className="text-sm text-[var(--sea-ink-soft)]">
+                No accepted Cast Members are available for selection. Pending
+                and declined invitations do not block draft editing.
+              </p>
+            ) : null}
+          </fieldset>
+
+          {allowedActions.selectProposedCast ? (
+            <button
+              className="mt-4 rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold disabled:opacity-60"
+              disabled={isSavingProposal}
+              onClick={async () => {
+                setProposalError(null)
+                setProposedCastSaved(false)
+                setIsSavingProposal(true)
+                try {
+                  const result = await saveEventProposedCastFn({
+                    data: {
+                      castMemberUserIds: proposedCastUserIds,
+                      commandId: crypto.randomUUID(),
+                      eventId: event.id,
+                    },
+                  })
+                  if (!result.ok) {
+                    setProposalError(result.error.message)
+                    return
+                  }
+                  setProposedCastUserIds(result.data.castMemberUserIds)
+                  setProposedCastSaved(true)
+                  setCandidateRecommendations(
+                    rankCandidateSlots({
+                      availability: availabilityResponses.map((response) => ({
+                        candidateSlotId: response.candidate_slot_id,
+                        response: response.response,
+                        userId: response.user_id,
+                      })),
+                      calls: occurrenceCalls.map((call) => ({
+                        call: call.call,
+                        occurrenceId: call.occurrence_id,
+                        userId: call.user_id,
+                      })),
+                      commitments: primaryVenueCommitments,
+                      occurrences: event.show_occurrences.map((occurrence) => ({
+                        id: occurrence.id,
+                        minimumViableCast: event.minimum_viable_cast ?? 1,
+                        slots: occurrence.show_candidate_slots.map((slot) => ({
+                          durationMinutes: slot.duration_minutes,
+                          id: slot.id,
+                          locationKind: slot.location_kind,
+                          startsAt: slot.starts_at,
+                        })),
+                        type: occurrence.occurrence_type,
+                      })),
+                      proposedCastUserIds: result.data.castMemberUserIds,
+                      setupBufferMinutes: theater.setup_buffer_minutes,
+                      turnoverBufferMinutes: theater.turnover_buffer_minutes,
+                    }),
+                  )
+                } finally {
+                  setIsSavingProposal(false)
+                }
+              }}
+              type="button"
+            >
+              Save Proposed Cast
+            </button>
+          ) : null}
+          {proposedCastSaved ? (
+            <p className="mt-2 font-semibold text-emerald-800">
+              Proposed Cast saved.
+            </p>
+          ) : null}
+
+          <div className="mt-7 grid gap-4">
+            <h3 className="text-xl font-extrabold">
+              Candidate Slot recommendations
+            </h3>
+            {event.show_occurrences.map((occurrence, occurrenceIndex) => (
+              <article
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                key={occurrence.id}
+              >
+                <h4 className="font-extrabold">
+                  Occurrence {occurrenceIndex + 1} ·{' '}
+                  <span className="capitalize">
+                    {occurrence.occurrence_type}
+                  </span>
+                </h4>
+                <div className="mt-3 grid gap-3">
+                  {candidateRecommendations
+                    .filter(
+                      (recommendation) =>
+                        recommendation.occurrenceId === occurrence.id,
+                    )
+                    .map((recommendation) => {
+                      const slot = occurrence.show_candidate_slots.find(
+                        ({ id }) => id === recommendation.slotId,
+                      )
+                      if (!slot) return null
+                      return (
+                        <label
+                          className="grid gap-2 rounded-md bg-[var(--sand)]/40 px-4 py-3"
+                          key={recommendation.slotId}
+                        >
+                          <span className="flex items-center gap-3 font-bold">
+                            <input
+                              checked={
+                                plan.occurrences.find(
+                                  ({ id }) => id === occurrence.id,
+                                )?.confirmedCandidateSlotId ===
+                                recommendation.slotId
+                              }
+                              disabled={!allowedActions.editOperationalPlan}
+                              name={`recommended-${occurrence.id}`}
+                              onChange={() =>
+                                updateOccurrence(setPlan, occurrence.id, {
+                                  confirmedCandidateSlotId:
+                                    recommendation.slotId,
+                                })
+                              }
+                              type="radio"
+                            />
+                            Rank {recommendation.rank}: {slot.location_name} ·{' '}
+                            {recommendation.isViable ? 'Viable' : 'Blocked'}
+                          </span>
+                          <ul className="list-disc pl-5 text-sm text-[var(--sea-ink-soft)]">
+                            {recommendation.evidence.map((evidence) => (
+                              <li key={evidence.code}>{evidence.message}</li>
+                            ))}
+                          </ul>
+                        </label>
+                      )
+                    })}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {proposalBlockers.length > 0 ? (
+            <div className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+              <p className="font-bold text-amber-950">Submission blockers</p>
+              <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
+                {proposalBlockers.map((blocker, index) => (
+                  <li key={`${blocker.code}-${index}`}>{blocker.message}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {proposalError ? (
+            <p className="mt-3 font-bold text-red-700">{proposalError}</p>
+          ) : null}
+          {submittedRevision ? (
+            <p className="mt-3 font-bold text-emerald-800">
+              Proposal Revision {submittedRevision} submitted for review.
+            </p>
+          ) : null}
+          {allowedActions.submitProposalRevision ? (
+            <button
+              className="mt-5 rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              disabled={isSavingProposal || submittedRevision !== null}
+              onClick={async () => {
+                setProposalError(null)
+                setProposalBlockers([])
+                setIsSavingProposal(true)
+                try {
+                  const result = await submitEventProposalRevisionFn({
+                    data: { commandId: crypto.randomUUID(), eventId: event.id },
+                  })
+                  if (!result.ok) {
+                    setProposalError(result.error.message)
+                    if (Array.isArray(result.error.details)) {
+                      setProposalBlockers(
+                        result.error.details.filter(
+                          (
+                            detail,
+                          ): detail is {
+                            code: string
+                            message: string
+                          } =>
+                            typeof detail === 'object' &&
+                            detail !== null &&
+                            'code' in detail &&
+                            typeof detail.code === 'string' &&
+                            'message' in detail &&
+                            typeof detail.message === 'string',
+                        ),
+                      )
+                    }
+                    return
+                  }
+                  setSubmittedRevision(result.data.revisionNumber)
+                } finally {
+                  setIsSavingProposal(false)
+                }
+              }}
+              type="button"
+            >
+              {isSavingProposal ? 'Submitting…' : 'Submit Proposal Revision'}
+            </button>
+          ) : null}
+
+          {event.show_proposal_revisions.length > 0 ? (
+            <div className="mt-7">
+              <h3 className="text-xl font-extrabold">Submitted revisions</h3>
+              <ul className="mt-3 grid gap-2">
+                {event.show_proposal_revisions.map((revision) => (
+                  <li
+                    className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                    key={revision.id}
+                  >
+                    Revision {revision.revision_number} ·{' '}
+                    <span className="capitalize">
+                      {revision.decision_state.replace('_', ' ')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       <section className="island-shell mt-5 rounded-lg px-6 py-6">
         <h2 className="text-2xl font-extrabold">
           {view === 'pending_invitee'
