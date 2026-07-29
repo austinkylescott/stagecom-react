@@ -52,6 +52,8 @@ function EventWorkspacePage() {
       allowedActions={data.allowedActions}
       event={data.event}
       publicContent={data.publicContent}
+      primaryVenueCommitments={data.primaryVenueCommitments}
+      recommendations={data.recommendations}
       theater={data.theater}
       view={data.view}
     />

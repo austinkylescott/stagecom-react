@@ -3,6 +3,7 @@ import { appError, err, ok, toAppError } from '@/server/errors'
 
 import { createSupabaseEventPersistence } from './persistence'
 import { createSupabaseEventPublicContentPersistence } from './public-content-persistence'
+import { createSupabaseProposalPersistence } from './proposal-persistence'
 import { resolveLocalDateTime } from './time'
 
 import type { z } from 'zod'
@@ -16,8 +17,11 @@ import type {
   saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
+  saveEventProposedCastInputSchema,
+  submitEventProposalRevisionInputSchema,
 } from './schemas'
 import type { EventPublicContentPersistence } from './public-content-persistence'
+import type { ProposalPersistence } from './proposal-persistence'
 
 export type EventCommandDependencies = {
   getCurrentUser: () => Promise<AppResult<{ id: string }>>
@@ -27,6 +31,11 @@ export type EventCommandDependencies = {
 export type EventPublicContentCommandDependencies = {
   getCurrentUser: () => Promise<AppResult<{ id: string }>>
   persistence: EventPublicContentPersistence
+}
+
+export type ProposalCommandDependencies = {
+  getCurrentUser: () => Promise<AppResult<{ id: string }>>
+  persistence: ProposalPersistence
 }
 
 function getDefaultDependencies(): EventCommandDependencies {
@@ -40,6 +49,75 @@ function getDefaultPublicContentDependencies(): EventPublicContentCommandDepende
   return {
     getCurrentUser: getCurrentUserFromRequest,
     persistence: createSupabaseEventPublicContentPersistence(),
+  }
+}
+
+function getDefaultProposalDependencies(): ProposalCommandDependencies {
+  return {
+    getCurrentUser: getCurrentUserFromRequest,
+    persistence: createSupabaseProposalPersistence(),
+  }
+}
+
+export async function saveEventProposedCast(
+  input: z.infer<typeof saveEventProposedCastInputSchema>,
+  dependencies: ProposalCommandDependencies = getDefaultProposalDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeProducerDraft({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+    })
+    return ok(
+      await dependencies.persistence.saveProposedCast({
+        actorUserId: currentUser.data.id,
+        ...input,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Proposed Cast could not be saved.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function submitEventProposalRevision(
+  input: z.infer<typeof submitEventProposalRevisionInputSchema>,
+  dependencies: ProposalCommandDependencies = getDefaultProposalDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeProducerDraft({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+    })
+    return ok(
+      await dependencies.persistence.submitRevision({
+        actorUserId: currentUser.data.id,
+        ...input,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Proposal Revision could not be submitted.',
+          ),
+        )
+      : err(failure)
   }
 }
 

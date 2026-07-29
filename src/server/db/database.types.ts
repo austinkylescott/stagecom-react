@@ -651,6 +651,104 @@ export type Database = {
           },
         ]
       }
+      show_proposal_revisions: {
+        Row: {
+          command_id: string
+          decision_state: Database['public']['Enums']['proposal_decision_state']
+          id: string
+          revision_number: number
+          show_id: string
+          snapshot: Json
+          submitted_at: string
+          submitted_by: string
+        }
+        Insert: {
+          command_id: string
+          decision_state?: Database['public']['Enums']['proposal_decision_state']
+          id?: string
+          revision_number: number
+          show_id: string
+          snapshot: Json
+          submitted_at?: string
+          submitted_by: string
+        }
+        Update: {
+          command_id?: string
+          decision_state?: Database['public']['Enums']['proposal_decision_state']
+          id?: string
+          revision_number?: number
+          show_id?: string
+          snapshot?: Json
+          submitted_at?: string
+          submitted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_proposal_revisions_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_proposal_revisions_submitted_by_fkey'
+            columns: ['submitted_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_proposed_cast: {
+        Row: {
+          selected_at: string
+          selected_by: string
+          show_id: string
+          user_id: string
+        }
+        Insert: {
+          selected_at?: string
+          selected_by: string
+          show_id: string
+          user_id: string
+        }
+        Update: {
+          selected_at?: string
+          selected_by?: string
+          show_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_proposed_cast_selected_by_fkey'
+            columns: ['selected_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_proposed_cast_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_proposed_cast_show_id_user_id_fkey'
+            columns: ['show_id', 'user_id']
+            isOneToOne: true
+            referencedRelation: 'show_cast'
+            referencedColumns: ['show_id', 'user_id']
+          },
+          {
+            foreignKeyName: 'show_proposed_cast_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_public_content_credits: {
         Row: {
           display_name: string
@@ -1816,6 +1914,15 @@ export type Database = {
         }
         Returns: Json
       }
+      save_event_proposed_cast: {
+        Args: {
+          p_actor_user_id: string
+          p_cast_user_ids: string[]
+          p_command_id: string
+          p_show_id: string
+        }
+        Returns: string[]
+      }
       save_event_public_content_draft: {
         Args: {
           p_actor_user_id: string
@@ -1931,6 +2038,29 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { '': string }; Returns: string[] }
+      submit_event_proposal_revision: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_show_id: string
+        }
+        Returns: {
+          command_id: string
+          decision_state: Database['public']['Enums']['proposal_decision_state']
+          id: string
+          revision_number: number
+          show_id: string
+          snapshot: Json
+          submitted_at: string
+          submitted_by: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_proposal_revisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_theater_governance: {
         Args: {
           p_actor_user_id: string
@@ -2035,6 +2165,12 @@ export type Database = {
       producer_eligibility_policy:
         'all_members' | 'designated_proposers' | 'admins_only'
       profile_visibility: 'public' | 'theater_only' | 'private'
+      proposal_decision_state:
+        | 'pending'
+        | 'changes_requested'
+        | 'counteroffered'
+        | 'approved'
+        | 'denied'
       review_action: 'submitted' | 'approved' | 'rejected' | 'changes_requested'
       show_cast_source: 'invited' | 'requested'
       show_cast_status:
@@ -2202,6 +2338,13 @@ export const Constants = {
         'admins_only',
       ],
       profile_visibility: ['public', 'theater_only', 'private'],
+      proposal_decision_state: [
+        'pending',
+        'changes_requested',
+        'counteroffered',
+        'approved',
+        'denied',
+      ],
       review_action: ['submitted', 'approved', 'rejected', 'changes_requested'],
       show_cast_source: ['invited', 'requested'],
       show_cast_status: [

@@ -35,6 +35,11 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - Event staff defaults are separate from per-Event staff assignments.
 - `show_acts` supports simple public grouping and running order.
 - Public media uses the `theater-assets` storage bucket.
+- `show_proposed_cast` stores the Producer's editable selection from accepted
+  active Cast membership.
+- `show_proposal_revisions` stores append-only, monotonically numbered
+  operational snapshots with a unique submission command identity and Proposal
+  decision state.
 - `show_cast` stores explicit private Event invitations and participation
   responses, including inviter and response timestamps. Invitation and response
   facts are durable activity events; in-app invitation notifications are
@@ -59,8 +64,6 @@ The retained `shows.status = rejected` value preserves the legacy distinction wh
 The existing schema does not yet express the agreed workflow completely. The remaining target model must support:
 
 - an Event that persists from draft through completion or cancellation
-- Event-wide Proposed Cast selection from accepted Cast membership
-- immutable numbered Proposal Revisions
 - review decisions including Counteroffers and Denials
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
@@ -92,7 +95,11 @@ Reviewers, and Owner/Admin receive the operational view. Only the active
 Director assigns required, optional, or not-called expectations to accepted
 Cast Members.
 
-The remaining items are specified product requirements, not claims about the executable schema. Future forward migrations must reconcile the current tables and enums with this model.
+Proposal submission is executable. Its transaction validates authorization,
+Proposed Cast eligibility, chosen slots, required availability, Performance
+Minimum Viable Cast, and buffered approved Primary Venue conflicts before it
+writes one immutable snapshot and durable submission event. The remaining items
+are specified product requirements, not claims about the executable schema.
 
 Operational-plan edits replace the supplied plan shape transactionally while
 preserving supplied Occurrence, Candidate Slot, and resource-request

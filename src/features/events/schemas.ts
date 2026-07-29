@@ -106,6 +106,17 @@ export const setOccurrenceCallInputSchema = z.object({
   occurrenceId: uuidSchema,
 })
 
+export const saveEventProposedCastInputSchema = z.object({
+  castMemberUserIds: z.array(uuidSchema).max(500),
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+})
+
+export const submitEventProposalRevisionInputSchema = z.object({
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+})
+
 const localDateTimeSchema = z
   .string()
   .regex(

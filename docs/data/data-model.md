@@ -73,7 +73,6 @@ Legacy Theater enum values remain in migration history but should not be assigne
 
 The accepted product model in `docs/product/event-publication-milestone.md` still requires schema work for:
 
-- immutable numbered Proposal Revisions
 - approve, deny, request-edits, and Counteroffer decisions
 - exclusive Counteroffer holds and response deadlines
 - Proposal decision state on immutable Proposal Revisions
@@ -81,6 +80,13 @@ The accepted product model in `docs/product/event-publication-milestone.md` stil
 
 Do not treat current generic JSON availability or the retained compatibility
 `show_status` enum as satisfying these remaining requirements.
+
+`show_proposed_cast` stores the Producer's working selection from accepted
+active Cast membership. `show_proposal_revisions` stores immutable numbered
+operational snapshots and a unique command identity. Submission locks the
+Event, validates required confirmations, Performance Minimum Viable Cast, and
+buffered approved Primary Venue conflicts, then emits
+`event.proposal_revision.submitted` in the same transaction.
 
 `show_public_content_revisions` now stores one current unpublished revision per
 Event and preserves previously published revisions as immutable anonymous

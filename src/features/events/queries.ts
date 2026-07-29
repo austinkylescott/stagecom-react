@@ -7,6 +7,7 @@ import {
   createSupabaseAnonClient,
   createSupabaseServiceRoleClient,
 } from '@/server/supabase/client'
+import { rankCandidateSlots } from './proposal-recommendations'
 
 import type { z } from 'zod'
 import type {
@@ -123,7 +124,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions(id, revision_number, decision_state, submitted_by, submitted_at, command_id, snapshot), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -205,26 +206,41 @@ export async function getManagedEventWorkspace(
   const occurrenceIds = managedEvent.show_occurrences.map(
     (occurrence) => occurrence.id,
   )
-  const [availabilityResult, callsResult] = await Promise.all([
-    candidateSlotIds.length > 0
-      ? supabase
-          .from('show_availability_responses')
-          .select(
-            'candidate_slot_id, user_id, response, actor_user_id, responded_at, version',
-          )
-          .in('candidate_slot_id', candidateSlotIds)
-      : Promise.resolve({ data: [], error: null }),
-    view !== 'pending_invitee' && occurrenceIds.length > 0
-      ? supabase
-          .from('show_occurrence_calls')
-          .select(
-            'occurrence_id, user_id, call, actor_user_id, assigned_at, version',
-          )
-          .in('occurrence_id', occurrenceIds)
-      : Promise.resolve({ data: [], error: null }),
-  ])
+  const [availabilityResult, callsResult, commitmentsResult] =
+    await Promise.all([
+      candidateSlotIds.length > 0
+        ? supabase
+            .from('show_availability_responses')
+            .select(
+              'candidate_slot_id, user_id, response, actor_user_id, responded_at, version',
+            )
+            .in('candidate_slot_id', candidateSlotIds)
+        : Promise.resolve({ data: [], error: null }),
+      view !== 'pending_invitee' && occurrenceIds.length > 0
+        ? supabase
+            .from('show_occurrence_calls')
+            .select(
+              'occurrence_id, user_id, call, actor_user_id, assigned_at, version',
+            )
+            .in('occurrence_id', occurrenceIds)
+        : Promise.resolve({ data: [], error: null }),
+      view === 'operational'
+        ? supabase
+            .from('shows')
+            .select(
+              'show_occurrences(confirmed_slot:show_candidate_slots!show_occurrences_confirmed_candidate_slot_id_fkey(starts_at, duration_minutes, location_kind))',
+            )
+            .eq('theater_id', access.data.theater.id)
+            .eq('lifecycle_status', 'approved')
+            .neq('id', managedEvent.id)
+        : Promise.resolve({ data: [], error: null }),
+    ])
 
-  if (availabilityResult.error || callsResult.error) {
+  if (
+    availabilityResult.error ||
+    callsResult.error ||
+    commitmentsResult.error
+  ) {
     return err(appError('external_service_error', 'Event could not be loaded.'))
   }
 
@@ -234,6 +250,50 @@ export async function getManagedEventWorkspace(
           (response) => response.user_id === access.data.actorUserId,
         )
       : availabilityResult.data
+  const primaryVenueCommitments = commitmentsResult.data.flatMap((event) =>
+    event.show_occurrences.flatMap((occurrence) =>
+      occurrence.confirmed_slot?.location_kind === 'primary_venue'
+        ? [
+            {
+              durationMinutes: occurrence.confirmed_slot.duration_minutes,
+              startsAt: occurrence.confirmed_slot.starts_at,
+            },
+          ]
+        : [],
+    ),
+  )
+  const recommendations =
+    view === 'operational'
+      ? rankCandidateSlots({
+          availability: availabilityResult.data.map((response) => ({
+            candidateSlotId: response.candidate_slot_id,
+            response: response.response,
+            userId: response.user_id,
+          })),
+          calls: callsResult.data.map((call) => ({
+            call: call.call,
+            occurrenceId: call.occurrence_id,
+            userId: call.user_id,
+          })),
+          commitments: primaryVenueCommitments,
+          occurrences: managedEvent.show_occurrences.map((occurrence) => ({
+            id: occurrence.id,
+            minimumViableCast: managedEvent.minimum_viable_cast ?? 1,
+            slots: occurrence.candidate_slots.map((slot) => ({
+              durationMinutes: slot.duration_minutes,
+              id: slot.id,
+              locationKind: slot.location_kind,
+              startsAt: slot.starts_at,
+            })),
+            type: occurrence.occurrence_type,
+          })),
+          proposedCastUserIds: managedEvent.show_proposed_cast.map(
+            ({ user_id }) => user_id,
+          ),
+          setupBufferMinutes: access.data.theater.setup_buffer_minutes,
+          turnoverBufferMinutes: access.data.theater.turnover_buffer_minutes,
+        })
+      : []
 
   return ok({
     activeMembers:
@@ -250,6 +310,8 @@ export async function getManagedEventWorkspace(
       inviteCast: actorLeadership.length > 0,
       respondToAvailability: canRespondToAvailability,
       respondToInvitation: view === 'pending_invitee',
+      selectProposedCast: canEditOperationalPlan,
+      submitProposalRevision: canEditOperationalPlan,
     },
     event: {
       ...managedEvent,
@@ -274,7 +336,18 @@ export async function getManagedEventWorkspace(
               (left, right) => left.position - right.position,
             )
           : [],
+      show_proposal_revisions:
+        view === 'operational'
+          ? managedEvent.show_proposal_revisions.sort(
+              (left, right) => right.revision_number - left.revision_number,
+            )
+          : [],
+      show_proposed_cast:
+        view === 'pending_invitee' ? [] : managedEvent.show_proposed_cast,
     },
+    recommendations,
+    primaryVenueCommitments:
+      view === 'operational' ? primaryVenueCommitments : [],
     theater: access.data.theater,
     view,
   })
@@ -335,7 +408,7 @@ export async function getTheaterAccess(theaterSlug: string) {
     await serviceRole
       .from('theaters')
       .select(
-        'id, name, slug, status, producer_eligibility, primary_venue_id, primary_venue_name, timezone, timezone_source',
+        'id, name, slug, status, producer_eligibility, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes, timezone, timezone_source',
       )
       .eq('id', theater.id)
       .single()

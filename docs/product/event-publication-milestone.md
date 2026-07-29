@@ -60,7 +60,10 @@ Theater governance and the managed Event-draft boundary are now implemented:
 Owner/Admin configures Producer and review policy, every Producer is checked
 independently, any active Member may direct, leadership remains separate from
 Cast, and creation persists one independently-stateful Event with durable
-history. The remaining multi-user workflow still needs Occurrences, casting,
-scheduling, review, and Event Publication. Detailed implementation tickets,
-acceptance
+history. Occurrences, Candidate Slots, Cast participation, Availability
+Responses, Occurrence Calls, Proposed Cast selection, deterministic schedule
+recommendations, and immutable Proposal Revision submission are now
+executable. The remaining multi-user workflow still needs review decisions,
+Counteroffer reservations, and Event Publication. Detailed implementation
+tickets, acceptance
 criteria, and dependency relationships are tracked under STA-5 in Linear.

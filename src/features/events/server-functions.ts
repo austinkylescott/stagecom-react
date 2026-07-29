@@ -8,6 +8,8 @@ import {
   saveEventPublicContent,
   saveEventOperationalPlan,
   setOccurrenceCall,
+  saveEventProposedCast,
+  submitEventProposalRevision,
 } from './commands'
 import {
   getEventCreationOptions,
@@ -25,6 +27,8 @@ import {
   saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
+  saveEventProposedCastInputSchema,
+  submitEventProposalRevisionInputSchema,
   theaterEventsInputSchema,
 } from './schemas'
 
@@ -79,3 +83,11 @@ export const recordCandidateSlotAvailabilityFn = createServerFn({
 export const setOccurrenceCallFn = createServerFn({ method: 'POST' })
   .validator(setOccurrenceCallInputSchema)
   .handler(async ({ data }) => setOccurrenceCall(data))
+
+export const saveEventProposedCastFn = createServerFn({ method: 'POST' })
+  .validator(saveEventProposedCastInputSchema)
+  .handler(async ({ data }) => saveEventProposedCast(data))
+
+export const submitEventProposalRevisionFn = createServerFn({ method: 'POST' })
+  .validator(submitEventProposalRevisionInputSchema)
+  .handler(async ({ data }) => submitEventProposalRevision(data))

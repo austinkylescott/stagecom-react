@@ -2,7 +2,8 @@
 
 Documentation status: active
 
-Implementation status: planning implemented; review and reservations not implemented
+Implementation status: planning and Proposal submission implemented; review
+decisions and reservations not implemented
 
 ## What Does Management Review?
 
@@ -12,10 +13,21 @@ The editable draft plan is executable: a Producer can order Rehearsal and
 Performance Occurrences, enter multiple timezone-safe Candidate Slots, mark an
 optional Confirmed Slot, distinguish Primary Venue use from approved off-site
 text, declare cast thresholds, and request staff, equipment, or other limited
-resources. Proposal Revision snapshots, conflict detection, Counteroffers, and
-approval remain future steps in this workflow.
+resources. Producers can select accepted Members for the working Proposed Cast,
+compare explainable Candidate Slot recommendations, choose Confirmed Slots,
+and submit the viable plan as an immutable numbered Proposal Revision.
+Counteroffers, reservations, and approval remain future steps in this workflow.
 
 Each submission creates an immutable, numbered Proposal Revision so the decision history always identifies exactly what was reviewed.
+
+Submission is one transactional gate. It locks the Event, rechecks Producer
+eligibility, accepted Proposed Cast membership, every required confirmation,
+Performance viability, chosen slots, and approved Primary Venue conflicts. A
+failure returns structured blockers without changing the draft. A success
+snapshots leadership, Proposed Cast, Occurrences, Confirmed Slots, Calls,
+viability, resources, locations, and visibility, emits a durable domain event,
+and moves the Event into review. Command identity and Event-row locking make
+retries and concurrent numbering safe.
 
 ## What Decisions Can A Reviewer Make?
 
