@@ -2,8 +2,8 @@
 
 Documentation status: active
 
-Implementation status: planning and Proposal submission implemented; review
-decisions and reservations not implemented
+Implementation status: Proposal submission and review decisions implemented;
+Counteroffer reservations not implemented
 
 ## What Does Management Review?
 
@@ -16,7 +16,7 @@ text, declare cast thresholds, and request staff, equipment, or other limited
 resources. Producers can select accepted Members for the working Proposed Cast,
 compare explainable Candidate Slot recommendations, choose Confirmed Slots,
 and submit the viable plan as an immutable numbered Proposal Revision.
-Counteroffers, reservations, and approval remain future steps in this workflow.
+Counteroffers and reservations remain future steps in this workflow.
 
 Each submission creates an immutable, numbered Proposal Revision so the decision history always identifies exactly what was reviewed.
 
@@ -37,6 +37,29 @@ retries and concurrent numbering safe.
 - `Deny`: close the current proposal with a reason.
 
 A Producer may create a linked replacement from a denied proposal, but management reviews it as a new proposal rather than silently reopening the denial.
+
+Review decisions are executable through one transactional command. It locks the
+exact revision, rechecks current active Owner/Admin or designated Reviewer
+authority, blocks the revision author, and requires an expected decision
+version. One decision moves the revision to approved, changes requested, or
+denied; a competing or stale decision conflicts without overwriting history.
+Request-edits and denial reasons are required and preserved in an append-only
+decision record.
+
+An author who is also an Owner can approve only by explicitly invoking the
+Theater's configured self-approval override and supplying a reason. That path
+emits a distinct Owner-override domain event. Approval points the Event at the
+exact approved Proposal Revision and moves lifecycle to approved without
+changing Publication. Operational-plan changes to approved Occurrences,
+Confirmed Slots, duration, location, Minimum Viable Cast, resources, or
+visibility clear that pointer, return the Event to draft, and emit an approval
+invalidation event; unapproved Candidate Slot alternatives and public-content
+copy remain outside that approval scope.
+
+A denied revision remains immutable. A current source Event Producer may seed
+a linked replacement Event containing the denied operational plan, but the new
+Event starts as a draft with new identifiers and does not carry Cast
+participation into the replacement.
 
 ## How Does A Counteroffer Work?
 
@@ -76,3 +99,7 @@ The interface may offer convenient price presets such as $5, $10, and $15 while 
 ## What Notifications Are Sent?
 
 Workflow notifications originate from explicit domain events, never directly from UI code. The first milestone uses in-app notifications for invitations, availability requests, review decisions, Counteroffers, approaching expirations, publication changes, and risk alerts. Stagecom-managed email and SMS delivery are deferred; invitation links are shared manually.
+
+Approval, Owner-override approval, requested-edits, and denial events now
+project in-app notifications to the Event leadership and Proposed Cast. A
+per-recipient dedupe key prevents retries from creating a second notification.

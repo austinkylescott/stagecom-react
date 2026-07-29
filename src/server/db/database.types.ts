@@ -651,10 +651,108 @@ export type Database = {
           },
         ]
       }
+      show_proposal_decisions: {
+        Row: {
+          action: Database['public']['Enums']['proposal_review_action']
+          actor_user_id: string
+          command_id: string
+          created_at: string
+          id: string
+          owner_override: boolean
+          proposal_revision_id: string
+          reason: string | null
+          revision_version: number
+        }
+        Insert: {
+          action: Database['public']['Enums']['proposal_review_action']
+          actor_user_id: string
+          command_id: string
+          created_at?: string
+          id?: string
+          owner_override?: boolean
+          proposal_revision_id: string
+          reason?: string | null
+          revision_version: number
+        }
+        Update: {
+          action?: Database['public']['Enums']['proposal_review_action']
+          actor_user_id?: string
+          command_id?: string
+          created_at?: string
+          id?: string
+          owner_override?: boolean
+          proposal_revision_id?: string
+          reason?: string | null
+          revision_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_proposal_decisions_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_proposal_decisions_proposal_revision_id_fkey'
+            columns: ['proposal_revision_id']
+            isOneToOne: true
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_proposal_replacements: {
+        Row: {
+          command_id: string
+          created_at: string
+          created_by_user_id: string
+          replacement_show_id: string
+          source_proposal_revision_id: string
+        }
+        Insert: {
+          command_id: string
+          created_at?: string
+          created_by_user_id: string
+          replacement_show_id: string
+          source_proposal_revision_id: string
+        }
+        Update: {
+          command_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          replacement_show_id?: string
+          source_proposal_revision_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_proposal_replacements_created_by_user_id_fkey'
+            columns: ['created_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_proposal_replacements_replacement_show_id_fkey'
+            columns: ['replacement_show_id']
+            isOneToOne: true
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_proposal_replacements_source_proposal_revision_id_fkey'
+            columns: ['source_proposal_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_proposal_revisions: {
         Row: {
           command_id: string
           decision_state: Database['public']['Enums']['proposal_decision_state']
+          decision_version: number
           id: string
           revision_number: number
           show_id: string
@@ -665,6 +763,7 @@ export type Database = {
         Insert: {
           command_id: string
           decision_state?: Database['public']['Enums']['proposal_decision_state']
+          decision_version?: number
           id?: string
           revision_number: number
           show_id: string
@@ -675,6 +774,7 @@ export type Database = {
         Update: {
           command_id?: string
           decision_state?: Database['public']['Enums']['proposal_decision_state']
+          decision_version?: number
           id?: string
           revision_number?: number
           show_id?: string
@@ -1033,6 +1133,7 @@ export type Database = {
       }
       shows: {
         Row: {
+          approved_proposal_revision_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -1061,6 +1162,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_proposal_revision_id?: string | null
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
@@ -1089,6 +1191,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_proposal_revision_id?: string | null
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
@@ -1117,6 +1220,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'shows_approved_proposal_revision_id_fkey'
+            columns: ['approved_proposal_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'shows_created_by_user_id_fkey'
             columns: ['created_by_user_id']
@@ -1604,6 +1714,7 @@ export type Database = {
           p_title: string
         }
         Returns: {
+          approved_proposal_revision_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -1791,6 +1902,22 @@ export type Database = {
         Args: { p_activity_event_id: string }
         Returns: undefined
       }
+      project_proposal_decision_notifications: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
+      proposal_approval_scope_from_plan: {
+        Args: {
+          p_minimum_viable_cast: number
+          p_occurrences: Json
+          p_resource_requests: Json
+        }
+        Returns: Json
+      }
+      proposal_approval_scope_from_snapshot: {
+        Args: { p_snapshot: Json }
+        Returns: Json
+      }
       publish_theater: {
         Args: { p_actor_user_id: string; p_theater_id: string }
         Returns: {
@@ -1880,6 +2007,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_proposal_revision: {
+        Args: {
+          p_action: Database['public']['Enums']['proposal_review_action']
+          p_actor_user_id: string
+          p_command_id: string
+          p_expected_version: number
+          p_owner_override: boolean
+          p_proposal_revision_id: string
+          p_reason: string
+        }
+        Returns: {
+          action: Database['public']['Enums']['proposal_review_action']
+          actor_user_id: string
+          command_id: string
+          created_at: string
+          id: string
+          owner_override: boolean
+          proposal_revision_id: string
+          reason: string | null
+          revision_version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_proposal_decisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       revoke_reusable_theater_join_link: {
         Args: { p_actor_user_id: string; p_join_link_id: string }
         Returns: boolean
@@ -1904,6 +2059,17 @@ export type Database = {
         }[]
       }
       save_event_operational_plan: {
+        Args: {
+          p_actor_user_id: string
+          p_minimum_viable_cast: number
+          p_occurrences: Json
+          p_resource_requests: Json
+          p_show_id: string
+          p_target_cast_size: number
+        }
+        Returns: Json
+      }
+      save_event_operational_plan_draft: {
         Args: {
           p_actor_user_id: string
           p_minimum_viable_cast: number
@@ -1958,6 +2124,50 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'show_public_content_revisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      seed_denied_proposal_replacement: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_slug: string
+          p_source_proposal_revision_id: string
+          p_title: string
+        }
+        Returns: {
+          approved_proposal_revision_id: string | null
+          cast_max: number | null
+          cast_min: number | null
+          casting_mode: Database['public']['Enums']['casting_mode']
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          event_type: Database['public']['Enums']['event_type']
+          id: string
+          is_cast_finalized: boolean
+          is_public_listed: boolean
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast: number | null
+          on_sale_at: string | null
+          operational_health: Database['public']['Enums']['show_operational_health']
+          poster_url: string | null
+          producer_note: string | null
+          publication_status: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id: string | null
+          slug: string
+          status: Database['public']['Enums']['show_status']
+          summary: string | null
+          target_cast_size: number | null
+          theater_id: string
+          ticket_url: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'shows'
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2047,6 +2257,7 @@ export type Database = {
         Returns: {
           command_id: string
           decision_state: Database['public']['Enums']['proposal_decision_state']
+          decision_version: number
           id: string
           revision_number: number
           show_id: string
@@ -2171,6 +2382,7 @@ export type Database = {
         | 'counteroffered'
         | 'approved'
         | 'denied'
+      proposal_review_action: 'approve' | 'request_edits' | 'deny'
       review_action: 'submitted' | 'approved' | 'rejected' | 'changes_requested'
       show_cast_source: 'invited' | 'requested'
       show_cast_status:
@@ -2345,6 +2557,7 @@ export const Constants = {
         'approved',
         'denied',
       ],
+      proposal_review_action: ['approve', 'request_edits', 'deny'],
       review_action: ['submitted', 'approved', 'rejected', 'changes_requested'],
       show_cast_source: ['invited', 'requested'],
       show_cast_status: [

@@ -4,11 +4,13 @@ import {
   createManagedEventFn,
   inviteEventCastMemberFn,
   recordCandidateSlotAvailabilityFn,
+  reviewProposalRevisionFn,
   respondToEventCastInvitationFn,
   saveEventPublicContentFn,
   saveEventOperationalPlanFn,
   saveEventProposedCastFn,
   setOccurrenceCallFn,
+  seedDeniedProposalReplacementFn,
   submitEventProposalRevisionFn,
 } from './server-functions'
 import { rankCandidateSlots } from './proposal-recommendations'
@@ -235,11 +237,15 @@ export function ManagedEventWorkspace({
     inviteCast: boolean
     respondToAvailability: boolean
     respondToInvitation: boolean
+    reviewProposalRevisions: boolean
+    seedDeniedReplacement: boolean
     selectProposedCast: boolean
     submitProposalRevision: boolean
+    useOwnerSelfApproval: boolean
   }
   event: {
     id: string
+    approved_proposal_revision_id: string | null
     lifecycle_status: EventLifecycle
     minimum_viable_cast: number | null
     operational_health: EventHealth
@@ -308,11 +314,22 @@ export function ManagedEventWorkspace({
         | 'counteroffered'
         | 'approved'
         | 'denied'
+      decision_version: number
       id: string
       revision_number: number
       snapshot: Database['public']['Tables']['show_proposal_revisions']['Row']['snapshot']
       submitted_at: string
       submitted_by: string
+      show_proposal_decisions: {
+        action: 'approve' | 'request_edits' | 'deny'
+        actor_user_id: string
+        command_id: string
+        created_at: string
+        id: string
+        owner_override: boolean
+        reason: string | null
+        revision_version: number
+      } | null
     }>
     show_proposed_cast: Array<{ user_id: string }>
     target_cast_size: number | null
@@ -364,6 +381,7 @@ export function ManagedEventWorkspace({
     primary_venue_id: string
     primary_venue_name: string | null
     setup_buffer_minutes: number
+    slug: string
     timezone: string | null
     timezone_source: 'unknown' | 'inferred' | 'manual'
     turnover_buffer_minutes: number
@@ -438,6 +456,10 @@ export function ManagedEventWorkspace({
   const [submittedRevision, setSubmittedRevision] = useState<number | null>(
     null,
   )
+  const [lifecycleStatus, setLifecycleStatus] = useState(event.lifecycle_status)
+  const [proposalRevisions, setProposalRevisions] = useState(
+    event.show_proposal_revisions,
+  )
   const [isSavingProposal, setIsSavingProposal] = useState(false)
   const [candidateRecommendations, setCandidateRecommendations] =
     useState(recommendations)
@@ -462,8 +484,12 @@ export function ManagedEventWorkspace({
       <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
         {event.title}
       </h1>
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <StateCard label="Lifecycle" value={event.lifecycle_status} />
+      <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <StateCard label="Lifecycle" value={lifecycleStatus} />
+        <StateCard
+          label="Proposal decision"
+          value={proposalRevisions[0]?.decision_state ?? 'not submitted'}
+        />
         <StateCard label="Publication" value={event.publication_status} />
         <StateCard
           label="Operational health"
@@ -1118,11 +1144,11 @@ export function ManagedEventWorkspace({
             </button>
           ) : null}
 
-          {event.show_proposal_revisions.length > 0 ? (
+          {proposalRevisions.length > 0 ? (
             <div className="mt-7">
               <h3 className="text-xl font-extrabold">Submitted revisions</h3>
               <ul className="mt-3 grid gap-2">
-                {event.show_proposal_revisions.map((revision) => (
+                {proposalRevisions.map((revision) => (
                   <li
                     className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
                     key={revision.id}
@@ -1131,6 +1157,80 @@ export function ManagedEventWorkspace({
                     <span className="capitalize">
                       {revision.decision_state.replace('_', ' ')}
                     </span>
+                    {revision.show_proposal_decisions ? (
+                      <div
+                        className="mt-3 rounded-md bg-[var(--sand)]/50 px-3 py-3 text-sm"
+                        key={revision.show_proposal_decisions.id}
+                      >
+                        <p className="font-bold capitalize">
+                          {revision.show_proposal_decisions.action.replace(
+                            '_',
+                            ' ',
+                          )}
+                          {revision.show_proposal_decisions.owner_override
+                            ? ' · Owner override'
+                            : ''}
+                        </p>
+                        {revision.show_proposal_decisions.reason ? (
+                          <p className="mt-1">
+                            Reason: {revision.show_proposal_decisions.reason}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {revision.decision_state === 'pending' &&
+                    allowedActions.reviewProposalRevisions ? (
+                      <ProposalDecisionControls
+                        actorUserId={actorUserId}
+                        canUseOwnerOverride={
+                          allowedActions.useOwnerSelfApproval &&
+                          revision.submitted_by === actorUserId
+                        }
+                        onDecided={(decision) => {
+                          setProposalRevisions((current) =>
+                            current.map((candidate) =>
+                              candidate.id === revision.id
+                                ? {
+                                    ...candidate,
+                                    decision_state:
+                                      decision.action === 'approve'
+                                        ? 'approved'
+                                        : decision.action === 'request_edits'
+                                          ? 'changes_requested'
+                                          : 'denied',
+                                    decision_version:
+                                      candidate.decision_version + 1,
+                                    show_proposal_decisions: {
+                                      action: decision.action,
+                                      actor_user_id: decision.actorUserId,
+                                      command_id: decision.commandId,
+                                      created_at: decision.createdAt,
+                                      id: decision.id,
+                                      owner_override: decision.ownerOverride,
+                                      reason: decision.reason,
+                                      revision_version:
+                                        decision.revisionVersion,
+                                    },
+                                  }
+                                : candidate,
+                            ),
+                          )
+                          if (decision.action === 'approve') {
+                            setLifecycleStatus('approved')
+                          } else if (decision.action === 'request_edits') {
+                            setLifecycleStatus('draft')
+                          }
+                        }}
+                        revision={revision}
+                      />
+                    ) : null}
+                    {revision.decision_state === 'denied' &&
+                    allowedActions.seedDeniedReplacement ? (
+                      <DeniedProposalReplacementForm
+                        revisionId={revision.id}
+                        theaterSlug={theater.slug}
+                      />
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -1364,7 +1464,7 @@ export function ManagedEventWorkspace({
           </div>
           {!allowedActions.editOperationalPlan && view === 'operational' ? (
             <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">
-              Only an eligible Producer can edit a draft plan.
+              Only an eligible Producer can edit a draft or approved plan.
             </p>
           ) : null}
         </div>
@@ -1845,6 +1945,206 @@ function SmallButton({
     >
       {children}
     </button>
+  )
+}
+
+function ProposalDecisionControls({
+  actorUserId,
+  canUseOwnerOverride,
+  onDecided,
+  revision,
+}: {
+  actorUserId: string
+  canUseOwnerOverride: boolean
+  onDecided: (decision: {
+    action: 'approve' | 'request_edits' | 'deny'
+    actorUserId: string
+    commandId: string
+    createdAt: string
+    id: string
+    ownerOverride: boolean
+    proposalRevisionId: string
+    reason: string | null
+    revisionVersion: number
+  }) => void
+  revision: {
+    decision_version: number
+    id: string
+    revision_number: number
+    submitted_by: string
+  }
+}) {
+  const isAuthor = revision.submitted_by === actorUserId
+  const [action, setAction] = useState<'approve' | 'request_edits' | 'deny'>(
+    'approve',
+  )
+  const [reason, setReason] = useState('')
+  const [ownerOverride, setOwnerOverride] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  if (isAuthor && !canUseOwnerOverride) {
+    return (
+      <p className="mt-3 text-sm font-semibold text-[var(--sea-ink-soft)]">
+        Separation from authorship prevents you from deciding this revision.
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4">
+      <p className="font-extrabold">Record review decision</p>
+      {isAuthor ? (
+        <label className="flex items-start gap-3 text-sm font-semibold">
+          <input
+            checked={ownerOverride}
+            onChange={(change) => setOwnerOverride(change.target.checked)}
+            type="checkbox"
+          />
+          Explicitly invoke the audited Owner self-approval override
+        </label>
+      ) : (
+        <label className="grid gap-2 text-sm font-bold">
+          Decision
+          <select
+            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+            onChange={(change) =>
+              setAction(
+                change.target.value as 'approve' | 'request_edits' | 'deny',
+              )
+            }
+            value={action}
+          >
+            <option value="approve">Approve</option>
+            <option value="request_edits">Request edits</option>
+            <option value="deny">Deny</option>
+          </select>
+        </label>
+      )}
+      <label className="grid gap-2 text-sm font-bold">
+        {action === 'approve' && !isAuthor
+          ? 'Reason (optional)'
+          : 'Reason (required)'}
+        <textarea
+          className="min-h-24 rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          maxLength={2000}
+          onChange={(change) => setReason(change.target.value)}
+          value={reason}
+        />
+      </label>
+      {error ? <p className="font-semibold text-red-800">{error}</p> : null}
+      <button
+        className="w-fit rounded-md bg-[var(--sea-ink)] px-4 py-2 font-extrabold text-white disabled:opacity-50"
+        disabled={
+          isSaving ||
+          (isAuthor && (!ownerOverride || !reason.trim())) ||
+          (action !== 'approve' && !reason.trim())
+        }
+        onClick={async () => {
+          setError(null)
+          setIsSaving(true)
+          try {
+            const result = await reviewProposalRevisionFn({
+              data: {
+                action,
+                commandId: crypto.randomUUID(),
+                expectedVersion: revision.decision_version,
+                ownerOverride: isAuthor && ownerOverride,
+                proposalRevisionId: revision.id,
+                reason: reason.trim() || null,
+              },
+            })
+            if (!result.ok) {
+              setError(result.error.message)
+              return
+            }
+            onDecided(result.data)
+          } finally {
+            setIsSaving(false)
+          }
+        }}
+        type="button"
+      >
+        {isSaving
+          ? 'Saving…'
+          : isAuthor
+            ? 'Approve with Owner override'
+            : `Record ${action.replace('_', ' ')}`}
+      </button>
+    </div>
+  )
+}
+
+function DeniedProposalReplacementForm({
+  revisionId,
+  theaterSlug,
+}: {
+  revisionId: string
+  theaterSlug: string
+}) {
+  const [title, setTitle] = useState('')
+  const [slug, setSlug] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  return (
+    <div className="mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4">
+      <p className="font-extrabold">Seed a linked replacement Event</p>
+      <p className="text-sm text-[var(--sea-ink-soft)]">
+        This copies the denied operational plan into a new draft. Cast
+        participation is intentionally not carried into the new Event.
+      </p>
+      <label className="grid gap-2 text-sm font-bold">
+        Replacement title
+        <input
+          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          onChange={(change) => {
+            setTitle(change.target.value)
+            if (!slug) setSlug(toSlug(change.target.value))
+          }}
+          value={title}
+        />
+      </label>
+      <label className="grid gap-2 text-sm font-bold">
+        Replacement slug
+        <input
+          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          onChange={(change) => setSlug(change.target.value)}
+          value={slug}
+        />
+      </label>
+      {error ? <p className="font-semibold text-red-800">{error}</p> : null}
+      <button
+        className="w-fit rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold disabled:opacity-50"
+        disabled={isSaving || !title.trim() || !slug}
+        onClick={async () => {
+          setError(null)
+          setIsSaving(true)
+          try {
+            const result = await seedDeniedProposalReplacementFn({
+              data: {
+                commandId: crypto.randomUUID(),
+                proposalRevisionId: revisionId,
+                slug,
+                title,
+              },
+            })
+            if (!result.ok) {
+              setError(result.error.message)
+              return
+            }
+            window.location.assign(
+              `/app/${theaterSlug}/events/${result.data.slug}`,
+            )
+          } finally {
+            setIsSaving(false)
+          }
+        }}
+        type="button"
+      >
+        {isSaving ? 'Creating…' : 'Create linked replacement'}
+      </button>
+    </div>
   )
 }
 
