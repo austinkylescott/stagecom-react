@@ -40,6 +40,12 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
 - `show_proposal_revisions` stores append-only, monotonically numbered
   operational snapshots with a unique submission command identity and Proposal
   decision state.
+- `show_proposal_decisions` stores the one auditable Reviewer decision for an
+  exact Proposal Revision, including reason, actor, expected revision version,
+  command identity, and whether the explicit Owner override was used.
+- `shows.approved_proposal_revision_id` identifies the exact current
+  Operational Approval. `show_proposal_replacements` links a new draft Event to
+  the denied immutable revision that seeded it.
 - `show_cast` stores explicit private Event invitations and participation
   responses, including inviter and response timestamps. Invitation and response
   facts are durable activity events; in-app invitation notifications are
@@ -95,7 +101,7 @@ Reviewers, and Owner/Admin receive the operational view. Only the active
 Director assigns required, optional, or not-called expectations to accepted
 Cast Members.
 
-Proposal submission is executable. Its transaction validates authorization,
+Proposal submission and review decisions are executable. Submission validates authorization,
 Proposed Cast eligibility, chosen slots, required availability, Performance
 Minimum Viable Cast, and buffered approved Primary Venue conflicts before it
 writes one immutable snapshot and durable submission event. The remaining items
@@ -105,7 +111,10 @@ Operational-plan edits replace the supplied plan shape transactionally while
 preserving supplied Occurrence, Candidate Slot, and resource-request
 identifiers. Omitted children are removed, ordering is explicit, and every
 successful save emits `event.operational_plan.updated`. Only a currently
-eligible assigned Producer may save while the Event is a draft.
+eligible assigned Producer may save. Draft plans remain editable; an approved
+plan may also be edited, but changes within Operational Approval scope
+atomically clear the current approved-revision pointer, return the Event to
+draft, and require a new Proposal Revision.
 
 ## Active Sources
 

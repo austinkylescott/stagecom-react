@@ -62,8 +62,11 @@ independently, any active Member may direct, leadership remains separate from
 Cast, and creation persists one independently-stateful Event with durable
 history. Occurrences, Candidate Slots, Cast participation, Availability
 Responses, Occurrence Calls, Proposed Cast selection, deterministic schedule
-recommendations, and immutable Proposal Revision submission are now
-executable. The remaining multi-user workflow still needs review decisions,
-Counteroffer reservations, and Event Publication. Detailed implementation
+recommendations, and immutable Proposal Revision submission are now executable.
+Current Reviewers can issue version-checked approvals, edit requests, and
+denials with auditable reasons, explicit Owner self-approval override,
+participant notifications, approval invalidation for later operational
+changes, and linked replacement drafts after denial. The remaining multi-user
+workflow still needs Counteroffer reservations and Event Publication. Detailed implementation
 tickets, acceptance
 criteria, and dependency relationships are tracked under STA-5 in Linear.

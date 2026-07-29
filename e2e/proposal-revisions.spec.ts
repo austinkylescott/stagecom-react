@@ -102,6 +102,58 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       revision_number: 1,
     })
     expect(activity).toEqual([{ action: 'event.proposal_revision.submitted' }])
+
+    await page.reload()
+    await page.waitForTimeout(500)
+    await page
+      .getByLabel('Explicitly invoke the audited Owner self-approval override')
+      .check()
+    await page
+      .getByLabel('Reason (required)')
+      .fill('One-person Theater exception for this exact operational plan.')
+    await page
+      .getByRole('button', { name: 'Approve with Owner override' })
+      .click()
+
+    await expect(
+      page.getByText('approved', { exact: true }).first(),
+    ).toBeVisible()
+    await expect(
+      page.getByText('Owner override', { exact: false }),
+    ).toBeVisible()
+    await expect(page.getByText('unpublished', { exact: true })).toBeVisible()
+
+    const [approvedEvent, decision, overrideActivity] = await Promise.all([
+      fixture.admin
+        .from('shows')
+        .select(
+          'lifecycle_status, publication_status, approved_proposal_revision_id',
+        )
+        .eq('id', fixture.eventId)
+        .single(),
+      fixture.admin
+        .from('show_proposal_decisions')
+        .select('action, owner_override, reason')
+        .single(),
+      fixture.admin
+        .from('activity_events')
+        .select('action')
+        .eq('entity_id', fixture.eventId)
+        .eq('action', 'event.proposal_revision.owner_override_approved'),
+    ])
+    expect(approvedEvent.data).toMatchObject({
+      lifecycle_status: 'approved',
+      publication_status: 'unpublished',
+    })
+    expect(approvedEvent.data?.approved_proposal_revision_id).toBeTruthy()
+    expect(decision.data).toEqual({
+      action: 'approve',
+      owner_override: true,
+      reason: 'One-person Theater exception for this exact operational plan.',
+    })
+    expect(overrideActivity.data).toEqual([
+      { action: 'event.proposal_revision.owner_override_approved' },
+    ])
   } finally {
     await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
     await Promise.all(
@@ -165,6 +217,11 @@ async function createFixture(
   )
   expect(theaterError).toBeNull()
   const theaterId = theaters![0].id
+  const { error: governanceError } = await admin
+    .from('theaters')
+    .update({ owner_self_approval_enabled: true })
+    .eq('id', theaterId)
+  expect(governanceError).toBeNull()
   const { error: membershipError } = await admin
     .from('theater_memberships')
     .insert(

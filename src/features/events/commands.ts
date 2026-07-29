@@ -18,6 +18,8 @@ import type {
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
   saveEventProposedCastInputSchema,
+  reviewProposalRevisionInputSchema,
+  seedDeniedProposalReplacementInputSchema,
   submitEventProposalRevisionInputSchema,
 } from './schemas'
 import type { EventPublicContentPersistence } from './public-content-persistence'
@@ -115,6 +117,66 @@ export async function submitEventProposalRevision(
           appError(
             'external_service_error',
             'Proposal Revision could not be submitted.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function reviewProposalRevision(
+  input: z.infer<typeof reviewProposalRevisionInputSchema>,
+  dependencies: ProposalCommandDependencies = getDefaultProposalDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    return ok(
+      await dependencies.persistence.reviewRevision({
+        ...input,
+        actorUserId: currentUser.data.id,
+        reason: input.reason?.trim() || null,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Proposal decision could not be saved.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function seedDeniedProposalReplacement(
+  input: z.infer<typeof seedDeniedProposalReplacementInputSchema>,
+  dependencies: ProposalCommandDependencies = getDefaultProposalDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeReplacement({
+      actorUserId: currentUser.data.id,
+      proposalRevisionId: input.proposalRevisionId,
+    })
+    return ok(
+      await dependencies.persistence.seedReplacement({
+        ...input,
+        actorUserId: currentUser.data.id,
+        title: input.title.trim(),
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Replacement Event could not be created.',
           ),
         )
       : err(failure)

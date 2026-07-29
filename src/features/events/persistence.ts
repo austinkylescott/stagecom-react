@@ -279,10 +279,13 @@ export function createSupabaseEventPersistence(): EventPersistence {
         )
       }
 
-      if (event.lifecycle_status !== 'draft') {
+      if (
+        event.lifecycle_status !== 'draft' &&
+        event.lifecycle_status !== 'approved'
+      ) {
         throw appError(
           'conflict',
-          'The operational plan is editable only while the Event is a draft.',
+          'The operational plan is editable only while the Event is a draft or approved.',
         )
       }
     },

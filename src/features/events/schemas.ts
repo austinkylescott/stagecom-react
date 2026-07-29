@@ -117,6 +117,44 @@ export const submitEventProposalRevisionInputSchema = z.object({
   eventId: uuidSchema,
 })
 
+export const reviewProposalRevisionInputSchema = z
+  .object({
+    action: z.enum(['approve', 'request_edits', 'deny']),
+    commandId: uuidSchema,
+    expectedVersion: z.number().int().positive(),
+    ownerOverride: z.boolean().default(false),
+    proposalRevisionId: uuidSchema,
+    reason: z.string().trim().max(2_000).nullable(),
+  })
+  .superRefine((decision, context) => {
+    if (
+      (decision.action === 'request_edits' ||
+        decision.action === 'deny' ||
+        decision.ownerOverride) &&
+      !decision.reason
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A reason is required for this decision.',
+        path: ['reason'],
+      })
+    }
+    if (decision.ownerOverride && decision.action !== 'approve') {
+      context.addIssue({
+        code: 'custom',
+        message: 'Owner override can only approve a Proposal Revision.',
+        path: ['ownerOverride'],
+      })
+    }
+  })
+
+export const seedDeniedProposalReplacementInputSchema = z.object({
+  commandId: uuidSchema,
+  proposalRevisionId: uuidSchema,
+  slug: slugSchema,
+  title: nonEmptyStringSchema.max(160),
+})
+
 const localDateTimeSchema = z
   .string()
   .regex(

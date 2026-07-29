@@ -5,11 +5,13 @@ import {
   inviteEventCastMember,
   recordCandidateSlotAvailability,
   respondToEventCastInvitation,
+  reviewProposalRevision,
   saveEventPublicContent,
   saveEventOperationalPlan,
   setOccurrenceCall,
   saveEventProposedCast,
   submitEventProposalRevision,
+  seedDeniedProposalReplacement,
 } from './commands'
 import {
   getEventCreationOptions,
@@ -24,11 +26,13 @@ import {
   inviteEventCastMemberInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
+  reviewProposalRevisionInputSchema,
   saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
   saveEventProposedCastInputSchema,
   submitEventProposalRevisionInputSchema,
+  seedDeniedProposalReplacementInputSchema,
   theaterEventsInputSchema,
 } from './schemas'
 
@@ -91,3 +95,13 @@ export const saveEventProposedCastFn = createServerFn({ method: 'POST' })
 export const submitEventProposalRevisionFn = createServerFn({ method: 'POST' })
   .validator(submitEventProposalRevisionInputSchema)
   .handler(async ({ data }) => submitEventProposalRevision(data))
+
+export const reviewProposalRevisionFn = createServerFn({ method: 'POST' })
+  .validator(reviewProposalRevisionInputSchema)
+  .handler(async ({ data }) => reviewProposalRevision(data))
+
+export const seedDeniedProposalReplacementFn = createServerFn({
+  method: 'POST',
+})
+  .validator(seedDeniedProposalReplacementInputSchema)
+  .handler(async ({ data }) => seedDeniedProposalReplacement(data))

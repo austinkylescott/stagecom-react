@@ -117,7 +117,17 @@ coordination table writes or infers the other concept.
 Operational-plan saves use one service-role-only transaction after explicit
 application authorization. They preserve supplied stable child identifiers,
 remove omitted plan children, validate draft state and current Producer
-eligibility, and emit one durable `event.operational_plan.updated` fact.
+or approved state and current Producer eligibility, and emit one durable
+`event.operational_plan.updated` fact.
+
+Proposal review stores append-only decision facts separately from immutable
+revision snapshots. Each revision accepts one optimistic-versioned approve,
+request-edits, or deny decision from a currently authorized Reviewer.
+`shows.approved_proposal_revision_id` identifies the exact current Operational
+Approval, while linked replacement records preserve the denied revision that
+seeded a new Event draft. Approved operational-plan edits are classified
+against that snapshot; in-scope changes invalidate approval and reopen the
+Event as a draft.
 
 ## Events Naming
 

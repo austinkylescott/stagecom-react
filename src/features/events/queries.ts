@@ -124,7 +124,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions(id, revision_number, decision_state, submitted_by, submitted_at, command_id, snapshot), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -165,9 +165,9 @@ export async function getManagedEventWorkspace(
   const isTheaterAdmin = access.data.membership.roles.some(
     (role) => role === 'owner' || role === 'admin',
   )
-  const isReviewer = capabilityResult.data.some(
-    ({ capability }) => capability === 'reviewer',
-  )
+  const isReviewer =
+    isTheaterAdmin ||
+    capabilityResult.data.some(({ capability }) => capability === 'reviewer')
   const hasOperationalView =
     isTheaterAdmin || isReviewer || actorLeadership.length > 0
   const view = hasOperationalView
@@ -182,7 +182,14 @@ export async function getManagedEventWorkspace(
     return err(appError('forbidden', 'Event collaborator access is required.'))
   }
 
+  const isProducer = actorLeadership.some(
+    (leader) => leader.role === 'producer',
+  )
   const canEditOperationalPlan =
+    (managedEvent.lifecycle_status === 'draft' ||
+      managedEvent.lifecycle_status === 'approved') &&
+    isProducer
+  const canEditDraftProposal =
     managedEvent.lifecycle_status === 'draft' &&
     actorLeadership.some((leader) => leader.role === 'producer')
   const canAssignOccurrenceCalls = actorLeadership.some(
@@ -310,8 +317,13 @@ export async function getManagedEventWorkspace(
       inviteCast: actorLeadership.length > 0,
       respondToAvailability: canRespondToAvailability,
       respondToInvitation: view === 'pending_invitee',
-      selectProposedCast: canEditOperationalPlan,
-      submitProposalRevision: canEditOperationalPlan,
+      reviewProposalRevisions: isReviewer,
+      seedDeniedReplacement: isProducer,
+      selectProposedCast: canEditDraftProposal,
+      submitProposalRevision: canEditDraftProposal,
+      useOwnerSelfApproval:
+        access.data.membership.roles.includes('owner') &&
+        access.data.theater.owner_self_approval_enabled,
     },
     event: {
       ...managedEvent,
@@ -408,7 +420,7 @@ export async function getTheaterAccess(theaterSlug: string) {
     await serviceRole
       .from('theaters')
       .select(
-        'id, name, slug, status, producer_eligibility, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes, timezone, timezone_source',
+        'id, name, slug, status, producer_eligibility, owner_self_approval_enabled, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes, timezone, timezone_source',
       )
       .eq('id', theater.id)
       .single()
