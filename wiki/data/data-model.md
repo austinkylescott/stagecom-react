@@ -64,7 +64,21 @@ The existing schema does not yet express the agreed workflow completely. The rem
 - review decisions including Counteroffers and Denials
 - exclusive Counteroffer holds with deadlines
 - Proposal decision state on immutable Proposal Revisions
-- explicit ticket Sales Channel and price
+- lightweight Owner/Admin Publication of a prepared Public Content Revision
+
+Versioned public presentation is executable. An Event has at most one
+unpublished `show_public_content_revisions` row; after Publication, later
+Producer edits create the next revision and leave the referenced published
+snapshot unchanged. Admission always stores a non-negative price and an
+explicit `external` or `no_advance_ticketing` Sales Channel. External requires
+an HTTP(S) ticket or reservation URL, while no advance ticketing stores no URL.
+Native Stagecom ticketing remains out of scope.
+
+Each Cast relationship initializes `public_credit_enabled` from the Member's
+profile preference, then remains independently controllable for that Event.
+Revision credit rows snapshot display names and permissions. Anonymous policies
+return only permitted credits from the revision referenced by the Event's
+published snapshot.
 
 Cast participation, per-Candidate-Slot Availability Responses, and
 per-Occurrence Calls are executable. Participation does not write or imply

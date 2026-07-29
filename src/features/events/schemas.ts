@@ -19,6 +19,68 @@ export const eventWorkspaceInputSchema = z.object({
   theaterSlug: slugSchema,
 })
 
+const externalSalesUrlSchema = z
+  .url()
+  .refine(
+    (value) => value.startsWith('https://') || value.startsWith('http://'),
+    {
+      message: 'Use an HTTP or HTTPS ticket or reservation URL.',
+    },
+  )
+
+export const saveEventPublicContentInputSchema = z
+  .object({
+    admissionPriceCents: z.number().int().nonnegative(),
+    castCredits: z
+      .array(
+        z.object({
+          position: z.number().int().nonnegative(),
+          publiclyCredited: z.boolean(),
+          userId: uuidSchema,
+        }),
+      )
+      .max(500),
+    commandId: uuidSchema,
+    description: z.string().trim().max(10_000),
+    eventId: uuidSchema,
+    expectedVersion: z.number().int().positive().nullable(),
+    imageUrl: z.url().nullable(),
+    salesChannel: z.enum(['external', 'no_advance_ticketing']),
+    externalUrl: externalSalesUrlSchema.nullable(),
+    title: nonEmptyStringSchema.max(160),
+  })
+  .superRefine((content, context) => {
+    if (content.salesChannel === 'external' && !content.externalUrl) {
+      context.addIssue({
+        code: 'custom',
+        message: 'External sales requires a ticket or reservation URL.',
+        path: ['externalUrl'],
+      })
+    }
+
+    if (
+      content.salesChannel === 'no_advance_ticketing' &&
+      content.externalUrl !== null
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'No advance ticketing does not use an external sales URL.',
+        path: ['externalUrl'],
+      })
+    }
+
+    if (
+      new Set(content.castCredits.map((credit) => credit.userId)).size !==
+      content.castCredits.length
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Each Cast Member can have only one credit setting.',
+        path: ['castCredits'],
+      })
+    }
+  })
+
 export const inviteEventCastMemberInputSchema = z.object({
   eventId: uuidSchema,
   memberUserId: uuidSchema,

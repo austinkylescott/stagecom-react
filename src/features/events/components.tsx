@@ -5,6 +5,7 @@ import {
   inviteEventCastMemberFn,
   recordCandidateSlotAvailabilityFn,
   respondToEventCastInvitationFn,
+  saveEventPublicContentFn,
   saveEventOperationalPlanFn,
   setOccurrenceCallFn,
 } from './server-functions'
@@ -217,6 +218,7 @@ export function ManagedEventWorkspace({
   actorUserId,
   allowedActions,
   event,
+  publicContent,
   theater,
   view,
 }: {
@@ -293,6 +295,31 @@ export function ManagedEventWorkspace({
     target_cast_size: number | null
     title: string
   }
+  publicContent: {
+    allowedActions: {
+      editPublicContent: boolean
+      publishEvent: boolean
+    }
+    blockers: Array<{ code: string; message: string }>
+    draft: {
+      admissionPriceCents: number | null
+      castCredits: Array<{
+        displayName: string
+        position: number
+        publiclyCredited: boolean
+        userId: string
+      }>
+      description: string
+      externalUrl: string | null
+      id: string | null
+      imageUrl: string | null
+      revisionNumber: number | null
+      salesChannel: 'external' | 'no_advance_ticketing' | null
+      title: string
+      version: number | null
+    }
+    publishedRevisionId: string | null
+  } | null
   theater: {
     primary_venue_id: string
     primary_venue_name: string | null
@@ -352,6 +379,12 @@ export function ManagedEventWorkspace({
   const [savingCoordinationKey, setSavingCoordinationKey] = useState<
     string | null
   >(null)
+  const [publicDraft, setPublicDraft] = useState(publicContent?.draft ?? null)
+  const [publicContentError, setPublicContentError] = useState<string | null>(
+    null,
+  )
+  const [publicContentSaved, setPublicContentSaved] = useState(false)
+  const [isSavingPublicContent, setIsSavingPublicContent] = useState(false)
   const timezoneName = theater.timezone ?? 'UTC'
   const venueName = theater.primary_venue_name ?? 'Primary Venue'
   const ownInvitation = cast.find(
@@ -381,6 +414,261 @@ export function ManagedEventWorkspace({
           value={event.operational_health}
         />
       </div>
+      {publicContent && publicDraft ? (
+        <section className="island-shell mt-5 rounded-lg px-6 py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-extrabold">Public presentation</h2>
+              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                {publicDraft.revisionNumber
+                  ? `Unpublished revision ${publicDraft.revisionNumber}, version ${publicDraft.version}.`
+                  : 'No public-content revision has been saved yet.'}{' '}
+                The published anonymous snapshot is not changed by this form.
+              </p>
+            </div>
+            {publicContent.publishedRevisionId ? (
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-900">
+                Published snapshot preserved
+              </span>
+            ) : null}
+          </div>
+          {publicContent.blockers.length > 0 ? (
+            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+              <p className="font-bold text-amber-950">Readiness blockers</p>
+              <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
+                {publicContent.blockers.map((blocker) => (
+                  <li key={blocker.code}>{blocker.message}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <form
+            className="mt-5 grid gap-5"
+            onSubmit={async (submitEvent) => {
+              submitEvent.preventDefault()
+              if (!publicContent.allowedActions.editPublicContent) return
+              setPublicContentError(null)
+              setPublicContentSaved(false)
+              setIsSavingPublicContent(true)
+              try {
+                const result = await saveEventPublicContentFn({
+                  data: {
+                    admissionPriceCents: publicDraft.admissionPriceCents ?? 0,
+                    castCredits: publicDraft.castCredits.map(
+                      ({ position, publiclyCredited, userId }) => ({
+                        position,
+                        publiclyCredited,
+                        userId,
+                      }),
+                    ),
+                    commandId: crypto.randomUUID(),
+                    description: publicDraft.description,
+                    eventId: event.id,
+                    expectedVersion: publicDraft.version,
+                    externalUrl:
+                      publicDraft.salesChannel === 'external'
+                        ? publicDraft.externalUrl
+                        : null,
+                    imageUrl: publicDraft.imageUrl,
+                    salesChannel:
+                      publicDraft.salesChannel ?? 'no_advance_ticketing',
+                    title: publicDraft.title,
+                  },
+                })
+                if (!result.ok) {
+                  setPublicContentError(result.error.message)
+                  return
+                }
+                setPublicDraft(result.data)
+                setPublicContentSaved(true)
+              } finally {
+                setIsSavingPublicContent(false)
+              }
+            }}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="grid gap-2 text-sm font-bold">
+                Public title
+                <input
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  disabled={!publicContent.allowedActions.editPublicContent}
+                  onChange={(change) =>
+                    setPublicDraft((current) =>
+                      current
+                        ? { ...current, title: change.target.value }
+                        : current,
+                    )
+                  }
+                  value={publicDraft.title}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-bold">
+                Image URL
+                <input
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  disabled={!publicContent.allowedActions.editPublicContent}
+                  onChange={(change) =>
+                    setPublicDraft((current) =>
+                      current
+                        ? { ...current, imageUrl: change.target.value || null }
+                        : current,
+                    )
+                  }
+                  type="url"
+                  value={publicDraft.imageUrl ?? ''}
+                />
+              </label>
+            </div>
+            <label className="grid gap-2 text-sm font-bold">
+              Public description
+              <textarea
+                className="min-h-32 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                disabled={!publicContent.allowedActions.editPublicContent}
+                onChange={(change) =>
+                  setPublicDraft((current) =>
+                    current
+                      ? { ...current, description: change.target.value }
+                      : current,
+                  )
+                }
+                value={publicDraft.description}
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="grid gap-2 text-sm font-bold">
+                General-admission price (USD)
+                <input
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  disabled={!publicContent.allowedActions.editPublicContent}
+                  min="0"
+                  onChange={(change) =>
+                    setPublicDraft((current) =>
+                      current
+                        ? {
+                            ...current,
+                            admissionPriceCents: Math.round(
+                              Number(change.target.value) * 100,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                  step="0.01"
+                  type="number"
+                  value={(publicDraft.admissionPriceCents ?? 0) / 100}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-bold">
+                Sales Channel
+                <select
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  disabled={!publicContent.allowedActions.editPublicContent}
+                  onChange={(change) =>
+                    setPublicDraft((current) =>
+                      current
+                        ? {
+                            ...current,
+                            externalUrl:
+                              change.target.value === 'external'
+                                ? current.externalUrl
+                                : null,
+                            salesChannel: change.target.value as
+                              'external' | 'no_advance_ticketing',
+                          }
+                        : current,
+                    )
+                  }
+                  value={publicDraft.salesChannel ?? 'no_advance_ticketing'}
+                >
+                  <option value="external">External ticketing</option>
+                  <option value="no_advance_ticketing">
+                    No advance ticketing
+                  </option>
+                </select>
+              </label>
+            </div>
+            {publicDraft.salesChannel === 'external' ? (
+              <label className="grid gap-2 text-sm font-bold">
+                Ticket or reservation URL
+                <input
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  disabled={!publicContent.allowedActions.editPublicContent}
+                  onChange={(change) =>
+                    setPublicDraft((current) =>
+                      current
+                        ? {
+                            ...current,
+                            externalUrl: change.target.value || null,
+                          }
+                        : current,
+                    )
+                  }
+                  required
+                  type="url"
+                  value={publicDraft.externalUrl ?? ''}
+                />
+              </label>
+            ) : null}
+            <fieldset className="grid gap-2">
+              <legend className="text-sm font-bold">Public Cast credits</legend>
+              {publicDraft.castCredits.map((credit) => (
+                <label
+                  className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  key={credit.userId}
+                >
+                  <input
+                    checked={credit.publiclyCredited}
+                    disabled={!publicContent.allowedActions.editPublicContent}
+                    onChange={(change) =>
+                      setPublicDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              castCredits: current.castCredits.map(
+                                (candidate) =>
+                                  candidate.userId === credit.userId
+                                    ? {
+                                        ...candidate,
+                                        publiclyCredited: change.target.checked,
+                                      }
+                                    : candidate,
+                              ),
+                            }
+                          : current,
+                      )
+                    }
+                    type="checkbox"
+                  />
+                  Credit {credit.displayName} for this Event
+                </label>
+              ))}
+            </fieldset>
+            {publicContentError ? (
+              <p className="font-semibold text-red-800">{publicContentError}</p>
+            ) : null}
+            {publicContentSaved ? (
+              <p className="font-semibold text-emerald-800">
+                Unpublished public-content revision saved.
+              </p>
+            ) : null}
+            {publicContent.allowedActions.editPublicContent ? (
+              <button
+                className="w-fit rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                disabled={isSavingPublicContent || !publicDraft.title.trim()}
+                type="submit"
+              >
+                {isSavingPublicContent
+                  ? 'Saving…'
+                  : 'Save unpublished revision'}
+              </button>
+            ) : (
+              <p className="text-sm font-semibold text-[var(--sea-ink-soft)]">
+                Producer access is required to edit this revision.
+              </p>
+            )}
+          </form>
+        </section>
+      ) : null}
       {event.show_leadership.length > 0 ? (
         <section className="island-shell mt-5 rounded-lg px-6 py-6">
           <h2 className="text-2xl font-extrabold">Leadership</h2>

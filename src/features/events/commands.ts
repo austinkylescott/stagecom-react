@@ -2,6 +2,7 @@ import { getCurrentUserFromRequest } from '@/server/auth/session'
 import { appError, err, ok, toAppError } from '@/server/errors'
 
 import { createSupabaseEventPersistence } from './persistence'
+import { createSupabaseEventPublicContentPersistence } from './public-content-persistence'
 import { resolveLocalDateTime } from './time'
 
 import type { z } from 'zod'
@@ -12,19 +13,67 @@ import type {
   inviteEventCastMemberInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
+  saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
 } from './schemas'
+import type { EventPublicContentPersistence } from './public-content-persistence'
 
 export type EventCommandDependencies = {
   getCurrentUser: () => Promise<AppResult<{ id: string }>>
   persistence: EventPersistence
 }
 
+export type EventPublicContentCommandDependencies = {
+  getCurrentUser: () => Promise<AppResult<{ id: string }>>
+  persistence: EventPublicContentPersistence
+}
+
 function getDefaultDependencies(): EventCommandDependencies {
   return {
     getCurrentUser: getCurrentUserFromRequest,
     persistence: createSupabaseEventPersistence(),
+  }
+}
+
+function getDefaultPublicContentDependencies(): EventPublicContentCommandDependencies {
+  return {
+    getCurrentUser: getCurrentUserFromRequest,
+    persistence: createSupabaseEventPublicContentPersistence(),
+  }
+}
+
+export async function saveEventPublicContent(
+  input: z.infer<typeof saveEventPublicContentInputSchema>,
+  dependencies: EventPublicContentCommandDependencies = getDefaultPublicContentDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeEdit({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+    })
+
+    return ok(
+      await dependencies.persistence.saveDraft({
+        actorUserId: currentUser.data.id,
+        ...input,
+        description: input.description.trim(),
+        title: input.title.trim(),
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Public Event content could not be saved.',
+          ),
+        )
+      : err(failure)
   }
 }
 

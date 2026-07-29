@@ -190,6 +190,7 @@ export type Database = {
           id: string
           notification_preferences: Json
           pronouns: string | null
+          public_cast_credit_preference: boolean
           timezone: string | null
           trust_flags: Json
           updated_at: string
@@ -212,6 +213,7 @@ export type Database = {
           id?: string
           notification_preferences?: Json
           pronouns?: string | null
+          public_cast_credit_preference?: boolean
           timezone?: string | null
           trust_flags?: Json
           updated_at?: string
@@ -234,6 +236,7 @@ export type Database = {
           id?: string
           notification_preferences?: Json
           pronouns?: string | null
+          public_cast_credit_preference?: boolean
           timezone?: string | null
           trust_flags?: Json
           updated_at?: string
@@ -410,6 +413,7 @@ export type Database = {
           invited_by_user_id: string | null
           note: string | null
           program_order: number | null
+          public_credit_enabled: boolean
           responded_at: string | null
           show_id: string
           source: Database['public']['Enums']['show_cast_source']
@@ -423,6 +427,7 @@ export type Database = {
           invited_by_user_id?: string | null
           note?: string | null
           program_order?: number | null
+          public_credit_enabled: boolean
           responded_at?: string | null
           show_id: string
           source: Database['public']['Enums']['show_cast_source']
@@ -436,6 +441,7 @@ export type Database = {
           invited_by_user_id?: string | null
           note?: string | null
           program_order?: number | null
+          public_credit_enabled?: boolean
           responded_at?: string | null
           show_id?: string
           source?: Database['public']['Enums']['show_cast_source']
@@ -645,6 +651,124 @@ export type Database = {
           },
         ]
       }
+      show_public_content_credits: {
+        Row: {
+          display_name: string
+          is_publicly_credited: boolean
+          position: number
+          revision_id: string
+          user_id: string
+        }
+        Insert: {
+          display_name: string
+          is_publicly_credited: boolean
+          position?: number
+          revision_id: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string
+          is_publicly_credited?: boolean
+          position?: number
+          revision_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_public_content_credits_revision_id_fkey'
+            columns: ['revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_public_content_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_public_content_credits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_public_content_revisions: {
+        Row: {
+          admission_price_cents: number
+          created_at: string
+          created_by_user_id: string | null
+          description: string
+          external_url: string | null
+          id: string
+          image_url: string | null
+          last_command_id: string
+          published_at: string | null
+          revision_number: number
+          sales_channel: Database['public']['Enums']['event_sales_channel']
+          show_id: string
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        Insert: {
+          admission_price_cents: number
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          last_command_id: string
+          published_at?: string | null
+          revision_number: number
+          sales_channel: Database['public']['Enums']['event_sales_channel']
+          show_id: string
+          title: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Update: {
+          admission_price_cents?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          last_command_id?: string
+          published_at?: string | null
+          revision_number?: number
+          sales_channel?: Database['public']['Enums']['event_sales_channel']
+          show_id?: string
+          title?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_public_content_revisions_created_by_user_id_fkey'
+            columns: ['created_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_public_content_revisions_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_public_content_revisions_updated_by_user_id_fkey'
+            columns: ['updated_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_resource_requests: {
         Row: {
           created_at: string
@@ -828,6 +952,7 @@ export type Database = {
           poster_url: string | null
           producer_note: string | null
           publication_status: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id: string | null
           slug: string
           status: Database['public']['Enums']['show_status']
           summary: string | null
@@ -855,6 +980,7 @@ export type Database = {
           poster_url?: string | null
           producer_note?: string | null
           publication_status?: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id?: string | null
           slug: string
           status?: Database['public']['Enums']['show_status']
           summary?: string | null
@@ -882,6 +1008,7 @@ export type Database = {
           poster_url?: string | null
           producer_note?: string | null
           publication_status?: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id?: string | null
           slug?: string
           status?: Database['public']['Enums']['show_status']
           summary?: string | null
@@ -897,6 +1024,13 @@ export type Database = {
             columns: ['created_by_user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'shows_published_public_content_revision_id_fkey'
+            columns: ['published_public_content_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_public_content_revisions'
             referencedColumns: ['id']
           },
           {
@@ -1389,6 +1523,7 @@ export type Database = {
           poster_url: string | null
           producer_note: string | null
           publication_status: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id: string | null
           slug: string
           status: Database['public']['Enums']['show_status']
           summary: string | null
@@ -1481,6 +1616,7 @@ export type Database = {
           invited_by_user_id: string | null
           note: string | null
           program_order: number | null
+          public_credit_enabled: boolean
           responded_at: string | null
           show_id: string
           source: Database['public']['Enums']['show_cast_source']
@@ -1632,6 +1768,7 @@ export type Database = {
           invited_by_user_id: string | null
           note: string | null
           program_order: number | null
+          public_credit_enabled: boolean
           responded_at: string | null
           show_id: string
           source: Database['public']['Enums']['show_cast_source']
@@ -1678,6 +1815,45 @@ export type Database = {
           p_target_cast_size: number
         }
         Returns: Json
+      }
+      save_event_public_content_draft: {
+        Args: {
+          p_actor_user_id: string
+          p_admission_price_cents: number
+          p_command_id: string
+          p_credits: Json
+          p_description: string
+          p_expected_version?: number
+          p_external_url?: string
+          p_image_url?: string
+          p_sales_channel: Database['public']['Enums']['event_sales_channel']
+          p_show_id: string
+          p_title: string
+        }
+        Returns: {
+          admission_price_cents: number
+          created_at: string
+          created_by_user_id: string | null
+          description: string
+          external_url: string | null
+          id: string
+          image_url: string | null
+          last_command_id: string
+          published_at: string | null
+          revision_number: number
+          sales_channel: Database['public']['Enums']['event_sales_channel']
+          show_id: string
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_public_content_revisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       set_default_theater: {
         Args: { p_theater_id: string; p_user_id: string }
@@ -1848,6 +2024,7 @@ export type Database = {
       email_outbox_status: 'queued' | 'sent' | 'failed'
       event_leadership_role: 'producer' | 'director'
       event_resource_type: 'staff' | 'equipment' | 'other'
+      event_sales_channel: 'external' | 'no_advance_ticketing'
       event_type: 'show' | 'practice' | 'meeting' | 'audition' | 'workshop'
       invite_status: 'pending' | 'accepted' | 'revoked' | 'expired'
       membership_status: 'active' | 'inactive'
@@ -2011,6 +2188,7 @@ export const Constants = {
       email_outbox_status: ['queued', 'sent', 'failed'],
       event_leadership_role: ['producer', 'director'],
       event_resource_type: ['staff', 'equipment', 'other'],
+      event_sales_channel: ['external', 'no_advance_ticketing'],
       event_type: ['show', 'practice', 'meeting', 'audition', 'workshop'],
       invite_status: ['pending', 'accepted', 'revoked', 'expired'],
       membership_status: ['active', 'inactive'],

@@ -77,11 +77,26 @@ The accepted product model in `docs/product/event-publication-milestone.md` stil
 - approve, deny, request-edits, and Counteroffer decisions
 - exclusive Counteroffer holds and response deadlines
 - Proposal decision state on immutable Proposal Revisions
-- explicit ticket Sales Channel and price
-- per-Event public cast-credit preference
+- lightweight Owner/Admin Publication of a prepared Public Content Revision
 
 Do not treat current generic JSON availability or the retained compatibility
 `show_status` enum as satisfying these remaining requirements.
+
+`show_public_content_revisions` now stores one current unpublished revision per
+Event and preserves previously published revisions as immutable anonymous
+snapshots. Each revision contains public title, description, image, explicit
+non-negative general-admission price, and an explicit Sales Channel of
+`external` or `no_advance_ticketing`. External admission requires an HTTP(S)
+ticket or reservation URL; no advance ticketing stores no URL. Native Stagecom
+ticketing is not an enum value.
+
+`profiles.public_cast_credit_preference` is copied into
+`show_cast.public_credit_enabled` when Cast membership is created. The
+per-Event value then changes independently. Revision credit rows snapshot the
+display name and permission for every accepted Cast Member, while anonymous
+row policies return only credits permitted by the published revision. Producer
+edits update the current unpublished revision, or create the next revision
+after Publication, without modifying `shows.published_public_content_revision_id`.
 
 `show_availability_responses` stores one versioned available, unavailable, or
 uncertain fact per invited Member and Candidate Slot. It retains the responding
