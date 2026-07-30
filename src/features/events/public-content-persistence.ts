@@ -27,17 +27,33 @@ export type EventPublicContentRevision = {
 }
 
 export type PublishedEventContent = {
+  admissionCallToAction: {
+    href: string | null
+    label: 'Get tickets' | 'No advance ticketing'
+  }
   admissionPriceCents: number
   castCredits: Array<{ displayName: string; position: number }>
   description: string
   externalUrl: string | null
   imageUrl: string | null
+  occurrences: Array<{
+    durationMinutes: number
+    localStartsAt: string
+    locationName: string
+    startsAt: string
+    timezoneName: string
+    utcOffsetMinutes: number
+  }>
   salesChannel: 'external' | 'no_advance_ticketing'
   title: string
 }
 
 export type EventPublicContentPersistence = {
   authorizeEdit: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  authorizePublication: (input: {
     actorUserId: string
     eventId: string
   }) => Promise<void>
@@ -49,6 +65,18 @@ export type EventPublicContentPersistence = {
     event: { id: string; lifecycleStatus: string; slug: string }
     theater: { name: string; slug: string }
   } | null>
+  publish: (input: {
+    actorUserId: string
+    allowAtRisk: boolean
+    commandId: string
+    eventId: string
+    expectedVersion: number
+    publicContentRevisionId: string
+  }) => Promise<{
+    eventId: string
+    publicContentRevisionId: string
+    published: true
+  }>
   saveDraft: (input: {
     actorUserId: string
     admissionPriceCents: number
@@ -107,16 +135,40 @@ export function createSupabaseEventPublicContentPersistence(): EventPublicConten
       }
     },
 
-    async findPublishedBySlug(input) {
-      const supabase = createSupabaseAnonClient()
+    async authorizePublication(input) {
+      const supabase = createAuthenticatedClient()
       const { data, error } = await supabase
         .from('shows')
         .select(
-          'id, slug, lifecycle_status, theaters!inner(name, slug), public_content:show_public_content_revisions!shows_published_public_content_revision_id_fkey(title, description, image_url, admission_price_cents, sales_channel, external_url, cast_credits:show_public_content_credits(display_name, position))',
+          'id, theater_id, theaters!inner(theater_memberships!inner(roles, status, user_id))',
         )
-        .eq('slug', input.eventSlug)
-        .eq('theaters.slug', input.theaterSlug)
+        .eq('id', input.eventId)
+        .eq('theaters.theater_memberships.user_id', input.actorUserId)
+        .eq('theaters.theater_memberships.status', 'active')
         .maybeSingle()
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Event Publication authorization could not be checked.',
+        )
+      }
+      if (!data) throw appError('not_found', 'Event was not found.')
+
+      const roles = data.theaters.theater_memberships.flatMap(
+        (membership) => membership.roles,
+      )
+      if (!roles.some((role) => role === 'owner' || role === 'admin')) {
+        throw appError('forbidden', 'Owner or Admin access is required.')
+      }
+    },
+
+    async findPublishedBySlug(input) {
+      const supabase = createSupabaseAnonClient()
+      const { data, error } = await supabase.rpc('get_published_event', {
+        p_event_slug: input.eventSlug,
+        p_theater_slug: input.theaterSlug,
+      })
 
       if (error) {
         throw appError(
@@ -125,27 +177,76 @@ export function createSupabaseEventPublicContentPersistence(): EventPublicConten
         )
       }
 
-      if (!data || !data.public_content) return null
+      if (!data) return null
+      const published = data as unknown as {
+        content: {
+          admissionPriceCents: number
+          castCredits: Array<{ displayName: string; position: number }>
+          description: string
+          externalUrl: string | null
+          imageUrl: string | null
+          occurrences: PublishedEventContent['occurrences']
+          salesChannel: 'external' | 'no_advance_ticketing'
+          title: string
+        }
+        event: { id: string; lifecycleStatus: string; slug: string }
+        theater: { name: string; slug: string }
+      }
 
       return {
         content: {
-          admissionPriceCents: data.public_content.admission_price_cents,
-          castCredits: data.public_content.cast_credits.map((credit) => ({
-            displayName: credit.display_name,
-            position: credit.position,
-          })),
-          description: data.public_content.description,
-          externalUrl: data.public_content.external_url,
-          imageUrl: data.public_content.image_url,
-          salesChannel: data.public_content.sales_channel,
-          title: data.public_content.title,
+          admissionCallToAction: buildAdmissionCallToAction({
+            externalUrl: published.content.externalUrl,
+            salesChannel: published.content.salesChannel,
+          }),
+          admissionPriceCents: published.content.admissionPriceCents,
+          castCredits: published.content.castCredits,
+          description: published.content.description,
+          externalUrl: published.content.externalUrl,
+          imageUrl: published.content.imageUrl,
+          occurrences: published.content.occurrences,
+          salesChannel: published.content.salesChannel,
+          title: published.content.title,
         },
-        event: {
-          id: data.id,
-          lifecycleStatus: data.lifecycle_status,
-          slug: data.slug,
-        },
-        theater: data.theaters,
+        event: published.event,
+        theater: published.theater,
+      }
+    },
+
+    async publish(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('publish_event', {
+        p_actor_user_id: input.actorUserId,
+        p_allow_at_risk: input.allowAtRisk,
+        p_command_id: input.commandId,
+        p_expected_version: input.expectedVersion,
+        p_public_content_revision_id: input.publicContentRevisionId,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        if (
+          error.code === '22023' ||
+          error.code === '23502' ||
+          error.code === '23514'
+        ) {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Event could not be published.',
+        )
+      }
+
+      return {
+        eventId: data.id,
+        publicContentRevisionId: data.published_public_content_revision_id!,
+        published: true,
       }
     },
 
@@ -211,6 +312,15 @@ export function createSupabaseEventPublicContentPersistence(): EventPublicConten
       return mapRevision({ ...data, cast_credits: credits })
     },
   }
+}
+
+export function buildAdmissionCallToAction(input: {
+  externalUrl: string | null
+  salesChannel: 'external' | 'no_advance_ticketing'
+}): PublishedEventContent['admissionCallToAction'] {
+  return input.salesChannel === 'external'
+    ? { href: input.externalUrl, label: 'Get tickets' }
+    : { href: null, label: 'No advance ticketing' }
 }
 
 function mapRevision(revision: {

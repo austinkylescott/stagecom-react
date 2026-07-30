@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(13);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values (
@@ -213,6 +213,22 @@ select throws_like(
 );
 
 update public.shows
+set
+  operational_health = 'at_risk',
+  at_risk_continuation_allowed = true
+where slug = 'legacy-draft';
+
+update public.shows
+set operational_health = 'on_track'
+where slug = 'legacy-draft';
+
+select isnt(
+  (select at_risk_continuation_allowed from public.shows where slug = 'legacy-draft'),
+  true,
+  'returning on track resets the allowance for a future At Risk episode'
+);
+
+update public.shows
 set publication_status = 'unpublished'
 where slug = 'legacy-approved-public';
 
@@ -231,11 +247,9 @@ select results_eq(
     order by slug
   $$,
   $$
-    values
-      ('legacy-approved-private'::text),
-      ('post-migration-legacy-insert'::text)
+    select null::text where false
   $$,
-  'anonymous RLS visibility is constrained by expanded Publication state'
+  'anonymous RLS suppresses Events while their Theater remains unpublished'
 );
 
 select * from finish();

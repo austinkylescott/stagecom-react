@@ -5,6 +5,7 @@ import {
 } from '@/server/supabase/client'
 
 import { getTheaterAccess } from './queries'
+import { buildAdmissionCallToAction } from './public-content-persistence'
 
 import type { z } from 'zod'
 import type { eventWorkspaceInputSchema } from './schemas'
@@ -31,7 +32,7 @@ export async function getEventPublicContentReadiness(
   const { data: event, error: eventError } = await serviceRole
     .from('shows')
     .select(
-      'id, title, description, lifecycle_status, operational_health, published_public_content_revision_id',
+      'id, title, description, lifecycle_status, operational_health, approved_proposal_revision_id, at_risk_continuation_allowed, published_public_content_revision_id',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -69,7 +70,9 @@ export async function getEventPublicContentReadiness(
         .order('created_at'),
       serviceRole
         .from('show_occurrences')
-        .select('*', { count: 'exact', head: true })
+        .select(
+          'id, position, confirmed_slot:show_candidate_slots!show_occurrences_confirmed_candidate_slot_id_fkey(starts_at, duration_minutes, local_starts_at, timezone_name, utc_offset_minutes, location_name)',
+        )
         .eq('show_id', event.id)
         .eq('occurrence_type', 'performance')
         .eq('visibility', 'public')
@@ -91,12 +94,15 @@ export async function getEventPublicContentReadiness(
   }
 
   const blockers = evaluatePublicReadiness({
+    atRiskContinuationAllowed: event.at_risk_continuation_allowed,
     eventAtRisk: event.operational_health === 'at_risk',
     hasDraft: Boolean(draftResult.data),
     hasDescription: Boolean(draftResult.data?.description.trim()),
     hasImage: Boolean(draftResult.data?.image_url),
-    hasOperationalApproval: event.lifecycle_status === 'approved',
-    hasPublicPerformance: (performanceResult.count ?? 0) > 0,
+    hasCurrentOperationalApproval:
+      event.lifecycle_status === 'approved' &&
+      event.approved_proposal_revision_id !== null,
+    hasPublicPerformance: performanceResult.data.length > 0,
     theaterPublished: access.data.theater.status === 'published',
   })
   const isTheaterAdmin = access.data.membership.roles.some(
@@ -106,8 +112,13 @@ export async function getEventPublicContentReadiness(
   return ok({
     allowedActions: {
       editPublicContent: Boolean(producerResult.data),
-      publishEvent: isTheaterAdmin && blockers.length === 0,
+      publishEvent:
+        isTheaterAdmin &&
+        blockers.every((blocker) => blocker.code === 'event_at_risk'),
     },
+    atRiskContinuationRequired:
+      event.operational_health === 'at_risk' &&
+      !event.at_risk_continuation_allowed,
     blockers,
     draft: draftResult.data
       ? {
@@ -145,15 +156,53 @@ export async function getEventPublicContentReadiness(
           version: null,
         },
     publishedRevisionId: event.published_public_content_revision_id,
+    preview: draftResult.data
+      ? {
+          admissionCallToAction: buildAdmissionCallToAction({
+            externalUrl: draftResult.data.external_url,
+            salesChannel: draftResult.data.sales_channel,
+          }),
+          admissionPriceCents: draftResult.data.admission_price_cents,
+          castCredits: draftResult.data.cast_credits
+            .filter((credit) => credit.is_publicly_credited)
+            .sort((left, right) => left.position - right.position)
+            .map((credit) => ({
+              displayName: credit.display_name,
+              position: credit.position,
+            })),
+          description: draftResult.data.description,
+          externalUrl: draftResult.data.external_url,
+          imageUrl: draftResult.data.image_url,
+          occurrences: performanceResult.data
+            .filter((occurrence) => occurrence.confirmed_slot !== null)
+            .sort(
+              (left, right) =>
+                left.confirmed_slot!.starts_at.localeCompare(
+                  right.confirmed_slot!.starts_at,
+                ) || left.position - right.position,
+            )
+            .map((occurrence) => ({
+              durationMinutes: occurrence.confirmed_slot!.duration_minutes,
+              localStartsAt: occurrence.confirmed_slot!.local_starts_at,
+              locationName: occurrence.confirmed_slot!.location_name,
+              startsAt: occurrence.confirmed_slot!.starts_at,
+              timezoneName: occurrence.confirmed_slot!.timezone_name,
+              utcOffsetMinutes: occurrence.confirmed_slot!.utc_offset_minutes,
+            })),
+          salesChannel: draftResult.data.sales_channel,
+          title: draftResult.data.title,
+        }
+      : null,
   })
 }
 
 export function evaluatePublicReadiness(input: {
+  atRiskContinuationAllowed: boolean
   eventAtRisk: boolean
   hasDraft: boolean
   hasDescription: boolean
   hasImage: boolean
-  hasOperationalApproval: boolean
+  hasCurrentOperationalApproval: boolean
   hasPublicPerformance: boolean
   theaterPublished: boolean
 }): PublicReadinessBlocker[] {
@@ -164,7 +213,7 @@ export function evaluatePublicReadiness(input: {
       message: 'Publish the Theater before publishing this Event.',
     })
   }
-  if (!input.hasOperationalApproval) {
+  if (!input.hasCurrentOperationalApproval) {
     blockers.push({
       code: 'operational_approval_missing',
       message: 'Operational Approval is required.',
@@ -195,7 +244,7 @@ export function evaluatePublicReadiness(input: {
       message: 'Confirm at least one public Performance.',
     })
   }
-  if (input.eventAtRisk) {
+  if (input.eventAtRisk && !input.atRiskContinuationAllowed) {
     blockers.push({
       code: 'event_at_risk',
       message: 'Management must explicitly allow this At Risk Event.',

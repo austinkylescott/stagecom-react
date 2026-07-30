@@ -2,8 +2,8 @@
 
 Documentation status: active
 
-Implementation status: Proposal submission, review decisions, and exclusive
-Counteroffer reservations implemented; Event Publication remains
+Implementation status: Proposal submission, review decisions, exclusive
+Counteroffer reservations, and anonymous-safe Event Publication implemented
 
 ## What Does Management Review?
 
@@ -93,6 +93,19 @@ No. Operational Approval makes the Event eligible for publication. The Theater i
 
 Producer changes to title, description, image, or other public copy create an unpublished content revision. Owner/Admin performs a lightweight publish action without repeating operational review. Ticket-price and Sales Channel changes use the same lightweight approval path.
 
+The workspace renders the exact allowlisted snapshot selected by the next
+publish command. Publication locks the Event and selected revision, rechecks a
+published Theater, current Operational Approval, complete copy and admission,
+and a confirmed public Performance, then snapshots those public Performances
+and promotes the revision atomically. An At Risk Event requires an explicit
+Owner/Admin continuation acknowledgement. Later content or admission edits
+create a new draft and cannot change the live result until another Publication.
+
+Anonymous reads use one allowlisted database read model. It returns only the
+published copy, snapshotted public Performances, permitted Cast credits, price,
+Sales Channel, and admission call to action, and returns not found when either
+the Event or its Theater is unpublished.
+
 ## How Does Initial Ticketing Work?
 
 The first milestone supports general admission and an explicit Sales Channel:
@@ -111,3 +124,5 @@ Workflow notifications originate from explicit domain events, never directly fro
 Approval, Owner-override approval, requested-edits, and denial events now
 project in-app notifications to the Event leadership and Proposed Cast. A
 per-recipient dedupe key prevents retries from creating a second notification.
+Publication writes `event.published` in the same transaction and projects
+deduplicated in-app notifications to Event leadership and accepted Cast.

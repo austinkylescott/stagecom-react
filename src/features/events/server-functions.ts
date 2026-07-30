@@ -4,6 +4,7 @@ import {
   createManagedEvent,
   inviteEventCastMember,
   issueProposalCounteroffer,
+  publishEvent,
   recordCandidateSlotAvailability,
   respondToEventCastInvitation,
   respondToProposalCounteroffer,
@@ -27,6 +28,7 @@ import {
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
   issueProposalCounterofferInputSchema,
+  publishEventInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
   respondToProposalCounterofferInputSchema,
@@ -73,6 +75,10 @@ export const saveEventOperationalPlanFn = createServerFn({ method: 'POST' })
 export const saveEventPublicContentFn = createServerFn({ method: 'POST' })
   .validator(saveEventPublicContentInputSchema)
   .handler(async ({ data }) => saveEventPublicContent(data))
+
+export const publishEventFn = createServerFn({ method: 'POST' })
+  .validator(publishEventInputSchema)
+  .handler(async ({ data }) => publishEvent(data))
 
 export const inviteEventCastMemberFn = createServerFn({ method: 'POST' })
   .validator(inviteEventCastMemberInputSchema)

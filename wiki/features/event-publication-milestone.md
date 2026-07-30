@@ -51,7 +51,11 @@ explicit Producer/Director leadership, and the editable operational plan are
 also implemented. Producers can persist ordered Rehearsal and Performance
 Occurrences, Candidate and optional Confirmed Slots, cast thresholds, and
 requested resources through one transactional command. Casting responses,
-schedule conflict handling, review, and Event Publication remain incomplete.
+schedule conflict handling, Proposal review, versioned public content, and
+anonymous-safe Event Publication are implemented. Owner/Admin can preview the
+exact next snapshot, acknowledge At Risk continuation explicitly, publish
+without repeating Operational Approval, and leave later edits private until a
+new Publication.
 The accepted product boundary lives in
 `docs/product/event-publication-milestone.md`; detailed implementation tickets
 and dependency relationships are tracked under STA-5 in Linear.
