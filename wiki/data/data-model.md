@@ -67,18 +67,23 @@ The retained `shows.status = rejected` value preserves the legacy distinction wh
 
 ## Target Event Model
 
-The existing schema does not yet express the agreed workflow completely. The remaining target model must support:
+The remaining target model must support an Event that persists through
+completion or cancellation while preserving its published history.
 
-- an Event that persists from draft through completion or cancellation
-- lightweight Owner/Admin Publication of a prepared Public Content Revision
-
-Versioned public presentation is executable. An Event has at most one
+Versioned public presentation and Publication are executable. An Event has at most one
 unpublished `show_public_content_revisions` row; after Publication, later
 Producer edits create the next revision and leave the referenced published
 snapshot unchanged. Admission always stores a non-negative price and an
 explicit `external` or `no_advance_ticketing` Sales Channel. External requires
 an HTTP(S) ticket or reservation URL, while no advance ticketing stores no URL.
 Native Stagecom ticketing remains out of scope.
+
+`show_public_occurrence_snapshots` freezes the confirmed public Performance
+facts selected during Publication alongside the published Public Content
+Revision. The Event retains independent lifecycle, Publication, and operational
+health fields; publishing an explicitly allowed At Risk Event does not erase
+its At Risk condition. `get_published_event` is the anonymous allowlist and
+returns no row unless both the Theater and Event are published.
 
 Each Cast relationship initializes `public_credit_enabled` from the Member's
 profile preference, then remains independently controllable for that Event.

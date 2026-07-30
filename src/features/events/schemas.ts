@@ -81,6 +81,14 @@ export const saveEventPublicContentInputSchema = z
     }
   })
 
+export const publishEventInputSchema = z.object({
+  allowAtRisk: z.boolean().default(false),
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+  expectedVersion: z.number().int().positive(),
+  publicContentRevisionId: uuidSchema,
+})
+
 export const inviteEventCastMemberInputSchema = z.object({
   eventId: uuidSchema,
   memberUserId: uuidSchema,

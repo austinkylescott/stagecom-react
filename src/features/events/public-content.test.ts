@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { saveEventPublicContent } from './commands'
+import { publishEvent, saveEventPublicContent } from './commands'
 import { evaluatePublicReadiness } from './public-content-queries'
 import { getPublishedEventBySlug } from './public-queries'
 import { saveEventPublicContentInputSchema } from './schemas'
@@ -13,13 +13,63 @@ const castUserId = '20000000-0000-4000-8000-000000000001'
 const commandId = '30000000-0000-4000-8000-000000000001'
 
 describe('versioned public Event content', () => {
+  it('publishes the exact previewed revision only after Owner/Admin authorization', async () => {
+    const calls: string[] = []
+    const dependencies: EventPublicContentCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
+      persistence: {
+        authorizeEdit: async () => undefined,
+        authorizePublication: async () => {
+          calls.push('authorize')
+        },
+        findPublishedBySlug: async () => null,
+        publish: async (input) => {
+          calls.push('publish')
+          return {
+            eventId: input.eventId,
+            publicContentRevisionId: input.publicContentRevisionId,
+            published: true,
+          }
+        },
+        saveDraft: async () => {
+          throw new Error('must not run')
+        },
+      },
+    }
+
+    const result = await publishEvent(
+      {
+        allowAtRisk: false,
+        commandId,
+        eventId,
+        expectedVersion: 3,
+        publicContentRevisionId: '40000000-0000-4000-8000-000000000001',
+      },
+      dependencies,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        eventId,
+        publicContentRevisionId: '40000000-0000-4000-8000-000000000001',
+        published: true,
+      },
+    })
+    expect(calls).toEqual(['authorize', 'publish'])
+  })
+
   it('authorizes the Producer before saving an unpublished revision', async () => {
     const calls: string[] = []
     const persistence: EventPublicContentPersistence = {
       authorizeEdit: async () => {
         calls.push('authorize')
       },
+      authorizePublication: async () => undefined,
       findPublishedBySlug: async () => null,
+      publish: async () => {
+        throw new Error('must not run')
+      },
       saveDraft: async (input) => {
         calls.push('save')
         return {
@@ -89,7 +139,11 @@ describe('versioned public Event content', () => {
             status: 403,
           }
         },
+        authorizePublication: async () => undefined,
         findPublishedBySlug: async () => null,
+        publish: async () => {
+          throw new Error('must not run')
+        },
         saveDraft: async () => {
           saved = true
           throw new Error('must not run')
@@ -162,11 +216,12 @@ describe('versioned public Event content', () => {
   it('returns explicit readiness blockers for the UI', () => {
     expect(
       evaluatePublicReadiness({
+        atRiskContinuationAllowed: false,
         eventAtRisk: false,
         hasDraft: false,
         hasDescription: false,
         hasImage: false,
-        hasOperationalApproval: false,
+        hasCurrentOperationalApproval: false,
         hasPublicPerformance: false,
         theaterPublished: false,
       }).map((blocker) => blocker.code),
@@ -176,13 +231,31 @@ describe('versioned public Event content', () => {
       'public_content_missing',
       'public_performance_missing',
     ])
+
+    expect(
+      evaluatePublicReadiness({
+        atRiskContinuationAllowed: true,
+        eventAtRisk: true,
+        hasCurrentOperationalApproval: true,
+        hasDescription: true,
+        hasDraft: true,
+        hasImage: true,
+        hasPublicPerformance: true,
+        theaterPublished: true,
+      }),
+    ).toEqual([])
   })
 
   it('removes hidden credits at the anonymous query boundary', async () => {
     const persistence: EventPublicContentPersistence = {
       authorizeEdit: async () => undefined,
+      authorizePublication: async () => undefined,
       findPublishedBySlug: async () => ({
         content: {
+          admissionCallToAction: {
+            href: 'https://tickets.example/event',
+            label: 'Get tickets',
+          },
           admissionPriceCents: 1500,
           castCredits: [
             {
@@ -193,12 +266,25 @@ describe('versioned public Event content', () => {
           description: 'Published description',
           externalUrl: 'https://tickets.example/event',
           imageUrl: 'https://images.example/event.jpg',
+          occurrences: [
+            {
+              durationMinutes: 90,
+              localStartsAt: '2026-08-14T19:30:00',
+              locationName: 'Main Stage',
+              startsAt: '2026-08-14T23:30:00+00:00',
+              timezoneName: 'America/New_York',
+              utcOffsetMinutes: -240,
+            },
+          ],
           salesChannel: 'external',
           title: 'Published title',
         },
         event: { id: eventId, lifecycleStatus: 'approved', slug: 'event' },
         theater: { name: 'Theater', slug: 'theater' },
       }),
+      publish: async () => {
+        throw new Error('must not run')
+      },
       saveDraft: async () => {
         throw new Error('must not run')
       },
@@ -213,6 +299,20 @@ describe('versioned public Event content', () => {
     if (result.ok) {
       expect(result.data.content.castCredits).toEqual([
         { displayName: 'Visible Member', position: 0 },
+      ])
+      expect(result.data.content.admissionCallToAction).toEqual({
+        href: 'https://tickets.example/event',
+        label: 'Get tickets',
+      })
+      expect(result.data.content.occurrences).toEqual([
+        {
+          durationMinutes: 90,
+          localStartsAt: '2026-08-14T19:30:00',
+          locationName: 'Main Stage',
+          startsAt: '2026-08-14T23:30:00+00:00',
+          timezoneName: 'America/New_York',
+          utcOffsetMinutes: -240,
+        },
       ])
       expect(JSON.stringify(result.data)).not.toContain(castUserId)
       expect(JSON.stringify(result.data)).not.toContain('revisionNumber')

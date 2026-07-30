@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(18);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -197,19 +197,81 @@ set
   country = 'US'
 where slug = 'public-content-theater';
 
-update public.show_public_content_revisions
-set published_at = now()
-where show_id = (select id from public.shows where slug = 'versioned-public-event');
+insert into public.show_occurrences (
+  id, show_id, occurrence_type, visibility, position
+) values (
+  '74000000-0000-0000-0000-000000000021',
+  (select id from public.shows where slug = 'versioned-public-event'),
+  'performance',
+  'public',
+  0
+);
+
+insert into public.show_candidate_slots (
+  id, occurrence_id, starts_at, duration_minutes, local_starts_at,
+  timezone_name, timezone_source, utc_offset_minutes, location_kind,
+  location_name, off_site_approved, position
+) values (
+  '74000000-0000-0000-0000-000000000022',
+  '74000000-0000-0000-0000-000000000021',
+  '2026-10-10T23:30:00Z',
+  90,
+  '2026-10-10T19:30:00',
+  'America/New_York',
+  'manual',
+  -240,
+  'off_site',
+  'Public Hall',
+  true,
+  0
+);
+
+update public.show_occurrences
+set confirmed_candidate_slot_id = '74000000-0000-0000-0000-000000000022'
+where id = '74000000-0000-0000-0000-000000000021';
+
+insert into public.show_proposal_revisions (
+  id, show_id, revision_number, submitted_by, command_id, snapshot,
+  decision_state
+) values (
+  '74000000-0000-0000-0000-000000000023',
+  (select id from public.shows where slug = 'versioned-public-event'),
+  1,
+  '74000000-0000-0000-0000-000000000001',
+  '74000000-0000-0000-0000-000000000024',
+  '{}'::jsonb,
+  'approved'
+);
 
 update public.shows
 set
   status = 'approved',
-  is_public_listed = true,
-  published_public_content_revision_id = (
-    select id from public.show_public_content_revisions
-    where show_id = public.shows.id and revision_number = 1
-  )
+  approved_proposal_revision_id = '74000000-0000-0000-0000-000000000023'
 where slug = 'versioned-public-event';
+
+select lives_ok(
+  format(
+    'select public.publish_event(%L, %L, %L, %L, %L, %L)',
+    (select id from public.shows where slug = 'versioned-public-event'),
+    '74000000-0000-0000-0000-000000000001',
+    (select id from public.show_public_content_revisions
+     where show_id = (select id from public.shows where slug = 'versioned-public-event')),
+    1,
+    '74000000-0000-0000-0000-000000000025',
+    false
+  ),
+  'Owner Publication atomically promotes the previewed revision'
+);
+
+select is(
+  (select count(*) from public.show_public_occurrence_snapshots
+   where revision_id = (
+     select published_public_content_revision_id from public.shows
+     where slug = 'versioned-public-event'
+   )),
+  1::bigint,
+  'Publication snapshots only the confirmed public Performance'
+);
 
 select lives_ok(
   $$
@@ -257,16 +319,31 @@ select is(
 
 set local role anon;
 
-select results_eq(
-  $$ select title from public.show_public_content_revisions $$,
-  $$ values ('Published Event Title'::text) $$,
+select is(
+  public.get_published_event(
+    'public-content-theater',
+    'versioned-public-event'
+  ) #>> '{content,title}',
+  'Published Event Title',
   'anonymous reads return the published snapshot and never the newer draft'
 );
 
-select results_eq(
-  $$ select display_name from public.show_public_content_credits $$,
-  $$ values ('Credited Cast'::text) $$,
+select is(
+  public.get_published_event(
+    'public-content-theater',
+    'versioned-public-event'
+  ) #>> '{content,castCredits,0,displayName}',
+  'Credited Cast',
   'anonymous reads omit hidden Cast credits'
+);
+
+select is(
+  public.get_published_event(
+    'public-content-theater',
+    'versioned-public-event'
+  ) #>> '{content,occurrences,0,locationName}',
+  'Public Hall',
+  'anonymous reads expose the snapshotted public Performance'
 );
 
 reset role;

@@ -16,6 +16,7 @@ import type {
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
   respondToProposalCounterofferInputSchema,
+  publishEventInputSchema,
   saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
@@ -283,6 +284,33 @@ export async function saveEventPublicContent(
             'Public Event content could not be saved.',
           ),
         )
+      : err(failure)
+  }
+}
+
+export async function publishEvent(
+  input: z.infer<typeof publishEventInputSchema>,
+  dependencies: EventPublicContentCommandDependencies = getDefaultPublicContentDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizePublication({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+    })
+
+    return ok(
+      await dependencies.persistence.publish({
+        actorUserId: currentUser.data.id,
+        ...input,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(appError('external_service_error', 'Event could not be published.'))
       : err(failure)
   }
 }

@@ -134,6 +134,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       fixture.admin
         .from('show_proposal_decisions')
         .select('action, owner_override, reason')
+        .eq('actor_user_id', fixture.ownerUserId)
         .single(),
       fixture.admin
         .from('activity_events')
@@ -154,6 +155,190 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     expect(overrideActivity.data).toEqual([
       { action: 'event.proposal_revision.owner_override_approved' },
     ])
+
+    await expect(
+      page.getByText('Publish the Theater before publishing this Event.'),
+    ).toBeVisible()
+
+    const { error: theaterSetupError } = await fixture.admin
+      .from('theaters')
+      .update({
+        city: 'New York',
+        country: 'US',
+        postal_code: '10001',
+        state_region: 'NY',
+        street: '10 Stage Door Way',
+        tagline: 'A home for public performance',
+        timezone_source: 'manual',
+      })
+      .eq('id', fixture.theaterId)
+    expect(theaterSetupError).toBeNull()
+    const { error: theaterPublishError } = await fixture.admin.rpc(
+      'publish_theater',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_theater_id: fixture.theaterId,
+      },
+    )
+    expect(theaterPublishError).toBeNull()
+
+    await page.reload()
+    await page.waitForTimeout(500)
+    await page.getByLabel('Public title').fill('The Exact Public Event')
+    await page
+      .getByLabel('Image URL')
+      .fill('https://images.example/public-event.jpg')
+    await page
+      .getByLabel('Public description')
+      .fill('This is the exact anonymous description.')
+    await page.getByLabel('General-admission price (USD)').fill('15')
+    await page.getByLabel('Sales Channel').selectOption('external')
+    await page
+      .getByLabel('Ticket or reservation URL')
+      .fill('https://tickets.example/exact-event')
+    await page.getByLabel('Credit Accepted Cast for this Event').check()
+    await page
+      .getByRole('button', { name: 'Save unpublished revision' })
+      .click()
+    await expect(
+      page.getByText('Unpublished public-content revision saved.'),
+    ).toBeVisible()
+
+    await page.reload()
+    const preview = page
+      .getByRole('article')
+      .filter({ hasText: 'Anonymous preview' })
+    await expect(preview.getByText('The Exact Public Event')).toBeVisible()
+    await expect(
+      preview.getByText('This is the exact anonymous description.'),
+    ).toBeVisible()
+    await expect(preview.getByText('$15.00')).toBeVisible()
+    await expect(preview.getByText('Accepted Cast')).toBeVisible()
+    await expect(
+      preview.getByRole('link', { name: 'Get tickets' }),
+    ).toHaveAttribute('href', 'https://tickets.example/exact-event')
+
+    const unpublishedAnonymousPage = await context.browser()!.newPage()
+    await unpublishedAnonymousPage.goto(
+      `/theater/${fixture.theaterSlug}/${fixture.eventSlug}`,
+    )
+    await expect(
+      unpublishedAnonymousPage.getByRole('heading', {
+        name: 'The Exact Public Event',
+      }),
+    ).toHaveCount(0)
+    await unpublishedAnonymousPage.close()
+
+    const { error: atRiskError } = await fixture.admin
+      .from('shows')
+      .update({ operational_health: 'at_risk' })
+      .eq('id', fixture.eventId)
+    expect(atRiskError).toBeNull()
+    await page.reload()
+    await expect(
+      page.getByText('Management must explicitly allow this At Risk Event.'),
+    ).toBeVisible()
+    const allowAtRisk = page.getByLabel(
+      'Explicitly allow this At Risk Event to continue to Publication.',
+    )
+    const publishButton = page.getByRole('button', {
+      name: 'Publish anonymous snapshot',
+    })
+    await expect(publishButton).toBeDisabled()
+    await allowAtRisk.check()
+    await expect(publishButton).toBeEnabled()
+    await page
+      .getByRole('button', { name: 'Publish anonymous snapshot' })
+      .click()
+    await expect(page.getByText('published', { exact: true })).toBeVisible()
+
+    const anonymousPage = await context.browser()!.newPage()
+    await anonymousPage.goto(
+      `/theater/${fixture.theaterSlug}/${fixture.eventSlug}`,
+    )
+    await expect(
+      anonymousPage.getByRole('heading', { name: 'The Exact Public Event' }),
+    ).toBeVisible()
+    await expect(anonymousPage.getByText('Community Hall')).toBeVisible()
+    await expect(anonymousPage.getByText('Accepted Cast')).toBeVisible()
+    await expect(anonymousPage.getByText('Pending Invitee')).toHaveCount(0)
+    await expect(anonymousPage.getByText('Proposal Revision')).toHaveCount(0)
+    await expect(
+      anonymousPage.getByRole('link', { name: 'Get tickets' }),
+    ).toHaveAttribute('href', 'https://tickets.example/exact-event')
+
+    await page.waitForTimeout(500)
+    await page.getByLabel('Public title').fill('A Later Unpublished Edit')
+    await page
+      .getByLabel('Image URL')
+      .fill('https://images.example/later-edit.jpg')
+    await page
+      .getByLabel('Public description')
+      .fill('This later description must remain private.')
+    await page.getByLabel('General-admission price (USD)').fill('20')
+    await page.getByLabel('Sales Channel').selectOption('external')
+    await page
+      .getByLabel('Ticket or reservation URL')
+      .fill('https://tickets.example/later-edit')
+    await page.getByLabel('Credit Accepted Cast for this Event').check()
+    await page
+      .getByRole('button', { name: 'Save unpublished revision' })
+      .click()
+    await expect(
+      page.getByText('Unpublished public-content revision saved.'),
+    ).toBeVisible()
+
+    await anonymousPage.reload()
+    await expect(
+      anonymousPage.getByRole('heading', { name: 'The Exact Public Event' }),
+    ).toBeVisible()
+    await expect(anonymousPage.getByText('$15.00')).toBeVisible()
+    await expect(
+      anonymousPage.getByText('A Later Unpublished Edit'),
+    ).toHaveCount(0)
+    await expect(
+      anonymousPage.getByText('This later description must remain private.'),
+    ).toHaveCount(0)
+
+    const [
+      { data: publicationState },
+      { data: publicationEvents },
+      { data: publicationNotifications },
+    ] = await Promise.all([
+      fixture.admin
+        .from('shows')
+        .select(
+          'lifecycle_status, publication_status, operational_health, at_risk_continuation_allowed',
+        )
+        .eq('id', fixture.eventId)
+        .single(),
+      fixture.admin
+        .from('activity_events')
+        .select('action')
+        .eq('entity_id', fixture.eventId)
+        .eq('action', 'event.published'),
+        fixture.admin
+          .from('notifications')
+          .select('type, dedupe_key, user_id')
+        .eq('entity_id', fixture.eventId)
+        .eq('type', 'event.published'),
+    ])
+    expect(publicationState).toEqual({
+      at_risk_continuation_allowed: true,
+      lifecycle_status: 'approved',
+      operational_health: 'at_risk',
+      publication_status: 'published',
+    })
+    expect(publicationEvents).toEqual([{ action: 'event.published' }])
+    expect(publicationNotifications?.length).toBeGreaterThan(0)
+    expect(
+      new Set(
+        publicationNotifications?.map(
+          (notification) =>
+            `${notification.user_id}:${notification.dedupe_key}`,
+        ),
+      ).size,
+    ).toBe(publicationNotifications?.length)
   } finally {
     await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
     await Promise.all(

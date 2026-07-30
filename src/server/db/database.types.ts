@@ -1107,6 +1107,57 @@ export type Database = {
           },
         ]
       }
+      show_public_occurrence_snapshots: {
+        Row: {
+          duration_minutes: number
+          local_starts_at: string
+          location_name: string
+          occurrence_id: string
+          position: number
+          revision_id: string
+          starts_at: string
+          timezone_name: string
+          utc_offset_minutes: number
+        }
+        Insert: {
+          duration_minutes: number
+          local_starts_at: string
+          location_name: string
+          occurrence_id: string
+          position: number
+          revision_id: string
+          starts_at: string
+          timezone_name: string
+          utc_offset_minutes: number
+        }
+        Update: {
+          duration_minutes?: number
+          local_starts_at?: string
+          location_name?: string
+          occurrence_id?: string
+          position?: number
+          revision_id?: string
+          starts_at?: string
+          timezone_name?: string
+          utc_offset_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_public_occurrence_snapshots_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_public_occurrence_snapshots_revision_id_fkey'
+            columns: ['revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_public_content_revisions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_resource_requests: {
         Row: {
           created_at: string
@@ -1365,6 +1416,7 @@ export type Database = {
       shows: {
         Row: {
           approved_proposal_revision_id: string | null
+          at_risk_continuation_allowed: boolean
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -1375,6 +1427,7 @@ export type Database = {
           id: string
           is_cast_finalized: boolean
           is_public_listed: boolean
+          last_publication_command_id: string | null
           lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
           minimum_viable_cast: number | null
           on_sale_at: string | null
@@ -1394,6 +1447,7 @@ export type Database = {
         }
         Insert: {
           approved_proposal_revision_id?: string | null
+          at_risk_continuation_allowed?: boolean
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
@@ -1404,6 +1458,7 @@ export type Database = {
           id?: string
           is_cast_finalized?: boolean
           is_public_listed?: boolean
+          last_publication_command_id?: string | null
           lifecycle_status?: Database['public']['Enums']['show_lifecycle_status']
           minimum_viable_cast?: number | null
           on_sale_at?: string | null
@@ -1423,6 +1478,7 @@ export type Database = {
         }
         Update: {
           approved_proposal_revision_id?: string | null
+          at_risk_continuation_allowed?: boolean
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
@@ -1433,6 +1489,7 @@ export type Database = {
           id?: string
           is_cast_finalized?: boolean
           is_public_listed?: boolean
+          last_publication_command_id?: string | null
           lifecycle_status?: Database['public']['Enums']['show_lifecycle_status']
           minimum_viable_cast?: number | null
           on_sale_at?: string | null
@@ -1950,6 +2007,7 @@ export type Database = {
         }
         Returns: {
           approved_proposal_revision_id: string | null
+          at_risk_continuation_allowed: boolean
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -1960,6 +2018,7 @@ export type Database = {
           id: string
           is_cast_finalized: boolean
           is_public_listed: boolean
+          last_publication_command_id: string | null
           lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
           minimum_viable_cast: number | null
           on_sale_at: string | null
@@ -2036,6 +2095,10 @@ export type Database = {
       expire_proposal_counteroffers: {
         Args: { p_now?: string; p_show_id?: string }
         Returns: number
+      }
+      get_published_event: {
+        Args: { p_event_slug: string; p_theater_slug: string }
+        Returns: Json
       }
       get_reusable_theater_join_link: {
         Args: { p_token_hash: string }
@@ -2200,6 +2263,53 @@ export type Database = {
       proposal_approval_scope_from_snapshot: {
         Args: { p_snapshot: Json }
         Returns: Json
+      }
+      publish_event: {
+        Args: {
+          p_actor_user_id: string
+          p_allow_at_risk?: boolean
+          p_command_id: string
+          p_expected_version: number
+          p_public_content_revision_id: string
+          p_show_id: string
+        }
+        Returns: {
+          approved_proposal_revision_id: string | null
+          at_risk_continuation_allowed: boolean
+          cast_max: number | null
+          cast_min: number | null
+          casting_mode: Database['public']['Enums']['casting_mode']
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          event_type: Database['public']['Enums']['event_type']
+          id: string
+          is_cast_finalized: boolean
+          is_public_listed: boolean
+          last_publication_command_id: string | null
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast: number | null
+          on_sale_at: string | null
+          operational_health: Database['public']['Enums']['show_operational_health']
+          poster_url: string | null
+          producer_note: string | null
+          publication_status: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id: string | null
+          slug: string
+          status: Database['public']['Enums']['show_status']
+          summary: string | null
+          target_cast_size: number | null
+          theater_id: string
+          ticket_url: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'shows'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       publish_theater: {
         Args: { p_actor_user_id: string; p_theater_id: string }
@@ -2431,6 +2541,7 @@ export type Database = {
         }
         Returns: {
           approved_proposal_revision_id: string | null
+          at_risk_continuation_allowed: boolean
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -2441,6 +2552,7 @@ export type Database = {
           id: string
           is_cast_finalized: boolean
           is_public_listed: boolean
+          last_publication_command_id: string | null
           lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
           minimum_viable_cast: number | null
           on_sale_at: string | null

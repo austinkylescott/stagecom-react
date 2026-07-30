@@ -4,6 +4,7 @@ import {
   createManagedEventFn,
   inviteEventCastMemberFn,
   issueProposalCounterofferFn,
+  publishEventFn,
   recordCandidateSlotAvailabilityFn,
   reviewProposalRevisionFn,
   respondToEventCastInvitationFn,
@@ -29,6 +30,14 @@ type EventMember = {
   isEligibleProducer: boolean
   roles: string[]
   userId: string
+}
+
+function formatAdmissionPrice(priceCents: number) {
+  if (priceCents === 0) return 'Free admission'
+  return new Intl.NumberFormat('en-US', {
+    currency: 'USD',
+    style: 'currency',
+  }).format(priceCents / 100)
 }
 
 export function CreateManagedEventPage({
@@ -158,6 +167,97 @@ export function CreateManagedEventPage({
           {isSubmitting ? 'Creating…' : 'Create Event draft'}
         </button>
       </form>
+    </main>
+  )
+}
+
+export function PublishedEventPage({
+  content,
+  theater,
+}: {
+  content: {
+    admissionCallToAction: {
+      href: string | null
+      label: 'Get tickets' | 'No advance ticketing'
+    }
+    admissionPriceCents: number
+    castCredits: Array<{ displayName: string; position: number }>
+    description: string
+    imageUrl: string | null
+    occurrences: Array<{
+      durationMinutes: number
+      localStartsAt: string
+      locationName: string
+      startsAt: string
+      timezoneName: string
+      utcOffsetMinutes: number
+    }>
+    title: string
+  }
+  theater: { name: string; slug: string }
+}) {
+  return (
+    <main className="page-wrap py-8 sm:py-12">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+        {theater.name} · Event
+      </p>
+      <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
+        {content.title}
+      </h1>
+      {content.imageUrl ? (
+        <img
+          alt=""
+          className="mt-6 max-h-[32rem] w-full rounded-lg object-cover"
+          src={content.imageUrl}
+        />
+      ) : null}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <section className="island-shell rounded-lg px-6 py-6">
+          <p className="whitespace-pre-wrap text-lg">{content.description}</p>
+          {content.castCredits.length > 0 ? (
+            <div className="mt-6">
+              <h2 className="text-xl font-extrabold">Cast</h2>
+              <ul className="mt-2 grid gap-1">
+                {content.castCredits.map((credit) => (
+                  <li key={`${credit.position}-${credit.displayName}`}>
+                    {credit.displayName}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+        <aside className="island-shell rounded-lg px-6 py-6">
+          <h2 className="text-xl font-extrabold">Performances</h2>
+          <ul className="mt-3 grid gap-4">
+            {content.occurrences.map((occurrence) => (
+              <li key={`${occurrence.startsAt}-${occurrence.locationName}`}>
+                <p className="font-bold">{occurrence.localStartsAt}</p>
+                <p className="text-sm text-[var(--sea-ink-soft)]">
+                  {occurrence.locationName} · {occurrence.durationMinutes}{' '}
+                  minutes · {occurrence.timezoneName}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 text-lg font-extrabold">
+            {formatAdmissionPrice(content.admissionPriceCents)}
+          </p>
+          {content.admissionCallToAction.href ? (
+            <a
+              className="mt-3 inline-flex rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white"
+              href={content.admissionCallToAction.href}
+              rel="noreferrer"
+            >
+              {content.admissionCallToAction.label}
+            </a>
+          ) : (
+            <p className="mt-3 font-semibold">
+              {content.admissionCallToAction.label}
+            </p>
+          )}
+        </aside>
+      </div>
     </main>
   )
 }
@@ -354,6 +454,7 @@ export function ManagedEventWorkspace({
       editPublicContent: boolean
       publishEvent: boolean
     }
+    atRiskContinuationRequired: boolean
     blockers: Array<{ code: string; message: string }>
     draft: {
       admissionPriceCents: number | null
@@ -373,6 +474,27 @@ export function ManagedEventWorkspace({
       version: number | null
     }
     publishedRevisionId: string | null
+    preview: {
+      admissionCallToAction: {
+        href: string | null
+        label: 'Get tickets' | 'No advance ticketing'
+      }
+      admissionPriceCents: number
+      castCredits: Array<{ displayName: string; position: number }>
+      description: string
+      externalUrl: string | null
+      imageUrl: string | null
+      occurrences: Array<{
+        durationMinutes: number
+        localStartsAt: string
+        locationName: string
+        startsAt: string
+        timezoneName: string
+        utcOffsetMinutes: number
+      }>
+      salesChannel: 'external' | 'no_advance_ticketing'
+      title: string
+    } | null
   } | null
   primaryVenueCommitments: Array<{
     durationMinutes: number
@@ -459,6 +581,8 @@ export function ManagedEventWorkspace({
   )
   const [publicContentSaved, setPublicContentSaved] = useState(false)
   const [isSavingPublicContent, setIsSavingPublicContent] = useState(false)
+  const [allowAtRisk, setAllowAtRisk] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
   const [proposedCastUserIds, setProposedCastUserIds] = useState(
     event.show_proposed_cast.map(({ user_id }) => user_id),
   )
@@ -537,6 +661,104 @@ export function ManagedEventWorkspace({
                 ))}
               </ul>
             </div>
+          ) : null}
+          {publicContent.preview ? (
+            <article className="mt-5 rounded-lg border border-[var(--line)] bg-white px-5 py-5">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+                Anonymous preview
+              </p>
+              <h3 className="mt-2 text-2xl font-extrabold">
+                {publicContent.preview.title}
+              </h3>
+              {publicContent.preview.imageUrl ? (
+                <img
+                  alt=""
+                  className="mt-4 max-h-64 w-full rounded-md object-cover"
+                  src={publicContent.preview.imageUrl}
+                />
+              ) : null}
+              <p className="mt-4 whitespace-pre-wrap">
+                {publicContent.preview.description}
+              </p>
+              <p className="mt-4 font-bold">
+                {formatAdmissionPrice(
+                  publicContent.preview.admissionPriceCents,
+                )}
+              </p>
+              <ul className="mt-3 grid gap-2">
+                {publicContent.preview.occurrences.map((occurrence) => (
+                  <li key={`${occurrence.startsAt}-${occurrence.locationName}`}>
+                    {occurrence.localStartsAt} · {occurrence.locationName}
+                  </li>
+                ))}
+              </ul>
+              {publicContent.preview.castCredits.length > 0 ? (
+                <p className="mt-4">
+                  Cast:{' '}
+                  {publicContent.preview.castCredits
+                    .map((credit) => credit.displayName)
+                    .join(', ')}
+                </p>
+              ) : null}
+              {publicContent.preview.admissionCallToAction.href ? (
+                <a
+                  className="mt-4 inline-flex rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white"
+                  href={publicContent.preview.admissionCallToAction.href}
+                >
+                  {publicContent.preview.admissionCallToAction.label}
+                </a>
+              ) : (
+                <p className="mt-4 font-semibold">
+                  {publicContent.preview.admissionCallToAction.label}
+                </p>
+              )}
+            </article>
+          ) : null}
+          {publicContent.atRiskContinuationRequired ? (
+            <label className="mt-5 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-950">
+              <input
+                checked={allowAtRisk}
+                onChange={(change) => setAllowAtRisk(change.target.checked)}
+                type="checkbox"
+              />
+              Explicitly allow this At Risk Event to continue to Publication.
+            </label>
+          ) : null}
+          {publicContent.allowedActions.publishEvent &&
+          publicDraft.id &&
+          publicDraft.version ? (
+            <button
+              className="mt-5 rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              disabled={
+                isPublishing ||
+                (publicContent.atRiskContinuationRequired && !allowAtRisk)
+              }
+              onClick={async () => {
+                setPublicContentError(null)
+                setIsPublishing(true)
+                try {
+                  const result = await publishEventFn({
+                    data: {
+                      allowAtRisk,
+                      commandId: crypto.randomUUID(),
+                      eventId: event.id,
+                      expectedVersion: publicDraft.version!,
+                      publicContentRevisionId: publicDraft.id!,
+                    },
+                  })
+                  if (!result.ok) {
+                    setPublicContentError(result.error.message)
+                    return
+                  }
+                  window.location.reload()
+                } finally {
+                  setIsPublishing(false)
+                }
+              }}
+              type="button"
+            >
+              {isPublishing ? 'Publishing…' : 'Publish anonymous snapshot'}
+            </button>
           ) : null}
           <form
             className="mt-5 grid gap-5"

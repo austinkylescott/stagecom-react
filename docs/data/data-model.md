@@ -71,9 +71,8 @@ Legacy Theater enum values remain in migration history but should not be assigne
 
 ## Target Event-Publication Model
 
-The accepted product model in `docs/product/event-publication-milestone.md` still requires schema work for:
-
-- lightweight Owner/Admin Publication of a prepared Public Content Revision
+The accepted product model now includes lightweight Owner/Admin Publication of
+a prepared Public Content Revision.
 
 The retained compatibility `show_status` enum does not replace the independent
 lifecycle, Proposal decision, Publication, and operational-health dimensions.
@@ -116,6 +115,14 @@ display name and permission for every accepted Cast Member, while anonymous
 row policies return only credits permitted by the published revision. Producer
 edits update the current unpublished revision, or create the next revision
 after Publication, without modifying `shows.published_public_content_revision_id`.
+
+`show_public_occurrence_snapshots` stores the confirmed public Performance
+facts promoted with a Public Content Revision. `publish_event` validates the
+published Theater, current Operational Approval, readiness, and explicit At
+Risk continuation in one transaction before changing Publication state,
+writing `event.published`, and projecting deduplicated notifications.
+`get_published_event` is the anonymous-safe allowlisted read model and returns
+no result for an unpublished Event or an Event under an unpublished Theater.
 
 `show_availability_responses` stores one versioned available, unavailable, or
 uncertain fact per invited Member and Candidate Slot. It retains the responding
