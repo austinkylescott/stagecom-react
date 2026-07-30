@@ -70,9 +70,6 @@ The retained `shows.status = rejected` value preserves the legacy distinction wh
 The existing schema does not yet express the agreed workflow completely. The remaining target model must support:
 
 - an Event that persists from draft through completion or cancellation
-- review decisions including Counteroffers and Denials
-- exclusive Counteroffer holds with deadlines
-- Proposal decision state on immutable Proposal Revisions
 - lightweight Owner/Admin Publication of a prepared Public Content Revision
 
 Versioned public presentation is executable. An Event has at most one
@@ -101,11 +98,19 @@ Reviewers, and Owner/Admin receive the operational view. Only the active
 Director assigns required, optional, or not-called expectations to accepted
 Cast Members.
 
-Proposal submission and review decisions are executable. Submission validates authorization,
+Proposal submission, review decisions, and Counteroffers are executable. Submission validates authorization,
 Proposed Cast eligibility, chosen slots, required availability, Performance
 Minimum Viable Cast, and buffered approved Primary Venue conflicts before it
-writes one immutable snapshot and durable submission event. The remaining items
-are specified product requirements, not claims about the executable schema.
+writes one immutable snapshot and durable submission event.
+
+`show_counteroffers` identifies the exact offered slot, Reviewer, target
+revision and deadline. `show_availability_requests` records unevaluated-slot
+requests for the Proposed Cast. `show_schedule_reservations` uses a database
+exclusion constraint over setup/turnover-buffered ranges to prevent overlapping
+active holds and approved Primary Venue commitments. Explicit decline and
+idempotent expiry release the hold and return the revision to review; explicit
+viable acceptance updates the working plan and submits the next pending
+immutable revision without granting Operational Approval or Publication.
 
 Operational-plan edits replace the supplied plan shape transactionally while
 preserving supplied Occurrence, Candidate Slot, and resource-request

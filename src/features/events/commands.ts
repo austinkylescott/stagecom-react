@@ -12,8 +12,10 @@ import type { EventPersistence } from './persistence'
 import type {
   createManagedEventInputSchema,
   inviteEventCastMemberInputSchema,
+  issueProposalCounterofferInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
+  respondToProposalCounterofferInputSchema,
   saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
   setOccurrenceCallInputSchema,
@@ -37,6 +39,7 @@ export type EventPublicContentCommandDependencies = {
 
 export type ProposalCommandDependencies = {
   getCurrentUser: () => Promise<AppResult<{ id: string }>>
+  now: () => Date
   persistence: ProposalPersistence
 }
 
@@ -57,7 +60,74 @@ function getDefaultPublicContentDependencies(): EventPublicContentCommandDepende
 function getDefaultProposalDependencies(): ProposalCommandDependencies {
   return {
     getCurrentUser: getCurrentUserFromRequest,
+    now: () => new Date(),
     persistence: createSupabaseProposalPersistence(),
+  }
+}
+
+export async function issueProposalCounteroffer(
+  input: z.infer<typeof issueProposalCounterofferInputSchema>,
+  dependencies: ProposalCommandDependencies = getDefaultProposalDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    const resolved = resolveLocalDateTime(
+      input.localStartsAt,
+      input.timezoneName,
+    )
+    return ok(
+      await dependencies.persistence.issueCounteroffer({
+        ...input,
+        ...resolved,
+        actorUserId: currentUser.data.id,
+        now: dependencies.now().toISOString(),
+        timezoneSource: 'manual',
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Counteroffer could not be issued.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function respondToProposalCounteroffer(
+  input: z.infer<typeof respondToProposalCounterofferInputSchema>,
+  dependencies: ProposalCommandDependencies = getDefaultProposalDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeCounterofferResponse({
+      actorUserId: currentUser.data.id,
+      counterofferId: input.counterofferId,
+    })
+    return ok(
+      await dependencies.persistence.respondToCounteroffer({
+        ...input,
+        actorUserId: currentUser.data.id,
+        now: dependencies.now().toISOString(),
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Counteroffer response could not be saved.',
+          ),
+        )
+      : err(failure)
   }
 }
 

@@ -162,6 +162,25 @@ const localDateTimeSchema = z
     'Use a complete local date and time.',
   )
 
+export const issueProposalCounterofferInputSchema = z.object({
+  commandId: uuidSchema,
+  durationMinutes: z.number().int().min(15).max(1440),
+  expectedVersion: z.number().int().positive(),
+  localStartsAt: localDateTimeSchema,
+  locationKind: z.enum(['primary_venue', 'off_site']),
+  locationName: nonEmptyStringSchema.max(240),
+  occurrenceId: uuidSchema,
+  proposalRevisionId: uuidSchema,
+  responseDeadline: z.iso.datetime({ offset: true }).optional(),
+  timezoneName: nonEmptyStringSchema.max(100),
+})
+
+export const respondToProposalCounterofferInputSchema = z.object({
+  commandId: uuidSchema,
+  counterofferId: uuidSchema,
+  response: z.enum(['accept', 'decline']),
+})
+
 export const operationalPlanCandidateSlotSchema = z
   .object({
     durationMinutes: z.number().int().min(15).max(1440),

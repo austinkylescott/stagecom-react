@@ -73,13 +73,10 @@ Legacy Theater enum values remain in migration history but should not be assigne
 
 The accepted product model in `docs/product/event-publication-milestone.md` still requires schema work for:
 
-- approve, deny, request-edits, and Counteroffer decisions
-- exclusive Counteroffer holds and response deadlines
-- Proposal decision state on immutable Proposal Revisions
 - lightweight Owner/Admin Publication of a prepared Public Content Revision
 
-Do not treat current generic JSON availability or the retained compatibility
-`show_status` enum as satisfying these remaining requirements.
+The retained compatibility `show_status` enum does not replace the independent
+lifecycle, Proposal decision, Publication, and operational-health dimensions.
 
 `show_proposed_cast` stores the Producer's working selection from accepted
 active Cast membership. `show_proposal_revisions` stores immutable numbered
@@ -87,6 +84,22 @@ operational snapshots and a unique command identity. Submission locks the
 Event, validates required confirmations, Performance Minimum Viable Cast, and
 buffered approved Primary Venue conflicts, then emits
 `event.proposal_revision.submitted` in the same transaction.
+
+`show_counteroffers` stores one exact offered Candidate Slot, its Reviewer,
+target Proposal Revision and Occurrence, response deadline, explicit outcome,
+and any resulting Proposal Revision. `show_availability_requests` records which
+Proposed Cast Members need to evaluate a newly introduced slot.
+`show_schedule_reservations` is the database-enforced exclusive schedule seam
+for active Counteroffer holds and approved Primary Venue commitments. Its
+exclusion constraint compares buffered time ranges per Theater resource;
+off-site slots never create a reservation.
+
+Issuing, accepting, declining, and expiring a Counteroffer are transactional,
+idempotent transitions. Acceptance rechecks required Calls and Minimum Viable
+Cast, updates the working plan, and submits the next immutable Proposal
+Revision without approving it. Expiry is repeatable under a supplied server
+clock, runs during workspace reads and actions, and is also available through a
+service-role maintenance function.
 
 `show_public_content_revisions` now stores one current unpublished revision per
 Event and preserves previously published revisions as immutable anonymous

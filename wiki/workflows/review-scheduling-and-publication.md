@@ -2,8 +2,8 @@
 
 Documentation status: active
 
-Implementation status: Proposal submission and review decisions implemented;
-Counteroffer reservations not implemented
+Implementation status: Proposal submission, review decisions, and exclusive
+Counteroffer reservations implemented; Event Publication remains
 
 ## What Does Management Review?
 
@@ -16,7 +16,6 @@ text, declare cast thresholds, and request staff, equipment, or other limited
 resources. Producers can select accepted Members for the working Proposed Cast,
 compare explainable Candidate Slot recommendations, choose Confirmed Slots,
 and submit the viable plan as an immutable numbered Proposal Revision.
-Counteroffers and reservations remain future steps in this workflow.
 
 Each submission creates an immutable, numbered Proposal Revision so the decision history always identifies exactly what was reviewed.
 
@@ -74,6 +73,15 @@ Reviewers may compare Candidate Slots and tentative schedule arrangements before
 If the offered slot was not already evaluated, the Proposed Cast receives a new availability request. Acceptance is blocked until the available cast meets the Minimum Viable Cast. An expired offer releases the hold and returns the proposal to review; it does not deny the Event.
 
 Accepting a Counteroffer updates the operational plan and creates a new Proposal Revision for review. Acceptance does not itself approve or publish the Event.
+
+This flow is executable through the workspace and transactional command
+boundary. A database exclusion constraint atomically rejects competing active
+holds and approved Primary Venue commitments after applying the configured
+setup and turnover buffers. Off-site offers create no reservation. New slots
+create Proposed Cast availability requests and deduplicated in-app
+notifications from the issued domain event. Decline and expiration close the
+request and release the hold; expiration can run repeatedly from normal reads
+or the service-role maintenance function under a deterministic clock.
 
 ## How Are Venue Conflicts Handled Initially?
 

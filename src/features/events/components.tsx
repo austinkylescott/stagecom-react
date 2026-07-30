@@ -3,9 +3,11 @@ import { useState } from 'react'
 import {
   createManagedEventFn,
   inviteEventCastMemberFn,
+  issueProposalCounterofferFn,
   recordCandidateSlotAvailabilityFn,
   reviewProposalRevisionFn,
   respondToEventCastInvitationFn,
+  respondToProposalCounterofferFn,
   saveEventPublicContentFn,
   saveEventOperationalPlanFn,
   saveEventProposedCastFn,
@@ -235,8 +237,10 @@ export function ManagedEventWorkspace({
     assignOccurrenceCalls: boolean
     editOperationalPlan: boolean
     inviteCast: boolean
+    issueCounteroffer: boolean
     respondToAvailability: boolean
     respondToInvitation: boolean
+    respondToCounteroffer: boolean
     reviewProposalRevisions: boolean
     seedDeniedReplacement: boolean
     selectProposedCast: boolean
@@ -330,6 +334,16 @@ export function ManagedEventWorkspace({
         reason: string | null
         revision_version: number
       } | null
+      show_counteroffers: Array<{
+        actor_user_id: string
+        candidate_slot_id: string
+        created_at: string
+        id: string
+        occurrence_id: string
+        response_deadline: string
+        resulting_proposal_revision_id: string | null
+        state: 'pending' | 'accepted' | 'declined' | 'expired'
+      }>
     }>
     show_proposed_cast: Array<{ user_id: string }>
     target_cast_size: number | null
@@ -1178,51 +1192,74 @@ export function ManagedEventWorkspace({
                         ) : null}
                       </div>
                     ) : null}
+                    {revision.show_counteroffers.map((counteroffer) => (
+                      <ProposalCounterofferCard
+                        canRespond={allowedActions.respondToCounteroffer}
+                        counteroffer={counteroffer}
+                        key={counteroffer.id}
+                        slot={
+                          candidateSlots.find(
+                            ({ slot }) =>
+                              slot.id === counteroffer.candidate_slot_id,
+                          )?.slot
+                        }
+                      />
+                    ))}
                     {revision.decision_state === 'pending' &&
                     allowedActions.reviewProposalRevisions ? (
-                      <ProposalDecisionControls
-                        actorUserId={actorUserId}
-                        canUseOwnerOverride={
-                          allowedActions.useOwnerSelfApproval &&
-                          revision.submitted_by === actorUserId
-                        }
-                        onDecided={(decision) => {
-                          setProposalRevisions((current) =>
-                            current.map((candidate) =>
-                              candidate.id === revision.id
-                                ? {
-                                    ...candidate,
-                                    decision_state:
-                                      decision.action === 'approve'
-                                        ? 'approved'
-                                        : decision.action === 'request_edits'
-                                          ? 'changes_requested'
-                                          : 'denied',
-                                    decision_version:
-                                      candidate.decision_version + 1,
-                                    show_proposal_decisions: {
-                                      action: decision.action,
-                                      actor_user_id: decision.actorUserId,
-                                      command_id: decision.commandId,
-                                      created_at: decision.createdAt,
-                                      id: decision.id,
-                                      owner_override: decision.ownerOverride,
-                                      reason: decision.reason,
-                                      revision_version:
-                                        decision.revisionVersion,
-                                    },
-                                  }
-                                : candidate,
-                            ),
-                          )
-                          if (decision.action === 'approve') {
-                            setLifecycleStatus('approved')
-                          } else if (decision.action === 'request_edits') {
-                            setLifecycleStatus('draft')
+                      <>
+                        <ProposalDecisionControls
+                          actorUserId={actorUserId}
+                          canUseOwnerOverride={
+                            allowedActions.useOwnerSelfApproval &&
+                            revision.submitted_by === actorUserId
                           }
-                        }}
-                        revision={revision}
-                      />
+                          onDecided={(decision) => {
+                            setProposalRevisions((current) =>
+                              current.map((candidate) =>
+                                candidate.id === revision.id
+                                  ? {
+                                      ...candidate,
+                                      decision_state:
+                                        decision.action === 'approve'
+                                          ? 'approved'
+                                          : decision.action === 'request_edits'
+                                            ? 'changes_requested'
+                                            : 'denied',
+                                      decision_version:
+                                        candidate.decision_version + 1,
+                                      show_proposal_decisions: {
+                                        action: decision.action,
+                                        actor_user_id: decision.actorUserId,
+                                        command_id: decision.commandId,
+                                        created_at: decision.createdAt,
+                                        id: decision.id,
+                                        owner_override: decision.ownerOverride,
+                                        reason: decision.reason,
+                                        revision_version:
+                                          decision.revisionVersion,
+                                      },
+                                    }
+                                  : candidate,
+                              ),
+                            )
+                            if (decision.action === 'approve') {
+                              setLifecycleStatus('approved')
+                            } else if (decision.action === 'request_edits') {
+                              setLifecycleStatus('draft')
+                            }
+                          }}
+                          revision={revision}
+                        />
+                        {allowedActions.issueCounteroffer &&
+                        revision.submitted_by !== actorUserId ? (
+                          <ProposalCounterofferForm
+                            occurrences={event.show_occurrences}
+                            revision={revision}
+                            theater={theater}
+                          />
+                        ) : null}
+                      </>
                     ) : null}
                     {revision.decision_state === 'denied' &&
                     allowedActions.seedDeniedReplacement ? (
@@ -1945,6 +1982,237 @@ function SmallButton({
     >
       {children}
     </button>
+  )
+}
+
+function ProposalCounterofferForm({
+  occurrences,
+  revision,
+  theater,
+}: {
+  occurrences: Array<{
+    id: string
+    occurrence_type: 'rehearsal' | 'performance'
+  }>
+  revision: { decision_version: number; id: string }
+  theater: {
+    primary_venue_name: string | null
+    timezone: string | null
+  }
+}) {
+  const [occurrenceId, setOccurrenceId] = useState(occurrences[0]?.id ?? '')
+  const [localStartsAt, setLocalStartsAt] = useState('')
+  const [durationMinutes, setDurationMinutes] = useState(60)
+  const [locationKind, setLocationKind] = useState<
+    'primary_venue' | 'off_site'
+  >('primary_venue')
+  const [locationName, setLocationName] = useState(
+    theater.primary_venue_name?.trim() || 'Primary Venue',
+  )
+  const [responseDeadline, setResponseDeadline] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  return (
+    <div className="mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4">
+      <p className="font-extrabold">Scheduling Counteroffer</p>
+      <label className="grid gap-2 text-sm font-bold">
+        Target Occurrence
+        <select
+          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          onChange={(change) => setOccurrenceId(change.target.value)}
+          value={occurrenceId}
+        >
+          {occurrences.map((occurrence, index) => (
+            <option key={occurrence.id} value={occurrence.id}>
+              Occurrence {index + 1} · {occurrence.occurrence_type}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm font-bold">
+          Offered local date and time
+          <input
+            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+            onChange={(change) => setLocalStartsAt(change.target.value)}
+            type="datetime-local"
+            value={localStartsAt}
+          />
+        </label>
+        <NumberField
+          disabled={isSaving}
+          label="Offered duration (minutes)"
+          max={1440}
+          min={15}
+          onChange={setDurationMinutes}
+          value={durationMinutes}
+        />
+      </div>
+      <label className="grid gap-2 text-sm font-bold">
+        Offered location
+        <select
+          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          onChange={(change) => {
+            const next = change.target.value as 'primary_venue' | 'off_site'
+            setLocationKind(next)
+            if (next === 'primary_venue') {
+              setLocationName(
+                theater.primary_venue_name?.trim() || 'Primary Venue',
+              )
+            }
+          }}
+          value={locationKind}
+        >
+          <option value="primary_venue">Primary Venue</option>
+          <option value="off_site">Approved off-site location</option>
+        </select>
+      </label>
+      {locationKind === 'off_site' ? (
+        <label className="grid gap-2 text-sm font-bold">
+          Off-site location name
+          <input
+            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+            onChange={(change) => setLocationName(change.target.value)}
+            value={locationName}
+          />
+        </label>
+      ) : null}
+      <label className="grid gap-2 text-sm font-bold">
+        Response deadline override (optional)
+        <input
+          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          onChange={(change) => setResponseDeadline(change.target.value)}
+          type="datetime-local"
+          value={responseDeadline}
+        />
+      </label>
+      <p className="text-sm text-[var(--sea-ink-soft)]">
+        Blank uses the Theater response window. Times display in{' '}
+        {theater.timezone ?? 'the Theater timezone'}.
+      </p>
+      {error ? <p className="font-semibold text-red-800">{error}</p> : null}
+      <button
+        className="w-fit rounded-md bg-[var(--sea-ink)] px-4 py-2 font-extrabold text-white disabled:opacity-50"
+        disabled={
+          isSaving || !occurrenceId || !localStartsAt || !locationName.trim()
+        }
+        onClick={async () => {
+          setError(null)
+          setIsSaving(true)
+          try {
+            const result = await issueProposalCounterofferFn({
+              data: {
+                commandId: crypto.randomUUID(),
+                durationMinutes,
+                expectedVersion: revision.decision_version,
+                localStartsAt,
+                locationKind,
+                locationName:
+                  locationName.trim() ||
+                  theater.primary_venue_name?.trim() ||
+                  'Primary Venue',
+                occurrenceId: occurrenceId || occurrences[0]?.id || '',
+                proposalRevisionId: revision.id,
+                ...(responseDeadline
+                  ? {
+                      responseDeadline: new Date(
+                        responseDeadline,
+                      ).toISOString(),
+                    }
+                  : {}),
+                timezoneName: theater.timezone ?? 'UTC',
+              },
+            })
+            if (!result.ok) {
+              setError(result.error.message)
+              return
+            }
+            window.location.reload()
+          } finally {
+            setIsSaving(false)
+          }
+        }}
+        type="button"
+      >
+        {isSaving ? 'Issuing…' : 'Issue Counteroffer'}
+      </button>
+    </div>
+  )
+}
+
+function ProposalCounterofferCard({
+  canRespond,
+  counteroffer,
+  slot,
+}: {
+  canRespond: boolean
+  counteroffer: {
+    id: string
+    response_deadline: string
+    state: 'pending' | 'accepted' | 'declined' | 'expired'
+  }
+  slot?: {
+    duration_minutes: number
+    local_starts_at: string
+    location_name: string
+  }
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  return (
+    <div className="mt-3 rounded-md bg-amber-50 px-3 py-3 text-sm text-amber-950">
+      <p className="font-extrabold capitalize">
+        Counteroffer · {counteroffer.state}
+      </p>
+      {slot ? (
+        <p className="mt-1">
+          {slot.local_starts_at.slice(0, 16).replace('T', ' ')} ·{' '}
+          {slot.duration_minutes} minutes · {slot.location_name}
+        </p>
+      ) : null}
+      <p className="mt-1">
+        Respond by {new Date(counteroffer.response_deadline).toLocaleString()}.
+      </p>
+      {error ? (
+        <p className="mt-2 font-semibold text-red-800">{error}</p>
+      ) : null}
+      {canRespond && counteroffer.state === 'pending' ? (
+        <div className="mt-3 flex gap-2">
+          {(['accept', 'decline'] as const).map((response) => (
+            <button
+              className="rounded-md border border-amber-950 bg-white px-3 py-2 font-extrabold capitalize disabled:opacity-50"
+              disabled={isSaving}
+              key={response}
+              onClick={async () => {
+                setError(null)
+                setIsSaving(true)
+                try {
+                  const result = await respondToProposalCounterofferFn({
+                    data: {
+                      commandId: crypto.randomUUID(),
+                      counterofferId: counteroffer.id,
+                      response,
+                    },
+                  })
+                  if (!result.ok) {
+                    setError(result.error.message)
+                    return
+                  }
+                  window.location.reload()
+                } finally {
+                  setIsSaving(false)
+                }
+              }}
+              type="button"
+            >
+              {response} Counteroffer
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

@@ -67,6 +67,9 @@ Current Reviewers can issue version-checked approvals, edit requests, and
 denials with auditable reasons, explicit Owner self-approval override,
 participant notifications, approval invalidation for later operational
 changes, and linked replacement drafts after denial. The remaining multi-user
-workflow still needs Counteroffer reservations and Event Publication. Detailed implementation
+workflow still needs Event Publication. Reviewers can now issue one exact
+Counteroffer with a buffered exclusive Primary Venue hold, notify the Proposed
+Cast for a new slot, and rely on explicit Producer decline, viable acceptance
+into a new Proposal Revision, or idempotent expiration. Detailed implementation
 tickets, acceptance
 criteria, and dependency relationships are tracked under STA-5 in Linear.
