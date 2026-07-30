@@ -1,5 +1,6 @@
 import { getBearerTokenFromRequest } from '@/server/auth/session'
 import { appError } from '@/server/errors'
+import { z } from 'zod'
 import {
   createSupabaseAnonClient,
   createSupabaseServiceRoleClient,
@@ -31,7 +32,23 @@ export type ProposalDecision = {
   revisionVersion: number
 }
 
+export type ProposalCounteroffer = {
+  actorUserId: string
+  candidateSlotId: string
+  commandId: string
+  createdAt: string
+  id: string
+  occurrenceId: string
+  proposalRevisionId: string
+  responseDeadline: string
+  state: 'pending' | 'accepted' | 'declined' | 'expired'
+}
+
 export type ProposalPersistence = {
+  authorizeCounterofferResponse: (input: {
+    actorUserId: string
+    counterofferId: string
+  }) => Promise<void>
   authorizeProducerDraft: (input: {
     actorUserId: string
     eventId: string
@@ -40,6 +57,27 @@ export type ProposalPersistence = {
     actorUserId: string
     proposalRevisionId: string
   }) => Promise<void>
+  expireCounteroffers: (input: {
+    eventId?: string
+    now: string
+  }) => Promise<number>
+  issueCounteroffer: (input: {
+    actorUserId: string
+    commandId: string
+    durationMinutes: number
+    expectedVersion: number
+    localStartsAt: string
+    locationKind: 'primary_venue' | 'off_site'
+    locationName: string
+    now: string
+    occurrenceId: string
+    proposalRevisionId: string
+    responseDeadline?: string
+    startsAt: string
+    timezoneName: string
+    timezoneSource: 'manual'
+    utcOffsetMinutes: number
+  }) => Promise<ProposalCounteroffer>
   reviewRevision: (input: {
     action: 'approve' | 'request_edits' | 'deny'
     actorUserId: string
@@ -55,6 +93,18 @@ export type ProposalPersistence = {
     commandId: string
     eventId: string
   }) => Promise<{ castMemberUserIds: string[]; eventId: string }>
+  respondToCounteroffer: (input: {
+    actorUserId: string
+    commandId: string
+    counterofferId: string
+    now: string
+    response: 'accept' | 'decline'
+  }) => Promise<{
+    counterofferId: string
+    proposalRevision: ProposalRevision | null
+    response: 'accept' | 'decline'
+    respondedAt: string
+  }>
   submitRevision: (input: {
     actorUserId: string
     commandId: string
@@ -71,6 +121,27 @@ export type ProposalPersistence = {
 
 export function createSupabaseProposalPersistence(): ProposalPersistence {
   return {
+    async authorizeCounterofferResponse(input) {
+      const token = getBearerTokenFromRequest()
+      if (!token) throw appError('unauthenticated', 'Sign in is required.')
+      const supabase = createSupabaseAnonClient(token)
+      const { data: canRespond, error } = await supabase.rpc(
+        'can_respond_to_proposal_counteroffer',
+        { p_counteroffer_id: input.counterofferId },
+      )
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Counteroffer authorization could not be checked.',
+        )
+      }
+      if (!canRespond) {
+        throw appError(
+          'forbidden',
+          'Current Event Producer access is required.',
+        )
+      }
+    },
     async authorizeReplacement(input) {
       const token = getBearerTokenFromRequest()
       if (!token) throw appError('unauthenticated', 'Sign in is required.')
@@ -142,6 +213,49 @@ export function createSupabaseProposalPersistence(): ProposalPersistence {
       }
     },
 
+    async expireCounteroffers(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc(
+        'expire_proposal_counteroffers',
+        {
+          p_now: input.now,
+          ...(input.eventId ? { p_show_id: input.eventId } : {}),
+        },
+      )
+      if (error) throwProposalError(error)
+      return data
+    },
+
+    async issueCounteroffer(input) {
+      const token = getBearerTokenFromRequest()
+      if (!token) throw appError('unauthenticated', 'Sign in is required.')
+      const supabase = createSupabaseAnonClient(token)
+      const { data, error } = await supabase.rpc(
+        'issue_proposal_counteroffer',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_command_id: input.commandId,
+          p_duration_minutes: input.durationMinutes,
+          p_expected_version: input.expectedVersion,
+          p_local_starts_at: input.localStartsAt,
+          p_location_kind: input.locationKind,
+          p_location_name: input.locationName,
+          p_now: input.now,
+          p_occurrence_id: input.occurrenceId,
+          p_proposal_revision_id: input.proposalRevisionId,
+          ...(input.responseDeadline
+            ? { p_response_deadline: input.responseDeadline }
+            : {}),
+          p_starts_at: input.startsAt,
+          p_timezone_name: input.timezoneName,
+          p_timezone_source: input.timezoneSource,
+          p_utc_offset_minutes: input.utcOffsetMinutes,
+        },
+      )
+      if (error) throwProposalError(error)
+      return mapCounteroffer(data)
+    },
+
     async saveProposedCast(input) {
       const supabase = createSupabaseServiceRoleClient()
       const { data, error } = await supabase.rpc('save_event_proposed_cast', {
@@ -206,6 +320,39 @@ export function createSupabaseProposalPersistence(): ProposalPersistence {
       }
     },
 
+    async respondToCounteroffer(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc(
+        'respond_to_proposal_counteroffer',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_command_id: input.commandId,
+          p_counteroffer_id: input.counterofferId,
+          p_now: input.now,
+          p_response: input.response,
+        },
+      )
+      if (error) throwProposalError(error)
+      const response = counterofferResponseSchema.parse(data)
+      return {
+        counterofferId: response.counterofferId,
+        proposalRevision: response.proposalRevision
+          ? {
+              commandId: response.proposalRevision.command_id,
+              decisionState: response.proposalRevision.decision_state,
+              eventId: response.proposalRevision.show_id,
+              id: response.proposalRevision.id,
+              revisionNumber: response.proposalRevision.revision_number,
+              snapshot: response.proposalRevision.snapshot,
+              submittedAt: response.proposalRevision.submitted_at,
+              submittedBy: response.proposalRevision.submitted_by,
+            }
+          : null,
+        response: response.response,
+        respondedAt: response.respondedAt,
+      }
+    },
+
     async submitRevision(input) {
       const supabase = createSupabaseServiceRoleClient()
       const { data, error } = await supabase.rpc(
@@ -239,7 +386,11 @@ function throwProposalError(error: {
 }): never {
   if (error.code === 'P0002') throw appError('not_found', error.message)
   if (error.code === '42501') throw appError('forbidden', error.message)
-  if (error.code === '55000' || error.code === '23505') {
+  if (
+    error.code === '55000' ||
+    error.code === '23505' ||
+    error.code === '23P01'
+  ) {
     throw appError('conflict', error.message)
   }
   if (error.code === '22023' || error.code === '23514') {
@@ -256,3 +407,51 @@ function throwProposalError(error: {
     'Proposal Revision could not be saved.',
   )
 }
+
+function mapCounteroffer(data: {
+  actor_user_id: string
+  candidate_slot_id: string
+  command_id: string
+  created_at: string
+  id: string
+  occurrence_id: string
+  proposal_revision_id: string
+  response_deadline: string
+  state: ProposalCounteroffer['state']
+}): ProposalCounteroffer {
+  return {
+    actorUserId: data.actor_user_id,
+    candidateSlotId: data.candidate_slot_id,
+    commandId: data.command_id,
+    createdAt: data.created_at,
+    id: data.id,
+    occurrenceId: data.occurrence_id,
+    proposalRevisionId: data.proposal_revision_id,
+    responseDeadline: data.response_deadline,
+    state: data.state,
+  }
+}
+
+const counterofferResponseSchema = z.object({
+  counterofferId: z.uuid(),
+  proposalRevision: z
+    .object({
+      command_id: z.uuid(),
+      decision_state: z.enum([
+        'pending',
+        'changes_requested',
+        'counteroffered',
+        'approved',
+        'denied',
+      ]),
+      id: z.uuid(),
+      revision_number: z.number().int().positive(),
+      show_id: z.uuid(),
+      snapshot: z.custom<Json>(),
+      submitted_at: z.string(),
+      submitted_by: z.uuid(),
+    })
+    .nullable(),
+  respondedAt: z.string(),
+  response: z.enum(['accept', 'decline']),
+})

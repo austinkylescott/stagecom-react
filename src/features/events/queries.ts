@@ -121,10 +121,22 @@ export async function getManagedEventWorkspace(
   }
 
   const supabase = createSupabaseServiceRoleClient()
+  const { error: expirationError } = await supabase.rpc(
+    'expire_proposal_counteroffers',
+    { p_now: new Date().toISOString() },
+  )
+  if (expirationError) {
+    return err(
+      appError(
+        'external_service_error',
+        'Counteroffers could not be refreshed.',
+      ),
+    )
+  }
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -315,8 +327,10 @@ export async function getManagedEventWorkspace(
       assignOccurrenceCalls: canAssignOccurrenceCalls,
       editOperationalPlan: canEditOperationalPlan,
       inviteCast: actorLeadership.length > 0,
+      issueCounteroffer: isReviewer,
       respondToAvailability: canRespondToAvailability,
       respondToInvitation: view === 'pending_invitee',
+      respondToCounteroffer: isProducer,
       reviewProposalRevisions: isReviewer,
       seedDeniedReplacement: isProducer,
       selectProposedCast: canEditDraftProposal,

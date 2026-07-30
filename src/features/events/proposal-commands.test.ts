@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  issueProposalCounteroffer,
   reviewProposalRevision,
+  respondToProposalCounteroffer,
   saveEventProposedCast,
   seedDeniedProposalReplacement,
   submitEventProposalRevision,
@@ -14,9 +16,23 @@ function dependencies(
 ): ProposalCommandDependencies {
   return {
     getCurrentUser: async () => ({ ok: true, data: { id: 'producer-1' } }),
+    now: () => new Date('2026-07-29T12:00:00.000Z'),
     persistence: {
       authorizeProducerDraft: async () => undefined,
       authorizeReplacement: async () => undefined,
+      authorizeCounterofferResponse: async () => undefined,
+      expireCounteroffers: async () => 0,
+      issueCounteroffer: async (input) => ({
+        actorUserId: input.actorUserId,
+        candidateSlotId: '73000000-0000-0000-0011-000000000001',
+        commandId: input.commandId,
+        createdAt: input.now,
+        id: '73000000-0000-0000-0011-000000000002',
+        occurrenceId: input.occurrenceId,
+        proposalRevisionId: input.proposalRevisionId,
+        responseDeadline: input.responseDeadline ?? '2026-08-01T12:00:00.000Z',
+        state: 'pending',
+      }),
       reviewRevision: async (input) => ({
         action: input.action,
         actorUserId: input.actorUserId,
@@ -48,12 +64,114 @@ function dependencies(
         theaterId: 'theater-1',
         title: input.title,
       }),
+      respondToCounteroffer: async (input) => ({
+        counterofferId: input.counterofferId,
+        proposalRevision:
+          input.response === 'accept'
+            ? {
+                commandId: input.commandId,
+                decisionState: 'pending',
+                eventId: '73000000-0000-0000-0000-000000000001',
+                id: '73000000-0000-0000-0011-000000000003',
+                revisionNumber: 2,
+                snapshot: {},
+                submittedAt: input.now,
+                submittedBy: input.actorUserId,
+              }
+            : null,
+        response: input.response,
+        respondedAt: input.now,
+      }),
       ...overrides,
     },
   }
 }
 
 describe('Proposal commands', () => {
+  it('uses the server clock when a Reviewer issues a Counteroffer', async () => {
+    const now = new Date('2026-07-29T12:00:00.000Z')
+    const result = await issueProposalCounteroffer(
+      {
+        commandId: '73000000-0000-0000-0011-000000000010',
+        durationMinutes: 90,
+        expectedVersion: 1,
+        localStartsAt: '2026-10-12T19:30',
+        locationKind: 'primary_venue',
+        locationName: 'Proposal Stage',
+        occurrenceId: '73000000-0000-0000-0001-000000000001',
+        proposalRevisionId: '73000000-0000-0000-0009-000000000011',
+        timezoneName: 'America/New_York',
+      },
+      { ...dependencies(), now: () => now },
+    )
+
+    expect(result).toMatchObject({
+      data: {
+        createdAt: '2026-07-29T12:00:00.000Z',
+        responseDeadline: '2026-08-01T12:00:00.000Z',
+      },
+      ok: true,
+    })
+  })
+
+  it('preserves a typed Primary Venue hold conflict', async () => {
+    const result = await issueProposalCounteroffer(
+      {
+        commandId: '73000000-0000-0000-0011-000000000011',
+        durationMinutes: 90,
+        expectedVersion: 1,
+        localStartsAt: '2026-10-12T19:30',
+        locationKind: 'primary_venue',
+        locationName: 'Proposal Stage',
+        occurrenceId: '73000000-0000-0000-0001-000000000001',
+        proposalRevisionId: '73000000-0000-0000-0009-000000000011',
+        timezoneName: 'America/New_York',
+      },
+      dependencies({
+        issueCounteroffer: async () => {
+          throw {
+            code: 'conflict',
+            message:
+              'The Primary Venue is already reserved during this buffered time.',
+            status: 409,
+          }
+        },
+      }),
+    )
+
+    expect(result).toMatchObject({ error: { code: 'conflict' }, ok: false })
+  })
+
+  it('authorizes a Producer before accepting a Counteroffer', async () => {
+    let elevated = false
+    const result = await respondToProposalCounteroffer(
+      {
+        commandId: '73000000-0000-0000-0011-000000000012',
+        counterofferId: '73000000-0000-0000-0011-000000000002',
+        response: 'accept',
+      },
+      {
+        ...dependencies({
+          authorizeCounterofferResponse: async () => {
+            throw {
+              code: 'forbidden',
+              message: 'Current Event Producer access is required.',
+              status: 403,
+            }
+          },
+          respondToCounteroffer: async () => {
+            elevated = true
+            throw new Error('must not run')
+          },
+        }),
+        now: () => new Date('2026-07-29T12:00:00.000Z'),
+      },
+    )
+
+    expect(result).toMatchObject({ error: { code: 'forbidden' }, ok: false })
+    expect(elevated).toBe(false)
+  })
+
   it('authorizes before persisting the Proposed Cast', async () => {
     let elevated = false
     const result = await saveEventProposedCast(

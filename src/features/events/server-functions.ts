@@ -3,8 +3,10 @@ import { createServerFn } from '@tanstack/react-start'
 import {
   createManagedEvent,
   inviteEventCastMember,
+  issueProposalCounteroffer,
   recordCandidateSlotAvailability,
   respondToEventCastInvitation,
+  respondToProposalCounteroffer,
   reviewProposalRevision,
   saveEventPublicContent,
   saveEventOperationalPlan,
@@ -24,8 +26,10 @@ import {
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
+  issueProposalCounterofferInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
+  respondToProposalCounterofferInputSchema,
   reviewProposalRevisionInputSchema,
   saveEventPublicContentInputSchema,
   saveEventOperationalPlanInputSchema,
@@ -99,6 +103,16 @@ export const submitEventProposalRevisionFn = createServerFn({ method: 'POST' })
 export const reviewProposalRevisionFn = createServerFn({ method: 'POST' })
   .validator(reviewProposalRevisionInputSchema)
   .handler(async ({ data }) => reviewProposalRevision(data))
+
+export const issueProposalCounterofferFn = createServerFn({ method: 'POST' })
+  .validator(issueProposalCounterofferInputSchema)
+  .handler(async ({ data }) => issueProposalCounteroffer(data))
+
+export const respondToProposalCounterofferFn = createServerFn({
+  method: 'POST',
+})
+  .validator(respondToProposalCounterofferInputSchema)
+  .handler(async ({ data }) => respondToProposalCounteroffer(data))
 
 export const seedDeniedProposalReplacementFn = createServerFn({
   method: 'POST',

@@ -291,6 +291,55 @@ export type Database = {
           },
         ]
       }
+      show_availability_requests: {
+        Row: {
+          candidate_slot_id: string
+          closed_at: string | null
+          counteroffer_id: string
+          requested_at: string
+          responded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          candidate_slot_id: string
+          closed_at?: string | null
+          counteroffer_id: string
+          requested_at?: string
+          responded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          candidate_slot_id?: string
+          closed_at?: string | null
+          counteroffer_id?: string
+          requested_at?: string
+          responded_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_availability_requests_candidate_slot_id_fkey'
+            columns: ['candidate_slot_id']
+            isOneToOne: false
+            referencedRelation: 'show_candidate_slots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_availability_requests_counteroffer_id_fkey'
+            columns: ['counteroffer_id']
+            isOneToOne: false
+            referencedRelation: 'show_counteroffers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_availability_requests_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_availability_responses: {
         Row: {
           actor_user_id: string
@@ -475,6 +524,97 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_counteroffers: {
+        Row: {
+          actor_user_id: string
+          candidate_slot_id: string
+          command_id: string
+          created_at: string
+          id: string
+          occurrence_id: string
+          proposal_revision_id: string
+          responded_at: string | null
+          responded_by_user_id: string | null
+          response_command_id: string | null
+          response_deadline: string
+          resulting_proposal_revision_id: string | null
+          state: Database['public']['Enums']['proposal_counteroffer_state']
+        }
+        Insert: {
+          actor_user_id: string
+          candidate_slot_id: string
+          command_id: string
+          created_at?: string
+          id?: string
+          occurrence_id: string
+          proposal_revision_id: string
+          responded_at?: string | null
+          responded_by_user_id?: string | null
+          response_command_id?: string | null
+          response_deadline: string
+          resulting_proposal_revision_id?: string | null
+          state?: Database['public']['Enums']['proposal_counteroffer_state']
+        }
+        Update: {
+          actor_user_id?: string
+          candidate_slot_id?: string
+          command_id?: string
+          created_at?: string
+          id?: string
+          occurrence_id?: string
+          proposal_revision_id?: string
+          responded_at?: string | null
+          responded_by_user_id?: string | null
+          response_command_id?: string | null
+          response_deadline?: string
+          resulting_proposal_revision_id?: string | null
+          state?: Database['public']['Enums']['proposal_counteroffer_state']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_counteroffers_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_counteroffers_candidate_slot_id_fkey'
+            columns: ['candidate_slot_id']
+            isOneToOne: false
+            referencedRelation: 'show_candidate_slots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_counteroffers_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_counteroffers_proposal_revision_id_fkey'
+            columns: ['proposal_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_counteroffers_responded_by_user_id_fkey'
+            columns: ['responded_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_counteroffers_resulting_proposal_revision_id_fkey'
+            columns: ['resulting_proposal_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
             referencedColumns: ['id']
           },
         ]
@@ -1086,6 +1226,97 @@ export type Database = {
           },
         ]
       }
+      show_schedule_reservations: {
+        Row: {
+          candidate_slot_id: string
+          counteroffer_id: string | null
+          created_at: string
+          id: string
+          kind: Database['public']['Enums']['schedule_reservation_kind']
+          occurrence_id: string
+          proposal_revision_id: string | null
+          released_at: string | null
+          reserved_during: unknown
+          resource_id: string
+          show_id: string
+          status: Database['public']['Enums']['schedule_reservation_status']
+          theater_id: string
+        }
+        Insert: {
+          candidate_slot_id: string
+          counteroffer_id?: string | null
+          created_at?: string
+          id?: string
+          kind: Database['public']['Enums']['schedule_reservation_kind']
+          occurrence_id: string
+          proposal_revision_id?: string | null
+          released_at?: string | null
+          reserved_during: unknown
+          resource_id: string
+          show_id: string
+          status?: Database['public']['Enums']['schedule_reservation_status']
+          theater_id: string
+        }
+        Update: {
+          candidate_slot_id?: string
+          counteroffer_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database['public']['Enums']['schedule_reservation_kind']
+          occurrence_id?: string
+          proposal_revision_id?: string | null
+          released_at?: string | null
+          reserved_during?: unknown
+          resource_id?: string
+          show_id?: string
+          status?: Database['public']['Enums']['schedule_reservation_status']
+          theater_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_schedule_reservations_candidate_slot_id_fkey'
+            columns: ['candidate_slot_id']
+            isOneToOne: false
+            referencedRelation: 'show_candidate_slots'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_counteroffer_id_fkey'
+            columns: ['counteroffer_id']
+            isOneToOne: true
+            referencedRelation: 'show_counteroffers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_proposal_revision_id_fkey'
+            columns: ['proposal_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_staff_assignments: {
         Row: {
           assignment_type: string
@@ -1668,6 +1899,10 @@ export type Database = {
         Args: { p_candidate_slot_id: string }
         Returns: boolean
       }
+      can_respond_to_proposal_counteroffer: {
+        Args: { p_counteroffer_id: string }
+        Returns: boolean
+      }
       can_update_show_cast: {
         Args: {
           p_act_id: string
@@ -1798,6 +2033,10 @@ export type Database = {
         Args: { p_show_id: string; p_user_id?: string }
         Returns: Database['public']['Enums']['show_cast_status']
       }
+      expire_proposal_counteroffers: {
+        Args: { p_now?: string; p_show_id?: string }
+        Returns: number
+      }
       get_reusable_theater_join_link: {
         Args: { p_token_hash: string }
         Returns: {
@@ -1863,6 +2102,46 @@ export type Database = {
       is_theater_admin: { Args: { p_theater_id: string }; Returns: boolean }
       is_theater_owner: { Args: { p_theater_id: string }; Returns: boolean }
       is_theater_staff: { Args: { p_theater_id: string }; Returns: boolean }
+      issue_proposal_counteroffer: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_duration_minutes: number
+          p_expected_version: number
+          p_local_starts_at: string
+          p_location_kind: Database['public']['Enums']['slot_location_kind']
+          p_location_name: string
+          p_now?: string
+          p_occurrence_id: string
+          p_proposal_revision_id: string
+          p_response_deadline?: string
+          p_starts_at: string
+          p_timezone_name: string
+          p_timezone_source: Database['public']['Enums']['timezone_source']
+          p_utc_offset_minutes: number
+        }
+        Returns: {
+          actor_user_id: string
+          candidate_slot_id: string
+          command_id: string
+          created_at: string
+          id: string
+          occurrence_id: string
+          proposal_revision_id: string
+          responded_at: string | null
+          responded_by_user_id: string | null
+          response_command_id: string | null
+          response_deadline: string
+          resulting_proposal_revision_id: string | null
+          state: Database['public']['Enums']['proposal_counteroffer_state']
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_counteroffers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       legacy_show_lifecycle_status: {
         Args: { p_status: Database['public']['Enums']['show_status'] }
         Returns: Database['public']['Enums']['show_lifecycle_status']
@@ -1897,6 +2176,10 @@ export type Database = {
           id: string
           status: Database['public']['Enums']['invite_status']
         }[]
+      }
+      project_counteroffer_notifications: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
       }
       project_event_cast_invitation_notification: {
         Args: { p_activity_event_id: string }
@@ -2006,6 +2289,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      respond_to_proposal_counteroffer: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_counteroffer_id: string
+          p_now?: string
+          p_response: Database['public']['Enums']['proposal_counteroffer_response']
+        }
+        Returns: Json
       }
       review_proposal_revision: {
         Args: {
@@ -2272,6 +2565,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      submit_event_proposal_revision_without_reservations: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_show_id: string
+        }
+        Returns: {
+          command_id: string
+          decision_state: Database['public']['Enums']['proposal_decision_state']
+          decision_version: number
+          id: string
+          revision_number: number
+          show_id: string
+          snapshot: Json
+          submitted_at: string
+          submitted_by: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_proposal_revisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_theater_governance: {
         Args: {
           p_actor_user_id: string
@@ -2376,6 +2693,9 @@ export type Database = {
       producer_eligibility_policy:
         'all_members' | 'designated_proposers' | 'admins_only'
       profile_visibility: 'public' | 'theater_only' | 'private'
+      proposal_counteroffer_response: 'accept' | 'decline'
+      proposal_counteroffer_state:
+        'pending' | 'accepted' | 'declined' | 'expired'
       proposal_decision_state:
         | 'pending'
         | 'changes_requested'
@@ -2384,6 +2704,8 @@ export type Database = {
         | 'denied'
       proposal_review_action: 'approve' | 'request_edits' | 'deny'
       review_action: 'submitted' | 'approved' | 'rejected' | 'changes_requested'
+      schedule_reservation_kind: 'counteroffer_hold' | 'approved_commitment'
+      schedule_reservation_status: 'active' | 'released'
       show_cast_source: 'invited' | 'requested'
       show_cast_status:
         'pending' | 'accepted' | 'declined' | 'withdrawn' | 'removed'
@@ -2550,6 +2872,13 @@ export const Constants = {
         'admins_only',
       ],
       profile_visibility: ['public', 'theater_only', 'private'],
+      proposal_counteroffer_response: ['accept', 'decline'],
+      proposal_counteroffer_state: [
+        'pending',
+        'accepted',
+        'declined',
+        'expired',
+      ],
       proposal_decision_state: [
         'pending',
         'changes_requested',
@@ -2559,6 +2888,8 @@ export const Constants = {
       ],
       proposal_review_action: ['approve', 'request_edits', 'deny'],
       review_action: ['submitted', 'approved', 'rejected', 'changes_requested'],
+      schedule_reservation_kind: ['counteroffer_hold', 'approved_commitment'],
+      schedule_reservation_status: ['active', 'released'],
       show_cast_source: ['invited', 'requested'],
       show_cast_status: [
         'pending',

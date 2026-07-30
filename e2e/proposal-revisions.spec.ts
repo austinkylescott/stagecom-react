@@ -164,6 +164,151 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
   }
 })
 
+test('Reviewer Counteroffer holds the Primary Venue until explicit viable acceptance', async ({
+  context,
+  page,
+}) => {
+  test.setTimeout(90_000)
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const fixture = await createFixture(config!)
+
+  try {
+    const { error: proposedCastError } = await fixture.admin.rpc(
+      'save_event_proposed_cast',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_cast_user_ids: [fixture.acceptedUserId],
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(proposedCastError).toBeNull()
+    const { error: confirmedSlotError } = await fixture.admin
+      .from('show_occurrences')
+      .update({ confirmed_candidate_slot_id: fixture.viableSlotId })
+      .eq('id', fixture.occurrenceId)
+    expect(confirmedSlotError).toBeNull()
+    const { error: submissionError } = await fixture.admin.rpc(
+      'submit_event_proposal_revision',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(submissionError).toBeNull()
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.reviewerEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
+    await page.waitForTimeout(500)
+    await page
+      .getByLabel('Offered local date and time')
+      .fill('2026-10-12T19:30')
+    await page.getByLabel('Offered duration (minutes)').fill('90')
+    await page.getByRole('button', { name: 'Issue Counteroffer' }).click()
+    await expect(page.getByText('Counteroffer · pending')).toBeVisible()
+
+    const { data: issuedOffer } = await fixture.admin
+      .from('show_counteroffers')
+      .select('id, candidate_slot_id, state')
+      .eq(
+        'proposal_revision_id',
+        (
+          await fixture.admin
+            .from('show_proposal_revisions')
+            .select('id')
+            .eq('show_id', fixture.eventId)
+            .eq('revision_number', 1)
+            .single()
+        ).data!.id,
+      )
+      .single()
+    expect(issuedOffer?.state).toBe('pending')
+    const { count: activeHoldCount } = await fixture.admin
+      .from('show_schedule_reservations')
+      .select('*', { count: 'exact', head: true })
+      .eq('counteroffer_id', issuedOffer!.id)
+      .eq('status', 'active')
+    expect(activeHoldCount).toBe(1)
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.acceptedEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
+    await page.waitForTimeout(500)
+    await page
+      .getByLabel('Availability for Candidate Slot 3')
+      .selectOption('available')
+    await expect
+      .poll(async () => {
+        const { data } = await fixture.admin
+          .from('show_availability_responses')
+          .select('response')
+          .eq('candidate_slot_id', issuedOffer!.candidate_slot_id)
+          .eq('user_id', fixture.acceptedUserId)
+          .maybeSingle()
+        return data?.response
+      })
+      .toBe('available')
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.ownerEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
+    await page.waitForTimeout(500)
+    await page.getByRole('button', { name: 'accept Counteroffer' }).click()
+    await expect(page.getByText('Revision 2 · pending')).toBeVisible()
+
+    const [{ data: revisions }, { data: offer }, { count: remainingHolds }] =
+      await Promise.all([
+        fixture.admin
+          .from('show_proposal_revisions')
+          .select('revision_number, decision_state')
+          .eq('show_id', fixture.eventId)
+          .order('revision_number'),
+        fixture.admin
+          .from('show_counteroffers')
+          .select('state, resulting_proposal_revision_id')
+          .eq('id', issuedOffer!.id)
+          .single(),
+        fixture.admin
+          .from('show_schedule_reservations')
+          .select('*', { count: 'exact', head: true })
+          .eq('counteroffer_id', issuedOffer!.id)
+          .eq('status', 'active'),
+      ])
+    expect(revisions).toEqual([
+      { decision_state: 'counteroffered', revision_number: 1 },
+      { decision_state: 'pending', revision_number: 2 },
+    ])
+    expect(offer).toMatchObject({ state: 'accepted' })
+    expect(offer?.resulting_proposal_revision_id).toBeTruthy()
+    expect(remainingHolds).toBe(0)
+  } finally {
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
 function getSupabaseConfig() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL ?? testEnv.VITE_SUPABASE_URL
   const anonKey =
@@ -191,6 +336,7 @@ async function createFixture(
       ['director', 'Proposal Director'],
       ['accepted', 'Accepted Cast'],
       ['pending', 'Pending Invitee'],
+      ['reviewer', 'Proposal Reviewer'],
     ].map(async ([key, name]) => {
       const email = `proposal-${key}-${suffix}@example.com`
       const { data, error } = await admin.auth.admin.createUser({
@@ -203,7 +349,7 @@ async function createFixture(
       return { email, userId: data.user!.id }
     }),
   )
-  const [owner, director, accepted, pending] = actors
+  const [owner, director, accepted, pending, reviewer] = actors
   const theaterSlug = `proposal-stage-${suffix}`
   const eventSlug = `proposal-event-${suffix}`
   const { data: theaters, error: theaterError } = await admin.rpc(
@@ -225,7 +371,7 @@ async function createFixture(
   const { error: membershipError } = await admin
     .from('theater_memberships')
     .insert(
-      [director, accepted, pending].map((actor) => ({
+      [director, accepted, pending, reviewer].map((actor) => ({
         roles: ['member' as const],
         status: 'active' as const,
         theater_id: theaterId,
@@ -233,6 +379,15 @@ async function createFixture(
       })),
     )
   expect(membershipError).toBeNull()
+  const { error: capabilityError } = await admin
+    .from('theater_member_capabilities')
+    .insert({
+      capability: 'reviewer',
+      granted_by_user_id: owner.userId,
+      theater_id: theaterId,
+      user_id: reviewer.userId,
+    })
+  expect(capabilityError).toBeNull()
   const { data: events, error: eventError } = await admin.rpc(
     'create_managed_event',
     {
@@ -342,15 +497,54 @@ async function createFixture(
   expect(uncertainError).toBeNull()
 
   return {
+    acceptedEmail: accepted.email,
+    acceptedUserId: accepted.userId,
     admin,
     anonKey: config.anonKey,
     eventId,
     eventSlug,
     ownerEmail: owner.email,
+    ownerUserId: owner.userId,
+    occurrenceId,
     password,
     supabaseUrl: config.supabaseUrl,
     theaterId,
     theaterSlug,
+    reviewerEmail: reviewer.email,
     userIds: actors.map(({ userId }) => userId),
+    viableSlotId,
   }
+}
+
+async function authenticateContext({
+  anonKey,
+  context,
+  email,
+  password,
+  supabaseUrl,
+}: {
+  anonKey: string
+  context: import('@playwright/test').BrowserContext
+  email: string
+  password: string
+  supabaseUrl: string
+}) {
+  const auth = createClient<Database>(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data, error } = await auth.auth.signInWithPassword({
+    email,
+    password,
+  })
+  expect(error).toBeNull()
+  await context.addCookies([
+    {
+      domain: 'localhost',
+      httpOnly: true,
+      name: 'stagecom-access-token',
+      path: '/',
+      sameSite: 'Lax',
+      value: data.session!.access_token,
+    },
+  ])
 }
