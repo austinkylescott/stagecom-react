@@ -210,6 +210,24 @@ export async function getManagedEventWorkspace(
   const canRespondToAvailability =
     actorCast?.source === 'invited' &&
     (actorCast.status === 'pending' || actorCast.status === 'accepted')
+  const confirmedSlotEndsAt = managedEvent.show_occurrences.flatMap(
+    (occurrence) => {
+      const confirmedSlot = occurrence.candidate_slots.find(
+        (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
+      )
+      return confirmedSlot
+        ? [
+            new Date(confirmedSlot.starts_at).getTime() +
+              confirmedSlot.duration_minutes * 60_000,
+          ]
+        : []
+    },
+  )
+  const canCompleteEvent =
+    isTheaterAdmin &&
+    managedEvent.lifecycle_status === 'approved' &&
+    confirmedSlotEndsAt.length > 0 &&
+    Math.max(...confirmedSlotEndsAt) <= Date.now()
 
   const visibleCast = managedEvent.show_cast.filter((castMember) => {
     if (view !== 'pending_invitee') return true
@@ -325,6 +343,7 @@ export async function getManagedEventWorkspace(
     actorUserId: access.data.actorUserId,
     allowedActions: {
       assignOccurrenceCalls: canAssignOccurrenceCalls,
+      completeEvent: canCompleteEvent,
       editOperationalPlan: canEditOperationalPlan,
       inviteCast: actorLeadership.length > 0,
       issueCounteroffer: isReviewer,

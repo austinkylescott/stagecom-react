@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(19);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -344,6 +344,26 @@ select is(
   ) #>> '{content,occurrences,0,locationName}',
   'Public Hall',
   'anonymous reads expose the snapshotted public Performance'
+);
+
+reset role;
+
+select * from public.complete_event(
+  (select id from public.shows where slug = 'versioned-public-event'),
+  '74000000-0000-0000-0000-000000000001',
+  '74000000-0000-0000-0000-000000000026',
+  '2026-10-11T01:00:00Z'
+);
+
+set local role anon;
+
+select is(
+  public.get_published_event(
+    'public-content-theater',
+    'versioned-public-event'
+  ) #>> '{event,lifecycleStatus}',
+  'completed',
+  'a completed Event preserves its published anonymous snapshot'
 );
 
 reset role;

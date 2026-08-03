@@ -1,15 +1,22 @@
 import { getCurrentUserFromRequest } from '@/server/auth/session'
 import { appError, err, ok, toAppError } from '@/server/errors'
 
-import { createSupabaseEventPersistence } from './persistence'
+import {
+  createSupabaseEventCompletionPersistence,
+  createSupabaseEventPersistence,
+} from './persistence'
 import { createSupabaseEventPublicContentPersistence } from './public-content-persistence'
 import { createSupabaseProposalPersistence } from './proposal-persistence'
 import { resolveLocalDateTime } from './time'
 
 import type { z } from 'zod'
 import type { AppResult } from '@/server/errors'
-import type { EventPersistence } from './persistence'
 import type {
+  EventCompletionPersistence,
+  EventPersistence,
+} from './persistence'
+import type {
+  completeEventInputSchema,
   createManagedEventInputSchema,
   inviteEventCastMemberInputSchema,
   issueProposalCounterofferInputSchema,
@@ -33,6 +40,12 @@ export type EventCommandDependencies = {
   persistence: EventPersistence
 }
 
+export type EventCompletionCommandDependencies = {
+  getCurrentUser: () => Promise<AppResult<{ id: string }>>
+  now: () => Date
+  persistence: EventCompletionPersistence
+}
+
 export type EventPublicContentCommandDependencies = {
   getCurrentUser: () => Promise<AppResult<{ id: string }>>
   persistence: EventPublicContentPersistence
@@ -48,6 +61,41 @@ function getDefaultDependencies(): EventCommandDependencies {
   return {
     getCurrentUser: getCurrentUserFromRequest,
     persistence: createSupabaseEventPersistence(),
+  }
+}
+
+function getDefaultCompletionDependencies(): EventCompletionCommandDependencies {
+  return {
+    getCurrentUser: getCurrentUserFromRequest,
+    now: () => new Date(),
+    persistence: createSupabaseEventCompletionPersistence(),
+  }
+}
+
+export async function completeEvent(
+  input: z.infer<typeof completeEventInputSchema>,
+  dependencies: EventCompletionCommandDependencies = getDefaultCompletionDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    await dependencies.persistence.authorizeCompletion({
+      actorUserId: currentUser.data.id,
+      eventId: input.eventId,
+    })
+    return ok(
+      await dependencies.persistence.complete({
+        ...input,
+        actorUserId: currentUser.data.id,
+        now: dependencies.now().toISOString(),
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(appError('external_service_error', 'Event could not be completed.'))
+      : err(failure)
   }
 }
 

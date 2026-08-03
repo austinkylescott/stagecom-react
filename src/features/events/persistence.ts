@@ -21,6 +21,23 @@ export type ManagedEvent = {
   title: string
 }
 
+export type EventCompletionPersistence = {
+  authorizeCompletion: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  complete: (input: {
+    actorUserId: string
+    commandId: string
+    eventId: string
+    now: string
+  }) => Promise<{
+    completedAt: string
+    eventId: string
+    lifecycleStatus: 'completed'
+  }>
+}
+
 export type EventPersistence = {
   authorizeAvailabilityResponse: (input: {
     actorUserId: string
@@ -120,6 +137,82 @@ export type EventPersistence = {
     userId: string
     version: number
   }>
+}
+
+export function createSupabaseEventCompletionPersistence(): EventCompletionPersistence {
+  return {
+    async authorizeCompletion(input) {
+      const supabase = createAuthenticatedClient()
+      const { data: event, error: eventError } = await supabase
+        .from('shows')
+        .select('id, theater_id')
+        .eq('id', input.eventId)
+        .maybeSingle()
+
+      if (eventError) {
+        throw appError(
+          'external_service_error',
+          'Event completion authorization could not be checked.',
+        )
+      }
+      if (!event) throw appError('not_found', 'Event was not found.')
+
+      const { data: membership, error: membershipError } = await supabase
+        .from('theater_memberships')
+        .select('roles')
+        .eq('theater_id', event.theater_id)
+        .eq('user_id', input.actorUserId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (membershipError) {
+        throw appError(
+          'external_service_error',
+          'Event completion authorization could not be checked.',
+        )
+      }
+      if (
+        !membership?.roles.some((role) => role === 'owner' || role === 'admin')
+      ) {
+        throw appError(
+          'forbidden',
+          'Owner or Admin access is required to complete an Event.',
+        )
+      }
+    },
+    async complete(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('complete_event', {
+        p_actor_user_id: input.actorUserId,
+        p_command_id: input.commandId,
+        p_now: input.now,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000') throw appError('conflict', error.message)
+        throw appError(
+          'external_service_error',
+          'Event could not be completed.',
+        )
+      }
+
+      if (data.lifecycle_status !== 'completed' || !data.completed_at) {
+        throw appError(
+          'external_service_error',
+          'Completed Event state could not be loaded.',
+        )
+      }
+
+      return {
+        completedAt: data.completed_at,
+        eventId: data.id,
+        lifecycleStatus: data.lifecycle_status,
+      }
+    },
+  }
 }
 
 export function createSupabaseEventPersistence(): EventPersistence {

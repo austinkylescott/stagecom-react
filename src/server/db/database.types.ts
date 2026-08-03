@@ -1420,6 +1420,7 @@ export type Database = {
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
+          completed_at: string | null
           created_at: string
           created_by_user_id: string | null
           description: string | null
@@ -1451,6 +1452,7 @@ export type Database = {
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
+          completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
           description?: string | null
@@ -1482,6 +1484,7 @@ export type Database = {
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
+          completed_at?: string | null
           created_at?: string
           created_by_user_id?: string | null
           description?: string | null
@@ -1996,6 +1999,56 @@ export type Database = {
         Returns: boolean
       }
       can_view_show: { Args: { p_show_id: string }; Returns: boolean }
+      complete_due_events: {
+        Args: { p_now?: string; p_show_id?: string }
+        Returns: number
+      }
+      complete_event: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_now?: string
+          p_show_id: string
+        }
+        Returns: {
+          approved_proposal_revision_id: string | null
+          at_risk_continuation_allowed: boolean
+          cast_max: number | null
+          cast_min: number | null
+          casting_mode: Database['public']['Enums']['casting_mode']
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          event_type: Database['public']['Enums']['event_type']
+          id: string
+          is_cast_finalized: boolean
+          is_public_listed: boolean
+          last_publication_command_id: string | null
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast: number | null
+          on_sale_at: string | null
+          operational_health: Database['public']['Enums']['show_operational_health']
+          poster_url: string | null
+          producer_note: string | null
+          publication_status: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id: string | null
+          slug: string
+          status: Database['public']['Enums']['show_status']
+          summary: string | null
+          target_cast_size: number | null
+          theater_id: string
+          ticket_url: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'shows'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_managed_event: {
         Args: {
           p_actor_user_id: string
@@ -2011,6 +2064,7 @@ export type Database = {
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
+          completed_at: string | null
           created_at: string
           created_by_user_id: string | null
           description: string | null
@@ -2279,6 +2333,7 @@ export type Database = {
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
+          completed_at: string | null
           created_at: string
           created_by_user_id: string | null
           description: string | null
@@ -2545,6 +2600,7 @@ export type Database = {
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
+          completed_at: string | null
           created_at: string
           created_by_user_id: string | null
           description: string | null

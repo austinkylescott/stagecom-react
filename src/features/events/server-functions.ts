@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import {
+  completeEvent,
   createManagedEvent,
   inviteEventCastMember,
   issueProposalCounteroffer,
@@ -24,6 +25,7 @@ import {
 import { getEventPublicContentReadiness } from './public-content-queries'
 import { getPublishedEventBySlug } from './public-queries'
 import {
+  completeEventInputSchema,
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
@@ -41,6 +43,10 @@ import {
   seedDeniedProposalReplacementInputSchema,
   theaterEventsInputSchema,
 } from './schemas'
+
+export const completeEventFn = createServerFn({ method: 'POST' })
+  .validator(completeEventInputSchema)
+  .handler(async ({ data }) => completeEvent(data))
 
 export const createManagedEventFn = createServerFn({ method: 'POST' })
   .validator(createManagedEventInputSchema)
