@@ -19,6 +19,11 @@ export const eventWorkspaceInputSchema = z.object({
   theaterSlug: slugSchema,
 })
 
+export const completeEventInputSchema = z.object({
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+})
+
 const externalSalesUrlSchema = z
   .url()
   .refine(

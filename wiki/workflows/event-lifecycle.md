@@ -69,7 +69,13 @@ Falling below Minimum Viable Cast or losing required Event leadership emits an e
 
 A Producer may request cancellation, but Owner/Admin performs it. A published cancelled Event remains publicly visible with a cancellation notice so audience members are not left with a disappearing page. Future Occurrences are cancelled and affected participants receive in-app notifications.
 
-An approved Event becomes completed after its final confirmed Occurrence ends. Completion preserves the Event's review, risk, casting, and publication history.
+An approved Event becomes completed after its final Confirmed Slot ends.
+Completion is executable through an Owner/Admin action and a service-role
+maintenance entry point under a supplied deterministic clock. The repeatable
+transition records one `event.completed` domain fact and preserves Operational
+Approval, Publication, operational health, casting, Proposal decisions, and
+canonical/Theater-local slot facts. Published completed Events retain their
+anonymous published snapshot.
 
 ## What History Is Preserved?
 

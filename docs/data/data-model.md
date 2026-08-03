@@ -100,6 +100,14 @@ Revision without approving it. Expiry is repeatable under a supplied server
 clock, runs during workspace reads and actions, and is also available through a
 service-role maintenance function.
 
+Event completion is likewise a repeatable transition under a supplied server
+clock. An Owner/Admin action or the service-role maintenance entry point moves
+only an approved Event whose final Confirmed Slot has ended to `completed` and
+records `completed_at` plus one `event.completed` fact. Operational Approval,
+Publication, operational health, cast, Proposal decisions, and the Confirmed
+Slot's canonical and Theater-local time provenance remain unchanged. A
+published completed Event continues to serve its published anonymous snapshot.
+
 `show_public_content_revisions` now stores one current unpublished revision per
 Event and preserves previously published revisions as immutable anonymous
 snapshots. Each revision contains public title, description, image, explicit

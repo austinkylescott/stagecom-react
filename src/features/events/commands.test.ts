@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  completeEvent,
   createManagedEvent,
   inviteEventCastMember,
   recordCandidateSlotAvailability,
@@ -9,7 +10,10 @@ import {
   setOccurrenceCall,
 } from './commands'
 
-import type { EventCommandDependencies } from './commands'
+import type {
+  EventCommandDependencies,
+  EventCompletionCommandDependencies,
+} from './commands'
 
 const unusedCastingPersistence = {
   authorizeAvailabilityResponse: async () => undefined,
@@ -31,6 +35,50 @@ const unusedCastingPersistence = {
 }
 
 describe('managed Event commands', () => {
+  it('completes an eligible Event through the authorized boundary using the deterministic clock', async () => {
+    const completions: unknown[] = []
+    const dependencies: EventCompletionCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
+      now: () => new Date('2026-10-11T01:00:00.000Z'),
+      persistence: {
+        authorizeCompletion: async () => undefined,
+        complete: async (input) => {
+          completions.push(input)
+          return {
+            completedAt: input.now,
+            eventId: input.eventId,
+            lifecycleStatus: 'completed',
+          }
+        },
+      },
+    }
+
+    const result = await completeEvent(
+      {
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+      },
+      dependencies,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        completedAt: '2026-10-11T01:00:00.000Z',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        lifecycleStatus: 'completed',
+      },
+    })
+    expect(completions).toEqual([
+      {
+        actorUserId: 'owner-1',
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        now: '2026-10-11T01:00:00.000Z',
+      },
+    ])
+  })
+
   it('does not elevate to service role before app authorization succeeds', async () => {
     let created = false
     const dependencies: EventCommandDependencies = {
