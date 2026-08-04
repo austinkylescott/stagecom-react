@@ -82,7 +82,24 @@ versions rather than overwriting a newer choice.
 
 ## How Are Cancellation And Completion Handled?
 
-A Producer may request cancellation, but Owner/Admin performs it. A published cancelled Event remains publicly visible with a cancellation notice so audience members are not left with a disappearing page. Future Occurrences are cancelled and affected participants receive in-app notifications.
+A Producer may record a reasoned cancellation request without changing the
+Event lifecycle. The request is preserved in `show_cancellation_requests` and
+emits `event.cancellation.requested`; an active Owner/Admin still makes the
+final decision. The cancellation command compares the lifecycle state the
+operator reviewed, so a concurrent transition returns a typed stale-state
+conflict, while a retry with the same command identity returns the original
+result.
+
+Cancellation records the actor, reason, and deterministic cancellation time,
+marks only future Occurrences cancelled, closes pending Counteroffers and
+availability requests, and releases reservations whose commitment range has
+not ended. It emits one `event.cancelled` fact and projects one deduplicated
+notification per active Event leader or accepted Cast Member. The Event row,
+Proposal Revisions and decisions, cast credits, and factual activity remain.
+A formerly published Event keeps its anonymous route and immutable published
+snapshot with a prominent cancellation notice; admission price and ticket
+actions are suppressed. An Event that was never published remains anonymous
+not-found.
 
 An approved Event becomes completed after its final Confirmed Slot ends.
 Completion is executable through an Owner/Admin action and a service-role

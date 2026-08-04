@@ -111,7 +111,10 @@ export async function getEventPublicContentReadiness(
 
   return ok({
     allowedActions: {
-      editPublicContent: Boolean(producerResult.data),
+      editPublicContent:
+        Boolean(producerResult.data) &&
+        event.lifecycle_status !== 'cancelled' &&
+        event.lifecycle_status !== 'completed',
       publishEvent: isTheaterAdmin && blockers.length === 0,
     },
     atRiskContinuationRequired:

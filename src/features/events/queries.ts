@@ -136,7 +136,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, cancelled_at, cancelled_by_user_id, cancellation_reason, show_cancellation_requests(id, actor_user_id, reason, requested_at, resolved_at, resolved_by_user_id), show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -197,6 +197,9 @@ export async function getManagedEventWorkspace(
   const isProducer = actorLeadership.some(
     (leader) => leader.role === 'producer',
   )
+  const isTerminalEvent =
+    managedEvent.lifecycle_status === 'cancelled' ||
+    managedEvent.lifecycle_status === 'completed'
   const canEditOperationalPlan =
     (managedEvent.lifecycle_status === 'draft' ||
       managedEvent.lifecycle_status === 'approved') &&
@@ -204,10 +207,11 @@ export async function getManagedEventWorkspace(
   const canEditDraftProposal =
     managedEvent.lifecycle_status === 'draft' &&
     actorLeadership.some((leader) => leader.role === 'producer')
-  const canAssignOccurrenceCalls = actorLeadership.some(
-    (leader) => leader.role === 'director',
-  )
+  const canAssignOccurrenceCalls =
+    !isTerminalEvent &&
+    actorLeadership.some((leader) => leader.role === 'director')
   const canRespondToAvailability =
+    !isTerminalEvent &&
     actorCast?.source === 'invited' &&
     (actorCast.status === 'pending' || actorCast.status === 'accepted')
   const confirmedSlotEndsAt = managedEvent.show_occurrences.flatMap(
@@ -343,25 +347,27 @@ export async function getManagedEventWorkspace(
     actorUserId: access.data.actorUserId,
     allowedActions: {
       assignOccurrenceCalls: canAssignOccurrenceCalls,
+      cancelEvent: isTheaterAdmin && !isTerminalEvent,
       completeEvent: canCompleteEvent,
       editOperationalPlan: canEditOperationalPlan,
-      inviteCast: actorLeadership.length > 0,
-      issueCounteroffer: isReviewer,
+      inviteCast: !isTerminalEvent && actorLeadership.length > 0,
+      issueCounteroffer: !isTerminalEvent && isReviewer,
       manageAtRisk:
         isTheaterAdmin &&
         managedEvent.lifecycle_status === 'approved' &&
         managedEvent.operational_health === 'at_risk',
       respondToAvailability: canRespondToAvailability,
-      respondToInvitation: view === 'pending_invitee',
-      respondToCounteroffer: isProducer,
-      reviewProposalRevisions: isReviewer,
-      seedDeniedReplacement: isProducer,
+      respondToInvitation: !isTerminalEvent && view === 'pending_invitee',
+      respondToCounteroffer: !isTerminalEvent && isProducer,
+      requestCancellation: isProducer && !isTerminalEvent,
+      reviewProposalRevisions: !isTerminalEvent && isReviewer,
+      seedDeniedReplacement: !isTerminalEvent && isProducer,
       selectProposedCast: canEditDraftProposal,
       submitProposalRevision: canEditDraftProposal,
       useOwnerSelfApproval:
         access.data.membership.roles.includes('owner') &&
         access.data.theater.owner_self_approval_enabled,
-      withdrawFromCast: actorCast?.status === 'accepted',
+      withdrawFromCast: !isTerminalEvent && actorCast?.status === 'accepted',
     },
     event: {
       ...managedEvent,
@@ -390,6 +396,12 @@ export async function getManagedEventWorkspace(
         view === 'operational'
           ? managedEvent.show_risk_management_decisions.sort((left, right) =>
               right.created_at.localeCompare(left.created_at),
+            )
+          : [],
+      show_cancellation_requests:
+        view === 'operational'
+          ? managedEvent.show_cancellation_requests.sort((left, right) =>
+              right.requested_at.localeCompare(left.requested_at),
             )
           : [],
       show_proposal_revisions:

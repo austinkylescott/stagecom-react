@@ -95,6 +95,15 @@ health fields; publishing an explicitly allowed At Risk Event does not erase
 its At Risk condition. `get_published_event` is the anonymous allowlist and
 returns no row unless both the Theater and Event are published.
 
+`show_cancellation_requests` preserves a Producer's recommendation separately
+from final authority. A request does not change lifecycle. Cancellation stores
+its actor, reason, and time on `shows`, uses the reviewed lifecycle as its
+optimistic-concurrency expectation, and preserves Operational Approval,
+Proposal Revisions, decisions, cast credits, Publication, and activity. Future
+Occurrence and reservation state is ended transactionally. A published
+cancelled Event remains eligible for `get_published_event`; an unpublished
+cancelled Event does not become anonymously visible.
+
 Each Cast relationship initializes `public_credit_enabled` from the Member's
 profile preference, then remains independently controllable for that Event.
 Revision credit rows snapshot display names and permissions. Anonymous policies

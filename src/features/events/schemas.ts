@@ -24,6 +24,19 @@ export const completeEventInputSchema = z.object({
   eventId: uuidSchema,
 })
 
+export const requestEventCancellationInputSchema = z.object({
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+  reason: nonEmptyStringSchema.max(2_000),
+})
+
+export const cancelEventInputSchema = z.object({
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+  expectedLifecycleStatus: z.enum(['draft', 'in_review', 'approved']),
+  reason: nonEmptyStringSchema.max(2_000),
+})
+
 export const withdrawFromEventCastInputSchema = z.object({
   commandId: uuidSchema,
   eventId: uuidSchema,
@@ -31,7 +44,7 @@ export const withdrawFromEventCastInputSchema = z.object({
 })
 
 export const manageAtRiskEventInputSchema = z.object({
-  action: z.enum(['revise', 'reschedule', 'allow', 'cancel']),
+  action: z.enum(['revise', 'reschedule', 'allow']),
   commandId: uuidSchema,
   eventId: uuidSchema,
   expectedHealthVersion: z.number().int().positive(),
