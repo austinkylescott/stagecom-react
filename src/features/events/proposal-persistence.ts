@@ -41,7 +41,7 @@ export type ProposalCounteroffer = {
   occurrenceId: string
   proposalRevisionId: string
   responseDeadline: string
-  state: 'pending' | 'accepted' | 'declined' | 'expired'
+  state: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled'
 }
 
 export type ProposalPersistence = {

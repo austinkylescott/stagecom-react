@@ -38,6 +38,176 @@ export type EventCompletionPersistence = {
   }>
 }
 
+export type EventCancellationPersistence = {
+  authorizeCancellation: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  authorizeRequest: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  cancel: (input: {
+    actorUserId: string
+    commandId: string
+    eventId: string
+    expectedLifecycleStatus: 'draft' | 'in_review' | 'approved'
+    now: string
+    reason: string
+  }) => Promise<{
+    cancelledAt: string
+    eventId: string
+    lifecycleStatus: 'cancelled'
+    publicationStatus: ManagedEvent['publicationStatus']
+  }>
+  request: (input: {
+    actorUserId: string
+    commandId: string
+    eventId: string
+    now: string
+    reason: string
+  }) => Promise<{
+    eventId: string
+    reason: string
+    requestId: string
+    requestedAt: string
+  }>
+}
+
+export function createSupabaseEventCancellationPersistence(): EventCancellationPersistence {
+  return {
+    async authorizeCancellation(input) {
+      const supabase = createAuthenticatedClient()
+      const { data: event, error: eventError } = await supabase
+        .from('shows')
+        .select('theater_id')
+        .eq('id', input.eventId)
+        .maybeSingle()
+
+      if (eventError) {
+        throw appError(
+          'external_service_error',
+          'Cancellation authorization could not be checked.',
+        )
+      }
+      if (!event) throw appError('not_found', 'Event was not found.')
+
+      const { data: membership, error } = await supabase
+        .from('theater_memberships')
+        .select('roles')
+        .eq('theater_id', event.theater_id)
+        .eq('user_id', input.actorUserId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Cancellation authorization could not be checked.',
+        )
+      }
+      if (
+        !membership?.roles.some((role) => role === 'owner' || role === 'admin')
+      ) {
+        throw appError(
+          'forbidden',
+          'Active Owner or Admin access is required to cancel an Event.',
+        )
+      }
+    },
+    async authorizeRequest(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase.rpc('is_show_producer', {
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Cancellation request authorization could not be checked.',
+        )
+      }
+      if (!data) {
+        throw appError(
+          'forbidden',
+          'Active Event Producer access is required to request cancellation.',
+        )
+      }
+    },
+    async cancel(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('cancel_event', {
+        p_actor_user_id: input.actorUserId,
+        p_command_id: input.commandId,
+        p_expected_lifecycle_status: input.expectedLifecycleStatus,
+        p_now: input.now,
+        p_reason: input.reason,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        if (error.code === '22023' || error.code === '23514') {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Event could not be cancelled.',
+        )
+      }
+
+      if (data.lifecycle_status !== 'cancelled' || !data.cancelled_at) {
+        throw appError(
+          'external_service_error',
+          'Cancelled Event state could not be loaded.',
+        )
+      }
+      return {
+        cancelledAt: data.cancelled_at,
+        eventId: data.id,
+        lifecycleStatus: data.lifecycle_status,
+        publicationStatus: data.publication_status,
+      }
+    },
+    async request(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('request_event_cancellation', {
+        p_actor_user_id: input.actorUserId,
+        p_command_id: input.commandId,
+        p_now: input.now,
+        p_reason: input.reason,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        if (error.code === '22023' || error.code === '23514') {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Cancellation request could not be saved.',
+        )
+      }
+
+      return {
+        eventId: data.show_id,
+        reason: data.reason,
+        requestId: data.id,
+        requestedAt: data.requested_at,
+      }
+    },
+  }
+}
+
 export type EventRiskPersistence = {
   authorizeCastWithdrawal: (input: {
     actorUserId: string
@@ -48,7 +218,7 @@ export type EventRiskPersistence = {
     eventId: string
   }) => Promise<void>
   manage: (input: {
-    action: 'revise' | 'reschedule' | 'allow' | 'cancel'
+    action: 'revise' | 'reschedule' | 'allow'
     actorUserId: string
     commandId: string
     eventId: string

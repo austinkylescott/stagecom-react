@@ -108,6 +108,18 @@ Publication, operational health, cast, Proposal decisions, and the Confirmed
 Slot's canonical and Theater-local time provenance remain unchanged. A
 published completed Event continues to serve its published anonymous snapshot.
 
+Cancellation requests are durable rows in `show_cancellation_requests`; they
+record the active Producer, reason, request time, and eventual resolution
+without changing lifecycle state. Final cancellation is a separate
+Owner/Admin-only command with expected-lifecycle concurrency and command-id
+idempotency. `shows.cancelled_at`, `cancelled_by_user_id`, and
+`cancellation_reason` retain the definitive fact. In the same transaction,
+future Occurrences become cancelled, active future schedule reservations are
+released, pending Counteroffers and their availability requests close, one
+`event.cancelled` activity fact is written, and deduplicated participant
+notifications are projected. Publication and the referenced public snapshot
+remain intact for formerly published Events.
+
 `show_public_content_revisions` now stores one current unpublished revision per
 Event and preserves previously published revisions as immutable anonymous
 snapshots. Each revision contains public title, description, image, explicit

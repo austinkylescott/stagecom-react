@@ -392,6 +392,68 @@ export type Database = {
           },
         ]
       }
+      show_cancellation_requests: {
+        Row: {
+          actor_user_id: string
+          cancellation_event_id: string | null
+          id: string
+          reason: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          show_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          cancellation_event_id?: string | null
+          id: string
+          reason: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          show_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          cancellation_event_id?: string | null
+          id?: string
+          reason?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          show_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_cancellation_requests_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_cancellation_requests_cancellation_event_id_fkey'
+            columns: ['cancellation_event_id']
+            isOneToOne: false
+            referencedRelation: 'activity_events'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_cancellation_requests_resolved_by_user_id_fkey'
+            columns: ['resolved_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_cancellation_requests_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_candidate_slots: {
         Row: {
           created_at: string
@@ -1465,6 +1527,9 @@ export type Database = {
         Row: {
           approved_proposal_revision_id: string | null
           at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -1498,6 +1563,9 @@ export type Database = {
         Insert: {
           approved_proposal_revision_id?: string | null
           at_risk_continuation_allowed?: boolean
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
@@ -1531,6 +1599,9 @@ export type Database = {
         Update: {
           approved_proposal_revision_id?: string | null
           at_risk_continuation_allowed?: boolean
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           cast_max?: number | null
           cast_min?: number | null
           casting_mode?: Database['public']['Enums']['casting_mode']
@@ -1567,6 +1638,13 @@ export type Database = {
             columns: ['approved_proposal_revision_id']
             isOneToOne: false
             referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'shows_cancelled_by_user_id_fkey'
+            columns: ['cancelled_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -2050,6 +2128,58 @@ export type Database = {
         Returns: boolean
       }
       can_view_show: { Args: { p_show_id: string }; Returns: boolean }
+      cancel_event: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_expected_lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          p_now?: string
+          p_reason: string
+          p_show_id: string
+        }
+        Returns: {
+          approved_proposal_revision_id: string | null
+          at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
+          cast_max: number | null
+          cast_min: number | null
+          casting_mode: Database['public']['Enums']['casting_mode']
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          event_type: Database['public']['Enums']['event_type']
+          id: string
+          is_cast_finalized: boolean
+          is_public_listed: boolean
+          last_publication_command_id: string | null
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          minimum_viable_cast: number | null
+          on_sale_at: string | null
+          operational_health: Database['public']['Enums']['show_operational_health']
+          operational_health_version: number
+          poster_url: string | null
+          producer_note: string | null
+          publication_status: Database['public']['Enums']['show_publication_status']
+          published_public_content_revision_id: string | null
+          slug: string
+          status: Database['public']['Enums']['show_status']
+          summary: string | null
+          target_cast_size: number | null
+          theater_id: string
+          ticket_url: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'shows'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_due_events: {
         Args: { p_now?: string; p_show_id?: string }
         Returns: number
@@ -2064,6 +2194,9 @@ export type Database = {
         Returns: {
           approved_proposal_revision_id: string | null
           at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -2113,6 +2246,9 @@ export type Database = {
         Returns: {
           approved_proposal_revision_id: string | null
           at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -2200,6 +2336,9 @@ export type Database = {
         Returns: {
           approved_proposal_revision_id: string | null
           at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -2411,6 +2550,10 @@ export type Database = {
         Args: { p_activity_event_id: string }
         Returns: undefined
       }
+      project_event_cancellation_notifications: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
       project_event_cast_invitation_notification: {
         Args: { p_activity_event_id: string }
         Returns: undefined
@@ -2447,6 +2590,9 @@ export type Database = {
         Returns: {
           approved_proposal_revision_id: string | null
           at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -2542,6 +2688,31 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'show_availability_responses'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_event_cancellation: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_now?: string
+          p_reason: string
+          p_show_id: string
+        }
+        Returns: {
+          actor_user_id: string
+          cancellation_event_id: string | null
+          id: string
+          reason: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          show_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_cancellation_requests'
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2715,6 +2886,9 @@ export type Database = {
         Returns: {
           approved_proposal_revision_id: string | null
           at_risk_continuation_allowed: boolean
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           cast_max: number | null
           cast_min: number | null
           casting_mode: Database['public']['Enums']['casting_mode']
@@ -2998,7 +3172,7 @@ export type Database = {
       profile_visibility: 'public' | 'theater_only' | 'private'
       proposal_counteroffer_response: 'accept' | 'decline'
       proposal_counteroffer_state:
-        'pending' | 'accepted' | 'declined' | 'expired'
+        'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled'
       proposal_decision_state:
         | 'pending'
         | 'changes_requested'
@@ -3182,6 +3356,7 @@ export const Constants = {
         'accepted',
         'declined',
         'expired',
+        'cancelled',
       ],
       proposal_decision_state: [
         'pending',

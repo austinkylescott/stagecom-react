@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import {
+  cancelEventFn,
   completeEventFn,
   createManagedEventFn,
   inviteEventCastMemberFn,
@@ -8,6 +9,7 @@ import {
   manageAtRiskEventFn,
   publishEventFn,
   recordCandidateSlotAvailabilityFn,
+  requestEventCancellationFn,
   reviewProposalRevisionFn,
   respondToEventCastInvitationFn,
   respondToProposalCounterofferFn,
@@ -254,10 +256,17 @@ export function PublishedEventPage({
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-lg font-extrabold">
-            {formatAdmissionPrice(content.admissionPriceCents)}
-          </p>
-          {content.admissionCallToAction.href ? (
+          {event.lifecycleStatus === 'cancelled' ? (
+            <p className="mt-6 font-extrabold text-red-900">
+              Admission is closed because this Event was cancelled.
+            </p>
+          ) : (
+            <p className="mt-6 text-lg font-extrabold">
+              {formatAdmissionPrice(content.admissionPriceCents)}
+            </p>
+          )}
+          {event.lifecycleStatus !== 'cancelled' &&
+          content.admissionCallToAction.href ? (
             <a
               className="mt-3 inline-flex rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white"
               href={content.admissionCallToAction.href}
@@ -265,11 +274,11 @@ export function PublishedEventPage({
             >
               {content.admissionCallToAction.label}
             </a>
-          ) : (
+          ) : event.lifecycleStatus !== 'cancelled' ? (
             <p className="mt-3 font-semibold">
               {content.admissionCallToAction.label}
             </p>
-          )}
+          ) : null}
         </aside>
       </div>
     </main>
@@ -349,6 +358,7 @@ export function ManagedEventWorkspace({
   actorUserId: string
   allowedActions: {
     assignOccurrenceCalls: boolean
+    cancelEvent: boolean
     completeEvent: boolean
     editOperationalPlan: boolean
     inviteCast: boolean
@@ -357,6 +367,7 @@ export function ManagedEventWorkspace({
     respondToAvailability: boolean
     respondToInvitation: boolean
     respondToCounteroffer: boolean
+    requestCancellation: boolean
     reviewProposalRevisions: boolean
     seedDeniedReplacement: boolean
     selectProposedCast: boolean
@@ -373,6 +384,17 @@ export function ManagedEventWorkspace({
     operational_health: EventHealth
     operational_health_version: number
     publication_status: EventPublication
+    cancelled_at: string | null
+    cancelled_by_user_id: string | null
+    cancellation_reason: string | null
+    show_cancellation_requests: Array<{
+      actor_user_id: string
+      id: string
+      reason: string
+      requested_at: string
+      resolved_at: string | null
+      resolved_by_user_id: string | null
+    }>
     show_availability_responses: Array<{
       actor_user_id: string
       candidate_slot_id: string
@@ -470,7 +492,7 @@ export function ManagedEventWorkspace({
         occurrence_id: string
         response_deadline: string
         resulting_proposal_revision_id: string | null
-        state: 'pending' | 'accepted' | 'declined' | 'expired'
+        state: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled'
       }>
     }>
     show_proposed_cast: Array<{ user_id: string }>
@@ -636,6 +658,19 @@ export function ManagedEventWorkspace({
     string | null
   >(null)
   const [isManagingRisk, setIsManagingRisk] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState('')
+  const [cancellationError, setCancellationError] = useState<string | null>(
+    null,
+  )
+  const [cancellationResult, setCancellationResult] = useState<string | null>(
+    null,
+  )
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [isRequestingCancellation, setIsRequestingCancellation] =
+    useState(false)
+  const [cancellationRequests, setCancellationRequests] = useState(
+    event.show_cancellation_requests,
+  )
   const [completionError, setCompletionError] = useState<string | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [proposalRevisions, setProposalRevisions] = useState(
@@ -674,6 +709,144 @@ export function ManagedEventWorkspace({
         <StateCard label="Publication" value={event.publication_status} />
         <StateCard label="Operational health" value={operationalHealth} />
       </div>
+      {lifecycleStatus === 'cancelled' ? (
+        <section className="mt-5 rounded-lg border border-red-300 bg-red-50 px-6 py-5 text-red-950">
+          <h2 className="text-xl font-extrabold">Event cancelled</h2>
+          <p className="mt-2 text-sm">
+            Future Occurrences and schedule commitments have ended. The Event,
+            Proposal Revisions, decisions, cast credits, and factual history are
+            preserved.
+          </p>
+          {event.publication_status === 'published' ? (
+            <p className="mt-2 text-sm font-bold">
+              Its public route remains available with a cancellation notice.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+      {(allowedActions.requestCancellation || allowedActions.cancelEvent) &&
+      lifecycleStatus !== 'cancelled' ? (
+        <section className="island-shell mt-5 rounded-lg px-6 py-5">
+          <h2 className="text-xl font-extrabold">Cancellation</h2>
+          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+            Producers may recommend cancellation. Only an active Owner or Admin
+            can make the final decision.
+          </p>
+          <label className="mt-4 grid gap-2 text-sm font-bold">
+            Cancellation reason
+            <textarea
+              className="min-h-24 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+              onChange={(change) => setCancellationReason(change.target.value)}
+              value={cancellationReason}
+            />
+          </label>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {allowedActions.requestCancellation ? (
+              <button
+                className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-60"
+                disabled={
+                  !cancellationReason.trim() || isRequestingCancellation
+                }
+                onClick={async () => {
+                  setCancellationError(null)
+                  setCancellationResult(null)
+                  setIsRequestingCancellation(true)
+                  try {
+                    const result = await requestEventCancellationFn({
+                      data: {
+                        commandId: crypto.randomUUID(),
+                        eventId: event.id,
+                        reason: cancellationReason,
+                      },
+                    })
+                    if (!result.ok) {
+                      setCancellationError(result.error.message)
+                      return
+                    }
+                    setCancellationRequests((current) => [
+                      {
+                        actor_user_id: actorUserId,
+                        id: result.data.requestId,
+                        reason: result.data.reason,
+                        requested_at: result.data.requestedAt,
+                        resolved_at: null,
+                        resolved_by_user_id: null,
+                      },
+                      ...current,
+                    ])
+                    setCancellationResult(
+                      'Cancellation requested. An Owner or Admin must make the final decision.',
+                    )
+                  } finally {
+                    setIsRequestingCancellation(false)
+                  }
+                }}
+                type="button"
+              >
+                {isRequestingCancellation
+                  ? 'Requesting…'
+                  : 'Request cancellation'}
+              </button>
+            ) : null}
+            {allowedActions.cancelEvent ? (
+              <button
+                className="rounded-md bg-red-800 px-4 py-3 font-extrabold text-white disabled:opacity-60"
+                disabled={!cancellationReason.trim() || isCancelling}
+                onClick={async () => {
+                  setCancellationError(null)
+                  setCancellationResult(null)
+                  setIsCancelling(true)
+                  try {
+                    if (lifecycleStatus === 'completed') {
+                      setCancellationError(
+                        'This Event can no longer be cancelled. Reload to see its current state.',
+                      )
+                      return
+                    }
+                    const result = await cancelEventFn({
+                      data: {
+                        commandId: crypto.randomUUID(),
+                        eventId: event.id,
+                        expectedLifecycleStatus: lifecycleStatus,
+                        reason: cancellationReason,
+                      },
+                    })
+                    if (!result.ok) {
+                      setCancellationError(result.error.message)
+                      return
+                    }
+                    setLifecycleStatus(result.data.lifecycleStatus)
+                    setCancellationResult(
+                      'Event cancelled. Future commitments were released.',
+                    )
+                  } finally {
+                    setIsCancelling(false)
+                  }
+                }}
+                type="button"
+              >
+                {isCancelling ? 'Cancelling…' : 'Cancel Event'}
+              </button>
+            ) : null}
+          </div>
+          {cancellationResult ? (
+            <p className="mt-4 font-bold">{cancellationResult}</p>
+          ) : null}
+          {cancellationError ? (
+            <p className="mt-4 font-bold text-red-800">{cancellationError}</p>
+          ) : null}
+          {cancellationRequests.length > 0 ? (
+            <div className="mt-5 border-t border-[var(--line)] pt-4">
+              <h3 className="font-extrabold">Cancellation requests</h3>
+              <ul className="mt-2 grid gap-2 text-sm">
+                {cancellationRequests.map((request) => (
+                  <li key={request.id}>{request.reason}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       {operationalHealth === 'at_risk' ? (
         <section className="mt-5 rounded-lg border border-amber-300 bg-amber-50 px-6 py-5 text-amber-950">
           <h2 className="text-xl font-extrabold">Event is At Risk</h2>
@@ -699,13 +872,10 @@ export function ManagedEventWorkspace({
                     ['allow', 'Allow continuation'],
                     ['revise', 'Revise Event'],
                     ['reschedule', 'Reschedule Event'],
-                    ['cancel', 'Cancel Event'],
                   ] as const
                 ).map(([action, label]) => (
                   <button
-                    className={`rounded-md px-4 py-3 font-extrabold text-white disabled:opacity-60 ${
-                      action === 'cancel' ? 'bg-red-800' : 'bg-[var(--sea-ink)]'
-                    }`}
+                    className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-60"
                     disabled={!riskManagementReason.trim() || isManagingRisk}
                     key={action}
                     onClick={async () => {
@@ -2579,7 +2749,7 @@ function ProposalCounterofferCard({
   counteroffer: {
     id: string
     response_deadline: string
-    state: 'pending' | 'accepted' | 'declined' | 'expired'
+    state: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled'
   }
   slot?: {
     duration_minutes: number

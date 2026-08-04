@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  cancelEvent,
   completeEvent,
   createManagedEvent,
   inviteEventCastMember,
   manageAtRiskEvent,
   recordCandidateSlotAvailability,
+  requestEventCancellation,
   respondToEventCastInvitation,
   saveEventOperationalPlan,
   setOccurrenceCall,
@@ -15,6 +17,7 @@ import {
 import type {
   EventCommandDependencies,
   EventCompletionCommandDependencies,
+  EventCancellationCommandDependencies,
   EventRiskCommandDependencies,
 } from './commands'
 
@@ -38,6 +41,96 @@ const unusedCastingPersistence = {
 }
 
 describe('managed Event commands', () => {
+  it('lets an authorized Producer record a cancellation request without changing lifecycle', async () => {
+    const requests: unknown[] = []
+    const dependencies: EventCancellationCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'producer-1' } }),
+      now: () => new Date('2026-10-01T16:00:00.000Z'),
+      persistence: {
+        authorizeCancellation: async () => undefined,
+        authorizeRequest: async () => undefined,
+        cancel: async () => {
+          throw new Error('must not run')
+        },
+        request: async (input) => {
+          requests.push(input)
+          return {
+            eventId: input.eventId,
+            reason: input.reason,
+            requestId: input.commandId,
+            requestedAt: input.now,
+          }
+        },
+      },
+    }
+
+    const result = await requestEventCancellation(
+      {
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        reason: '  The Producer recommends cancellation.  ',
+      },
+      dependencies,
+    )
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        reason: 'The Producer recommends cancellation.',
+        requestedAt: '2026-10-01T16:00:00.000Z',
+      },
+    })
+    expect(requests).toEqual([
+      {
+        actorUserId: 'producer-1',
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        now: '2026-10-01T16:00:00.000Z',
+        reason: 'The Producer recommends cancellation.',
+      },
+    ])
+  })
+
+  it('returns the typed stale lifecycle conflict from authorized cancellation', async () => {
+    const dependencies: EventCancellationCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
+      now: () => new Date('2026-10-01T17:00:00.000Z'),
+      persistence: {
+        authorizeCancellation: async () => undefined,
+        authorizeRequest: async () => undefined,
+        cancel: async () => {
+          throw {
+            code: 'conflict',
+            message: 'Event lifecycle changed. Reload before cancelling.',
+            status: 409,
+          }
+        },
+        request: async () => {
+          throw new Error('must not run')
+        },
+      },
+    }
+
+    const result = await cancelEvent(
+      {
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        expectedLifecycleStatus: 'approved',
+        reason: 'Management confirmed cancellation.',
+      },
+      dependencies,
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'conflict',
+        message: 'Event lifecycle changed. Reload before cancelling.',
+        status: 409,
+      },
+    })
+  })
+
   it('withdraws accepted Cast through the authorized transactional boundary', async () => {
     const withdrawals: unknown[] = []
     const dependencies: EventRiskCommandDependencies = {
