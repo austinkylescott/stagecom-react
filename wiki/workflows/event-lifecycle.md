@@ -65,6 +65,21 @@ Changing any of these after approval requires a new Proposal Revision. Title, de
 
 Falling below Minimum Viable Cast or losing required Event leadership emits an explicit domain event, changes operational health to `at risk`, and creates in-app notifications for management and Event leaders. Stagecom does not automatically cancel or unpublish the Event. Owner/Admin chooses whether to revise, reschedule, allow it to proceed, or cancel it.
 
+This transition is executable through one database-owned evaluator. Cast
+withdrawal, Availability Response changes, and leadership removal call that
+same evaluator inside their transaction. It locks the Event, compares current
+active leadership and committed Cast with the approved Proposal Revision, and
+increments an optimistic health version only when health changes. Retries do
+not repeat the risk event or its per-recipient notification projection.
+
+The workspace continues to show lifecycle, the latest Proposal decision,
+Publication, and operational health independently. An approved, published
+Event therefore remains anonymously visible after becoming At Risk. Owner or
+Admin may record an audited continuation reason without clearing At Risk, or
+choose revise/reschedule to invalidate current Operational Approval and return
+to the Proposal Revision workflow. Management commands reject stale health
+versions rather than overwriting a newer choice.
+
 ## How Are Cancellation And Completion Handled?
 
 A Producer may request cancellation, but Owner/Admin performs it. A published cancelled Event remains publicly visible with a cancellation notice so audience members are not left with a disappearing page. Future Occurrences are cancelled and affected participants receive in-app notifications.

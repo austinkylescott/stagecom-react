@@ -67,7 +67,6 @@ export type EventPublicContentPersistence = {
   } | null>
   publish: (input: {
     actorUserId: string
-    allowAtRisk: boolean
     commandId: string
     eventId: string
     expectedVersion: number
@@ -217,7 +216,7 @@ export function createSupabaseEventPublicContentPersistence(): EventPublicConten
       const supabase = createSupabaseServiceRoleClient()
       const { data, error } = await supabase.rpc('publish_event', {
         p_actor_user_id: input.actorUserId,
-        p_allow_at_risk: input.allowAtRisk,
+        p_allow_at_risk: false,
         p_command_id: input.commandId,
         p_expected_version: input.expectedVersion,
         p_public_content_revision_id: input.publicContentRevisionId,

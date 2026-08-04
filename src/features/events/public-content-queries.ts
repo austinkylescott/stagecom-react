@@ -112,9 +112,7 @@ export async function getEventPublicContentReadiness(
   return ok({
     allowedActions: {
       editPublicContent: Boolean(producerResult.data),
-      publishEvent:
-        isTheaterAdmin &&
-        blockers.every((blocker) => blocker.code === 'event_at_risk'),
+      publishEvent: isTheaterAdmin && blockers.length === 0,
     },
     atRiskContinuationRequired:
       event.operational_health === 'at_risk' &&

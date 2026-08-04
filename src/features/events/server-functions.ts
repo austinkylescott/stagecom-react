@@ -5,6 +5,7 @@ import {
   createManagedEvent,
   inviteEventCastMember,
   issueProposalCounteroffer,
+  manageAtRiskEvent,
   publishEvent,
   recordCandidateSlotAvailability,
   respondToEventCastInvitation,
@@ -15,6 +16,7 @@ import {
   setOccurrenceCall,
   saveEventProposedCast,
   submitEventProposalRevision,
+  withdrawFromEventCast,
   seedDeniedProposalReplacement,
 } from './commands'
 import {
@@ -30,6 +32,7 @@ import {
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
   issueProposalCounterofferInputSchema,
+  manageAtRiskEventInputSchema,
   publishEventInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   respondToEventCastInvitationInputSchema,
@@ -42,11 +45,20 @@ import {
   submitEventProposalRevisionInputSchema,
   seedDeniedProposalReplacementInputSchema,
   theaterEventsInputSchema,
+  withdrawFromEventCastInputSchema,
 } from './schemas'
 
 export const completeEventFn = createServerFn({ method: 'POST' })
   .validator(completeEventInputSchema)
   .handler(async ({ data }) => completeEvent(data))
+
+export const withdrawFromEventCastFn = createServerFn({ method: 'POST' })
+  .validator(withdrawFromEventCastInputSchema)
+  .handler(async ({ data }) => withdrawFromEventCast(data))
+
+export const manageAtRiskEventFn = createServerFn({ method: 'POST' })
+  .validator(manageAtRiskEventInputSchema)
+  .handler(async ({ data }) => manageAtRiskEvent(data))
 
 export const createManagedEventFn = createServerFn({ method: 'POST' })
   .validator(createManagedEventInputSchema)

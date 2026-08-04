@@ -39,7 +39,6 @@ describe('versioned public Event content', () => {
 
     const result = await publishEvent(
       {
-        allowAtRisk: false,
         commandId,
         eventId,
         expectedVersion: 3,

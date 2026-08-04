@@ -65,6 +65,16 @@ The executable schema now stores Event lifecycle (`draft`, `in_review`, `approve
 
 The retained `shows.status = rejected` value preserves the legacy distinction while its lifecycle maps to the terminal `cancelled` state. Migrated rows begin `on_track` because the legacy schema has no reliable operational-risk signal. Legacy writes synchronize forward during expansion; the independent dimensions do not collapse back into the lossy old status.
 
+Operational health has its own optimistic
+`shows.operational_health_version`. The centralized evaluator reads the exact
+approved Proposal Revision and current leadership, Cast, Calls, Availability
+Responses, and active Theater memberships under an Event-row lock. A real
+`on_track` to `at_risk` transition writes one activity fact and projects
+deduplicated alerts. `show_risk_management_decisions` preserves each explicit
+Owner/Admin revise, reschedule, allow, or cancel choice with its reason and
+prior/resulting health versions. Allowing continuation leaves health At Risk so
+the original risk fact and management history remain truthful.
+
 ## Target Event Model
 
 The remaining target model must support an Event that persists through

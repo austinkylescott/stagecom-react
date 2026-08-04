@@ -24,6 +24,20 @@ export const completeEventInputSchema = z.object({
   eventId: uuidSchema,
 })
 
+export const withdrawFromEventCastInputSchema = z.object({
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+  expectedHealthVersion: z.number().int().positive(),
+})
+
+export const manageAtRiskEventInputSchema = z.object({
+  action: z.enum(['revise', 'reschedule', 'allow', 'cancel']),
+  commandId: uuidSchema,
+  eventId: uuidSchema,
+  expectedHealthVersion: z.number().int().positive(),
+  reason: nonEmptyStringSchema.max(2_000),
+})
+
 const externalSalesUrlSchema = z
   .url()
   .refine(
@@ -87,7 +101,6 @@ export const saveEventPublicContentInputSchema = z
   })
 
 export const publishEventInputSchema = z.object({
-  allowAtRisk: z.boolean().default(false),
   commandId: uuidSchema,
   eventId: uuidSchema,
   expectedVersion: z.number().int().positive(),
