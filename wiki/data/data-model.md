@@ -50,6 +50,12 @@ The rebuild keeps the existing Supabase schema as its executable baseline and ad
   responses, including inviter and response timestamps. Invitation and response
   facts are durable activity events; in-app invitation notifications are
   deduplicated projections of those events.
+- `theater_memberships.membership_version` provides optimistic concurrency for
+  deactivation. `deactivate_theater_membership` locks the membership, preserves
+  at least one active Owner, ends current capabilities and Event assignments,
+  reevaluates affected approved Events, and writes its Theater-local facts and
+  notification projections atomically. Historical Proposal and published-credit
+  rows are not rewritten.
 
 ## Event State Expansion
 

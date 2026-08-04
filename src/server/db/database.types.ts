@@ -1852,6 +1852,7 @@ export type Database = {
           created_at: string
           home_rank: number | null
           is_home: boolean
+          membership_version: number
           roles: Database['public']['Enums']['theater_role'][]
           status: Database['public']['Enums']['membership_status']
           theater_id: string
@@ -1861,6 +1862,7 @@ export type Database = {
           created_at?: string
           home_rank?: number | null
           is_home?: boolean
+          membership_version?: number
           roles?: Database['public']['Enums']['theater_role'][]
           status?: Database['public']['Enums']['membership_status']
           theater_id: string
@@ -1870,6 +1872,7 @@ export type Database = {
           created_at?: string
           home_rank?: number | null
           is_home?: boolean
+          membership_version?: number
           roles?: Database['public']['Enums']['theater_role'][]
           status?: Database['public']['Enums']['membership_status']
           theater_id?: string
@@ -2331,6 +2334,26 @@ export type Database = {
           status: Database['public']['Enums']['theater_status']
         }[]
       }
+      deactivate_theater_membership: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_expected_membership_version: number
+          p_member_user_id: string
+          p_theater_id: string
+        }
+        Returns: {
+          affected_event_ids: string[]
+          at_risk_event_ids: string[]
+          capabilities_ended: number
+          cast_assignments_ended: number
+          leadership_assignments_ended: number
+          member_user_id: string
+          membership_status: Database['public']['Enums']['membership_status']
+          membership_version: number
+          theater_id: string
+        }[]
+      }
       evaluate_event_operational_health: {
         Args: { p_actor_user_id?: string; p_cause?: string; p_show_id: string }
         Returns: {
@@ -2563,6 +2586,10 @@ export type Database = {
         Returns: undefined
       }
       project_proposal_decision_notifications: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
+      project_theater_membership_deactivation_notification: {
         Args: { p_activity_event_id: string }
         Returns: undefined
       }
@@ -3163,7 +3190,7 @@ export type Database = {
       event_type: 'show' | 'practice' | 'meeting' | 'audition' | 'workshop'
       invite_status: 'pending' | 'accepted' | 'revoked' | 'expired'
       membership_status: 'active' | 'inactive'
-      notification_entity: 'show' | 'occurrence' | 'cast'
+      notification_entity: 'show' | 'occurrence' | 'cast' | 'theater'
       occurrence_call: 'required' | 'optional' | 'not_called'
       occurrence_type: 'rehearsal' | 'performance'
       occurrence_visibility: 'public' | 'internal'
@@ -3340,7 +3367,7 @@ export const Constants = {
       event_type: ['show', 'practice', 'meeting', 'audition', 'workshop'],
       invite_status: ['pending', 'accepted', 'revoked', 'expired'],
       membership_status: ['active', 'inactive'],
-      notification_entity: ['show', 'occurrence', 'cast'],
+      notification_entity: ['show', 'occurrence', 'cast', 'theater'],
       occurrence_call: ['required', 'optional', 'not_called'],
       occurrence_type: ['rehearsal', 'performance'],
       occurrence_visibility: ['public', 'internal'],

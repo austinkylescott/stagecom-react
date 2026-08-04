@@ -18,7 +18,10 @@ base Member access through governed hash-only links with optional expiration
 and use limits. Owner/Admin can now configure Producer eligibility, designate
 narrow Proposer and Reviewer capabilities for active Members, and persist the
 Owner self-approval, Counteroffer-window, and Primary Venue defaults used by
-the managed Event workflow. Membership deactivation remains to be implemented.
+the managed Event workflow. Owner/Admin can now deactivate an active Member
+through one optimistic, idempotent transaction. The command prevents removal
+of the last active Owner, ends narrow capabilities and current Event work, and
+retains the person's Theater-local history.
 
 ## How Does Someone Join?
 
@@ -65,6 +68,21 @@ An Owner may use an auditable self-approval override so a one-person Theater is 
 ## What Happens When Membership Ends?
 
 Removing a Member ends their active Producer, Director, Reviewer, and cast assignments while preserving historical credits and activity. Affected Events become `at risk` when they lose required leadership or fall below Minimum Viable Cast, and management must intervene.
+
+The executable deactivation command compares the membership version the
+operator reviewed and rejects stale requests. A command-identity retry returns
+the original result. It makes the membership inactive, clears Proposer and
+Reviewer capabilities, removes current Producer/Director leadership and
+Proposed Cast selection, marks pending or accepted Cast participation removed,
+and reevaluates every affected approved Event through the centralized At Risk
+evaluator in the same transaction. The Event remains approved and published.
+Immutable Proposal Revisions and decisions, published Cast-credit snapshots,
+and factual activity continue to reference the person truthfully.
+
+Membership, leadership, Cast-removal, and any At Risk transition are durable
+Theater-local facts. The deactivated Member and affected Event recipients
+receive domain-event-derived notifications with dedupe keys, so a retry does
+not repeat them.
 
 ## Is There A Cross-Theater Reputation Score?
 
