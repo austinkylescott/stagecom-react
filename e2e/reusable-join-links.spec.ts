@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
+import type { BrowserContext, Locator } from '@playwright/test'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../src/server/db/database.types'
 
@@ -131,7 +132,7 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
   const concurrentToken = randomBytes(32).toString('base64url')
   const expiredToken = randomBytes(32).toString('base64url')
   const revokedToken = randomBytes(32).toString('base64url')
-  const contenderContexts: import('@playwright/test').BrowserContext[] = []
+  const contenderContexts: BrowserContext[] = []
 
   try {
     await createJoinLink(fixture, successfulToken, { maxUses: 1 })
@@ -140,7 +141,9 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
     await expect(
       page.getByRole('heading', { name: `Join ${fixture.theaterName}` }),
     ).toBeVisible()
-    await page.getByRole('button', { name: 'Join Theater' }).click()
+    const joinButton = page.getByRole('button', { name: 'Join Theater' })
+    await waitForReactHandler(joinButton, 'onClick')
+    await joinButton.click()
     await expect(
       page.getByRole('heading', {
         name: `You joined ${fixture.theaterName}`,
@@ -409,7 +412,7 @@ async function createJoinLink(
 }
 
 async function signInBrowserAsOwner(
-  context: import('@playwright/test').BrowserContext,
+  context: BrowserContext,
   fixture: JoinLinkFixture,
 ) {
   await setBrowserSession(
@@ -421,7 +424,7 @@ async function signInBrowserAsOwner(
 }
 
 async function signInBrowserAsMember(
-  context: import('@playwright/test').BrowserContext,
+  context: BrowserContext,
   fixture: JoinLinkFixture,
   memberIndex: number,
 ) {
@@ -434,7 +437,7 @@ async function signInBrowserAsMember(
 }
 
 async function setBrowserSession(
-  context: import('@playwright/test').BrowserContext,
+  context: BrowserContext,
   fixture: JoinLinkFixture,
   email: string,
   password: string,
@@ -474,4 +477,21 @@ async function deleteJoinLinkFixture(fixture: JoinLinkFixture) {
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
+}
+
+async function waitForReactHandler(locator: Locator, handlerName: string) {
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element, name) =>
+          Object.keys(element).some((key) => {
+            if (!key.startsWith('__reactProps$')) return false
+            const props = Reflect.get(element, key) as
+              Record<string, unknown> | undefined
+            return typeof props?.[name] === 'function'
+          }),
+        handlerName,
+      ),
+    )
+    .toBe(true)
 }

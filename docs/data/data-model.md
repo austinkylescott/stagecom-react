@@ -100,6 +100,11 @@ Revision without approving it. Expiry is repeatable under a supplied server
 clock, runs during workspace reads and actions, and is also available through a
 service-role maintenance function.
 
+Approaching expiration is a separate idempotent maintenance transition. It
+accepts a supplied clock and window, emits one explicit
+`event.proposal_counteroffer.expiring_soon` activity fact per Counteroffer, and
+projects deduplicated notifications to current Event Producers.
+
 Event completion is likewise a repeatable transition under a supplied server
 clock. An Owner/Admin action or the service-role maintenance entry point moves
 only an approved Event whose final Confirmed Slot has ended to `completed` and

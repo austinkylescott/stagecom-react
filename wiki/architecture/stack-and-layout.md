@@ -32,3 +32,13 @@ Routes should stay thin. Product behavior belongs in feature `commands.ts`, `que
 ## Checks
 
 Use `npm run typecheck`, `npm run test`, `npm run test:e2e`, and `npm run build` before calling implementation work complete. For schema work, also apply local migrations and regenerate database types.
+
+## Milestone Acceptance Seams
+
+The Event-publication milestone uses one seeded Playwright journey through the
+real route and server-function boundary with distinct authenticated browser
+contexts plus an anonymous context. Focused Playwright specs keep alternate
+outcomes independently diagnosable. pgTAP is reserved for transactional and
+concurrent database invariants, including reservations and supplied-clock
+maintenance; Vitest covers typed command contracts and deterministic pure
+policy only.

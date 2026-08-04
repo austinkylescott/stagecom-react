@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: partially implemented
+Implementation status: implemented and acceptance-proven
 
 ## What Does This Milestone Prove?
 
@@ -59,3 +59,16 @@ new Publication.
 The accepted product boundary lives in
 `docs/product/event-publication-milestone.md`; detailed implementation tickets
 and dependency relationships are tracked under STA-5 in Linear.
+
+## Acceptance Proof
+
+`e2e/event-publication-milestone.spec.ts` is the primary seeded seam. It creates
+and publishes a persistent Theater, admits four Members through one Reusable
+Join Link, and uses distinct Owner, Producer, Director, Cast, Reviewer, and
+anonymous browser contexts through Event Publication and admission.
+
+Focused Playwright specs retain alternate outcomes and disclosure boundaries.
+The pgTAP suite owns transactional concurrency, immutable revision,
+reservation, lifecycle-clock, and deduplication invariants. Counteroffer expiry
+and approaching-expiration notification maintenance both accept an explicit
+clock instant, so the suite never waits for wall time.

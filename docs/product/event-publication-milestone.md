@@ -1,6 +1,6 @@
 # Event Publication Milestone
 
-Status: accepted product direction; partially implemented
+Status: accepted product direction; implemented and acceptance-proven
 
 ## Outcome
 
@@ -76,3 +76,10 @@ Cast for a new slot, and rely on explicit Producer decline, viable acceptance
 into a new Proposal Revision, or idempotent expiration. Detailed implementation
 tickets, acceptance
 criteria, and dependency relationships are tracked under STA-5 in Linear.
+
+The integrated milestone is proved by
+`e2e/event-publication-milestone.spec.ts`, which uses separate Owner, Producer,
+Director, Cast, Reviewer, and anonymous browser contexts against TanStack Start
+server functions and local Supabase. Focused browser specs preserve alternate
+journeys, while pgTAP owns concurrency, immutable snapshot, reservation,
+deterministic-clock, and domain-event/notification deduplication invariants.

@@ -2569,6 +2569,14 @@ export type Database = {
           publication_status: Database['public']['Enums']['show_publication_status']
         }[]
       }
+      notify_approaching_counteroffer_expirations: {
+        Args: { p_now?: string; p_show_id?: string; p_window?: string }
+        Returns: number
+      }
+      project_counteroffer_expiration_notification: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
       project_counteroffer_notifications: {
         Args: { p_activity_event_id: string }
         Returns: undefined

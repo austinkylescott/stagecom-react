@@ -141,6 +141,10 @@ active holds and approved Primary Venue commitments. Explicit decline and
 idempotent expiry release the hold and return the revision to review; explicit
 viable acceptance updates the working plan and submits the next pending
 immutable revision without granting Operational Approval or Publication.
+An expression-backed unique activity index admits only one approaching-expiry
+fact per Counteroffer. The maintenance function takes a supplied clock and
+window, writes that domain fact, and projects per-Producer notifications with
+recipient/dedupe keys.
 
 Operational-plan edits replace the supplied plan shape transactionally while
 preserving supplied Occurrence, Candidate Slot, and resource-request
