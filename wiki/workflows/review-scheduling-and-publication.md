@@ -126,3 +126,7 @@ project in-app notifications to the Event leadership and Proposed Cast. A
 per-recipient dedupe key prevents retries from creating a second notification.
 Publication writes `event.published` in the same transaction and projects
 deduplicated in-app notifications to Event leadership and accepted Cast.
+The schedulable Counteroffer maintenance seam accepts an explicit clock and
+emits one `event.proposal_counteroffer.expiring_soon` fact per pending offer in
+the configured window. That fact projects a deduplicated notification to each
+current Producer before the separate expiry transition releases the hold.

@@ -1,6 +1,6 @@
 begin;
 
-select plan(31);
+select plan(35);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -397,6 +397,48 @@ select is(
   (select state::text from public.show_counteroffers where command_id = '74000000-0000-0000-0012-000000000008'),
   'expired',
   'normal actions use the same expiration transition'
+);
+
+select is(
+  public.notify_approaching_counteroffer_expirations(
+    '2026-08-01T18:00:00Z', interval '24 hours', null
+  ),
+  1,
+  'the deterministic maintenance clock emits one approaching-expiration fact'
+);
+
+select is(
+  (select count(*)
+   from public.activity_events
+   where action = 'event.proposal_counteroffer.expiring_soon'
+     and payload ->> 'counterofferId' = (
+       select id::text
+       from public.show_counteroffers
+       where command_id = '74000000-0000-0000-0012-000000000009'
+     )),
+  1::bigint,
+  'approaching expiration is recorded as one explicit domain event'
+);
+
+select is(
+  (select count(*)
+   from public.notifications
+   where type = 'event.proposal_counteroffer.expiring_soon'
+     and payload ->> 'counterofferId' = (
+       select id::text
+       from public.show_counteroffers
+       where command_id = '74000000-0000-0000-0012-000000000009'
+     )),
+  1::bigint,
+  'the approaching-expiration fact projects one Producer notification'
+);
+
+select is(
+  public.notify_approaching_counteroffer_expirations(
+    '2026-08-01T18:00:00Z', interval '24 hours', null
+  ),
+  0,
+  'approaching-expiration projection is idempotent under the same test clock'
 );
 
 select is(
