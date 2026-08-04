@@ -72,6 +72,12 @@ active leadership and committed Cast with the approved Proposal Revision, and
 increments an optimistic health version only when health changes. Retries do
 not repeat the risk event or its per-recipient notification projection.
 
+Theater membership deactivation also calls this evaluator for every Event on
+which the Member held current leadership or active Cast participation. It does
+so after ending active membership and before removing the current assignments,
+so the approved snapshot is compared against the newly inactive relationship
+with the deactivating Owner/Admin recorded as the cause actor.
+
 The workspace continues to show lifecycle, the latest Proposal decision,
 Publication, and operational health independently. An approved, published
 Event therefore remains anonymously visible after becoming At Risk. Owner or

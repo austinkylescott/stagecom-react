@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { TargetedInvitationsPage } from '@/features/invitations/components'
 import { listTargetedInvitationsFn } from '@/features/invitations/server-functions'
 import { listReusableJoinLinksFn } from '@/features/join-links/server-functions'
+import { listTheaterMembersFn } from '@/features/memberships/server-functions'
 import { canManageTheater } from '@/features/theaters/permissions'
 
 export const Route = createFileRoute('/app/$theaterSlug/members')({
@@ -10,14 +11,17 @@ export const Route = createFileRoute('/app/$theaterSlug/members')({
     const canManage = canManageTheater(context.membership.roles)
 
     if (!canManage) {
-      return { canManage, invitations: [], joinLinks: [] }
+      return { canManage, invitations: [], joinLinks: [], members: [] }
     }
 
-    const [invitationResult, joinLinkResult] = await Promise.all([
+    const [invitationResult, joinLinkResult, memberResult] = await Promise.all([
       listTargetedInvitationsFn({
         data: { theaterId: context.theater.id },
       }),
       listReusableJoinLinksFn({
+        data: { theaterId: context.theater.id },
+      }),
+      listTheaterMembersFn({
         data: { theaterId: context.theater.id },
       }),
     ])
@@ -30,24 +34,31 @@ export const Route = createFileRoute('/app/$theaterSlug/members')({
       throw joinLinkResult.error
     }
 
+    if (!memberResult.ok) {
+      throw memberResult.error
+    }
+
     return {
       canManage,
       invitations: invitationResult.data.invitations,
       joinLinks: joinLinkResult.data.links,
+      members: memberResult.data.members,
     }
   },
   component: TheaterMembersPage,
 })
 
 function TheaterMembersPage() {
-  const { theater } = Route.useRouteContext()
-  const { canManage, invitations, joinLinks } = Route.useLoaderData()
+  const { membership, theater } = Route.useRouteContext()
+  const { canManage, invitations, joinLinks, members } = Route.useLoaderData()
 
   return (
     <TargetedInvitationsPage
       canManage={canManage}
+      actorUserId={membership.user_id}
       initialInvitations={invitations}
       initialJoinLinks={joinLinks}
+      initialMembers={members}
       theaterId={theater.id}
     />
   )

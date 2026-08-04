@@ -761,6 +761,219 @@ test('published approved Event becomes At Risk after Cast withdrawal without dis
   }
 })
 
+test('Owner deactivates a Theater Member while preserving history and surfacing affected Event risk', async ({
+  browser,
+}) => {
+  test.setTimeout(120_000)
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const fixture = await createFixture(config!)
+  const ownerContext = await browser.newContext()
+  const memberContext = await browser.newContext()
+  const anonymousContext = await browser.newContext()
+
+  try {
+    const { error: leadershipError } = await fixture.admin
+      .from('show_leadership')
+      .insert({
+        assigned_by_user_id: fixture.ownerUserId,
+        role: 'producer',
+        show_id: fixture.eventId,
+        user_id: fixture.acceptedUserId,
+      })
+    expect(leadershipError).toBeNull()
+
+    const { error: proposedCastError } = await fixture.admin.rpc(
+      'save_event_proposed_cast',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_cast_user_ids: [fixture.acceptedUserId],
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(proposedCastError).toBeNull()
+    const { error: confirmedSlotError } = await fixture.admin
+      .from('show_occurrences')
+      .update({ confirmed_candidate_slot_id: fixture.viableSlotId })
+      .eq('id', fixture.occurrenceId)
+    expect(confirmedSlotError).toBeNull()
+    const { data: revision, error: submissionError } = await fixture.admin.rpc(
+      'submit_event_proposal_revision',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(submissionError).toBeNull()
+    const { error: revisionApprovalError } = await fixture.admin
+      .from('show_proposal_revisions')
+      .update({ decision_state: 'approved', decision_version: 2 })
+      .eq('id', revision!.id)
+    expect(revisionApprovalError).toBeNull()
+    const { error: eventApprovalError } = await fixture.admin
+      .from('shows')
+      .update({
+        approved_proposal_revision_id: revision!.id,
+        lifecycle_status: 'approved',
+        status: 'approved',
+      })
+      .eq('id', fixture.eventId)
+    expect(eventApprovalError).toBeNull()
+
+    const { error: theaterSetupError } = await fixture.admin
+      .from('theaters')
+      .update({
+        city: 'New York',
+        country: 'US',
+        postal_code: '10001',
+        state_region: 'NY',
+        street: '22 Membership Way',
+        tagline: 'History stays truthful',
+        timezone_source: 'manual',
+      })
+      .eq('id', fixture.theaterId)
+    expect(theaterSetupError).toBeNull()
+    const { error: theaterPublishError } = await fixture.admin.rpc(
+      'publish_theater',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_theater_id: fixture.theaterId,
+      },
+    )
+    expect(theaterPublishError).toBeNull()
+    const { data: contentRevision, error: contentError } =
+      await fixture.admin.rpc('save_event_public_content_draft', {
+        p_actor_user_id: fixture.ownerUserId,
+        p_admission_price_cents: 0,
+        p_command_id: crypto.randomUUID(),
+        p_credits: [
+          {
+            position: 0,
+            publicly_credited: true,
+            user_id: fixture.acceptedUserId,
+          },
+        ],
+        p_description: 'A published Event with preserved historical credit.',
+        p_image_url: 'https://images.example/membership-history.jpg',
+        p_sales_channel: 'no_advance_ticketing',
+        p_show_id: fixture.eventId,
+        p_title: 'Membership History Event',
+      })
+    expect(contentError).toBeNull()
+    const { error: publicationError } = await fixture.admin.rpc(
+      'publish_event',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_allow_at_risk: false,
+        p_command_id: crypto.randomUUID(),
+        p_expected_version: contentRevision!.version,
+        p_public_content_revision_id: contentRevision!.id,
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(publicationError).toBeNull()
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context: memberContext,
+      email: fixture.acceptedEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    const memberPage = await memberContext.newPage()
+    await memberPage.goto(
+      `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
+    )
+    await expect(memberPage.getByText('Accepted Cast · producer')).toBeVisible()
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context: ownerContext,
+      email: fixture.ownerEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    const ownerPage = await ownerContext.newPage()
+    await ownerPage.goto(`/app/${fixture.theaterSlug}/members`)
+    const memberCard = ownerPage.locator('article').filter({
+      has: ownerPage.getByRole('heading', { name: 'Accepted Cast' }),
+    })
+    const deactivateButton = memberCard.getByRole('button', {
+      name: 'Deactivate Member',
+    })
+    await waitForReactHandler(deactivateButton, 'onClick')
+    await deactivateButton.click()
+    const confirmButton = memberCard.getByRole('button', {
+      name: 'Confirm deactivation',
+    })
+    await waitForReactHandler(confirmButton, 'onClick')
+    await confirmButton.click()
+    await expect(
+      ownerPage.getByText(
+        'Accepted Cast was deactivated. 1 affected Event became At Risk.',
+      ),
+    ).toBeVisible()
+
+    await memberPage.reload()
+    await expect(memberPage).toHaveURL('/app/callsheet')
+    await expect(
+      memberPage.getByText(
+        'No Theater memberships yet. Create a Theater to begin.',
+      ),
+    ).toBeVisible()
+
+    await ownerPage.goto(
+      `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
+    )
+    await expect(ownerPage.getByText('Event is At Risk')).toBeVisible()
+    await expect(
+      ownerPage.getByText('approved', { exact: true }).first(),
+    ).toBeVisible()
+    await expect(
+      ownerPage.getByText('published', { exact: true }),
+    ).toBeVisible()
+    await expect(ownerPage.getByText('at_risk', { exact: true })).toBeVisible()
+    await expect(ownerPage.getByText('Accepted Cast · producer')).toHaveCount(0)
+    await expect(
+      ownerPage
+        .getByRole('heading', { name: 'Cast participation' })
+        .locator('..')
+        .getByText('removed', { exact: true }),
+    ).toBeVisible()
+    await expect(ownerPage.getByText('Revision 1 ·')).toBeVisible()
+    await expect(
+      ownerPage.getByText('approved', { exact: true }).last(),
+    ).toBeVisible()
+
+    const anonymousPage = await anonymousContext.newPage()
+    await anonymousPage.goto(
+      `/theater/${fixture.theaterSlug}/${fixture.eventSlug}`,
+    )
+    await expect(
+      anonymousPage.getByRole('heading', { name: 'Membership History Event' }),
+    ).toBeVisible()
+    await expect(anonymousPage.getByText('Accepted Cast')).toBeVisible()
+  } finally {
+    await Promise.all([
+      ownerContext.close(),
+      memberContext.close(),
+      anonymousContext.close(),
+    ])
+    await fixture.admin
+      .from('show_public_occurrence_snapshots')
+      .delete()
+      .eq('occurrence_id', fixture.occurrenceId)
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
 function getSupabaseConfig() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL ?? testEnv.VITE_SUPABASE_URL
   const anonKey =

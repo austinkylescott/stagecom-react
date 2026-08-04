@@ -3,6 +3,7 @@ import { CheckCircle2, Copy, Loader2, MailPlus, Theater } from 'lucide-react'
 import { useState } from 'react'
 
 import { ReusableJoinLinksManager } from '@/features/join-links/components'
+import { TheaterMembersManager } from '@/features/memberships/components'
 import {
   acceptTargetedInvitationFn,
   createTargetedInvitationFn,
@@ -11,16 +12,22 @@ import {
 
 import type { TargetedInvitationListItem } from './persistence'
 import type { TargetedInvitationView } from './queries'
+import type { ReusableJoinLinkListItem } from '@/features/join-links/persistence'
+import type { TheaterMemberListItem } from '@/features/memberships/queries'
 
 export function TargetedInvitationsPage({
   canManage,
+  actorUserId,
   initialInvitations,
   initialJoinLinks,
+  initialMembers,
   theaterId,
 }: {
   canManage: boolean
+  actorUserId: string
   initialInvitations: TargetedInvitationListItem[]
-  initialJoinLinks: import('@/features/join-links/persistence').ReusableJoinLinkListItem[]
+  initialJoinLinks: ReusableJoinLinkListItem[]
+  initialMembers: TheaterMemberListItem[]
   theaterId: string
 }) {
   const [email, setEmail] = useState('')
@@ -35,12 +42,19 @@ export function TargetedInvitationsPage({
         Members
       </p>
       <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
-        Targeted Invitations
+        Theater Members
       </h1>
       <p className="mt-3 max-w-2xl text-[var(--sea-ink-soft)]">
-        Create a single-recipient link for someone to join as a base Theater
-        Member. Share it through your usual messaging tool.
+        Manage active membership and invite people to join this Theater.
       </p>
+
+      {canManage ? (
+        <TheaterMembersManager
+          actorUserId={actorUserId}
+          initialMembers={initialMembers}
+          theaterId={theaterId}
+        />
+      ) : null}
 
       {canManage ? (
         <section className="island-shell mt-7 rounded-lg px-5 py-5">
