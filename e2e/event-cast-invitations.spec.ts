@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
-import type { Browser, BrowserContext } from '@playwright/test'
+import type { Browser, BrowserContext, Locator } from '@playwright/test'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../src/server/db/database.types'
 
@@ -43,7 +43,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await expect(
       directorPage.page.getByRole('heading', { name: 'Private Cast Event' }),
     ).toBeVisible()
-    await directorPage.page.waitForTimeout(500)
+    await waitForReactHandler(
+      directorPage.page.getByLabel('Active Theater Member'),
+      'onChange',
+    )
 
     for (const actor of [fixture.accepted, fixture.pending, fixture.declined]) {
       await directorPage.page
@@ -67,7 +70,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await acceptedPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await acceptedPage.page.waitForTimeout(500)
+    await waitForReactHandler(
+      acceptedPage.page.getByLabel('Availability for Candidate Slot 1'),
+      'onChange',
+    )
     await expect(
       acceptedPage.page.getByText('Your participation response is separate'),
     ).toBeVisible()
@@ -99,6 +105,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     ).toContainText('accepted')
 
     await directorPage.page.reload()
+    await waitForReactHandler(
+      directorPage.page.getByLabel('Call for Accepted Member, Occurrence 1'),
+      'onChange',
+    )
     await Promise.all([
       directorPage.page.waitForResponse((response) =>
         response.url().includes('/_serverFn/'),
@@ -113,7 +123,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await declinedPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await declinedPage.page.waitForTimeout(500)
+    await waitForReactHandler(
+      declinedPage.page.getByRole('button', { name: 'Decline invitation' }),
+      'onClick',
+    )
     await declinedPage.page
       .getByRole('button', { name: 'Decline invitation' })
       .click()
@@ -380,6 +393,23 @@ async function actorPage(browser: Browser, fixture: Fixture, actor: Actor) {
     },
   ])
   return { context, page: await context.newPage() }
+}
+
+async function waitForReactHandler(locator: Locator, handlerName: string) {
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element, name) =>
+          Object.keys(element).some((key) => {
+            if (!key.startsWith('__reactProps$')) return false
+            const props = Reflect.get(element, key) as
+              Record<string, unknown> | undefined
+            return typeof props?.[name] === 'function'
+          }),
+        handlerName,
+      ),
+    )
+    .toBe(true)
 }
 
 async function deleteFixture(fixture: Fixture) {

@@ -136,7 +136,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -347,6 +347,10 @@ export async function getManagedEventWorkspace(
       editOperationalPlan: canEditOperationalPlan,
       inviteCast: actorLeadership.length > 0,
       issueCounteroffer: isReviewer,
+      manageAtRisk:
+        isTheaterAdmin &&
+        managedEvent.lifecycle_status === 'approved' &&
+        managedEvent.operational_health === 'at_risk',
       respondToAvailability: canRespondToAvailability,
       respondToInvitation: view === 'pending_invitee',
       respondToCounteroffer: isProducer,
@@ -357,6 +361,7 @@ export async function getManagedEventWorkspace(
       useOwnerSelfApproval:
         access.data.membership.roles.includes('owner') &&
         access.data.theater.owner_self_approval_enabled,
+      withdrawFromCast: actorCast?.status === 'accepted',
     },
     event: {
       ...managedEvent,
@@ -379,6 +384,12 @@ export async function getManagedEventWorkspace(
         view === 'operational'
           ? managedEvent.show_resource_requests.sort(
               (left, right) => left.position - right.position,
+            )
+          : [],
+      show_risk_management_decisions:
+        view === 'operational'
+          ? managedEvent.show_risk_management_decisions.sort((left, right) =>
+              right.created_at.localeCompare(left.created_at),
             )
           : [],
       show_proposal_revisions:

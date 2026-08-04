@@ -4,15 +4,18 @@ import {
   completeEvent,
   createManagedEvent,
   inviteEventCastMember,
+  manageAtRiskEvent,
   recordCandidateSlotAvailability,
   respondToEventCastInvitation,
   saveEventOperationalPlan,
   setOccurrenceCall,
+  withdrawFromEventCast,
 } from './commands'
 
 import type {
   EventCommandDependencies,
   EventCompletionCommandDependencies,
+  EventRiskCommandDependencies,
 } from './commands'
 
 const unusedCastingPersistence = {
@@ -35,6 +38,98 @@ const unusedCastingPersistence = {
 }
 
 describe('managed Event commands', () => {
+  it('withdraws accepted Cast through the authorized transactional boundary', async () => {
+    const withdrawals: unknown[] = []
+    const dependencies: EventRiskCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'cast-1' } }),
+      persistence: {
+        authorizeCastWithdrawal: async () => undefined,
+        authorizeRiskManagement: async () => undefined,
+        manage: async () => {
+          throw new Error('must not run')
+        },
+        withdraw: async (input) => {
+          withdrawals.push(input)
+          return {
+            eventId: input.eventId,
+            memberUserId: input.actorUserId,
+            operationalHealth: 'at_risk',
+            operationalHealthVersion: 2,
+            status: 'withdrawn',
+          }
+        },
+      },
+    }
+
+    const result = await withdrawFromEventCast(
+      {
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        expectedHealthVersion: 1,
+      },
+      dependencies,
+    )
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        operationalHealth: 'at_risk',
+        operationalHealthVersion: 2,
+        status: 'withdrawn',
+      },
+    })
+    expect(withdrawals).toEqual([
+      {
+        actorUserId: 'cast-1',
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        expectedHealthVersion: 1,
+      },
+    ])
+  })
+
+  it('requires authorization before recording an audited At Risk management action', async () => {
+    let managed = false
+    const dependencies: EventRiskCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'member-1' } }),
+      persistence: {
+        authorizeCastWithdrawal: async () => undefined,
+        authorizeRiskManagement: async () => {
+          throw {
+            code: 'forbidden',
+            message:
+              'Owner or Admin access is required to manage an At Risk Event.',
+            status: 403,
+          }
+        },
+        manage: async () => {
+          managed = true
+          throw new Error('must not run')
+        },
+        withdraw: async () => {
+          throw new Error('must not run')
+        },
+      },
+    }
+
+    const result = await manageAtRiskEvent(
+      {
+        action: 'allow',
+        commandId: '10000000-0000-0000-0000-000000000002',
+        eventId: '10000000-0000-0000-0000-000000000001',
+        expectedHealthVersion: 2,
+        reason: 'Proceed with a documented understudy plan.',
+      },
+      dependencies,
+    )
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    })
+    expect(managed).toBe(false)
+  })
+
   it('completes an eligible Event through the authorized boundary using the deterministic clock', async () => {
     const completions: unknown[] = []
     const dependencies: EventCompletionCommandDependencies = {

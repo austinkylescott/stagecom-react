@@ -24,5 +24,11 @@ export const Route = createFileRoute('/theater/$theaterSlug/$eventSlug')({
 
 function PublicEventRoute() {
   const data = Route.useLoaderData()
-  return <PublishedEventPage content={data.content} theater={data.theater} />
+  return (
+    <PublishedEventPage
+      content={data.content}
+      event={data.event}
+      theater={data.theater}
+    />
+  )
 }

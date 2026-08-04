@@ -38,6 +38,44 @@ export type EventCompletionPersistence = {
   }>
 }
 
+export type EventRiskPersistence = {
+  authorizeCastWithdrawal: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  authorizeRiskManagement: (input: {
+    actorUserId: string
+    eventId: string
+  }) => Promise<void>
+  manage: (input: {
+    action: 'revise' | 'reschedule' | 'allow' | 'cancel'
+    actorUserId: string
+    commandId: string
+    eventId: string
+    expectedHealthVersion: number
+    reason: string
+  }) => Promise<{
+    atRiskContinuationAllowed: boolean
+    eventId: string
+    lifecycleStatus: ManagedEvent['lifecycleStatus']
+    operationalHealth: ManagedEvent['operationalHealth']
+    operationalHealthVersion: number
+    publicationStatus: ManagedEvent['publicationStatus']
+  }>
+  withdraw: (input: {
+    actorUserId: string
+    commandId: string
+    eventId: string
+    expectedHealthVersion: number
+  }) => Promise<{
+    eventId: string
+    memberUserId: string
+    operationalHealth: ManagedEvent['operationalHealth']
+    operationalHealthVersion: number
+    status: 'withdrawn'
+  }>
+}
+
 export type EventPersistence = {
   authorizeAvailabilityResponse: (input: {
     actorUserId: string
@@ -210,6 +248,148 @@ export function createSupabaseEventCompletionPersistence(): EventCompletionPersi
         completedAt: data.completed_at,
         eventId: data.id,
         lifecycleStatus: data.lifecycle_status,
+      }
+    },
+  }
+}
+
+export function createSupabaseEventRiskPersistence(): EventRiskPersistence {
+  return {
+    async authorizeCastWithdrawal(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase
+        .from('show_cast')
+        .select('status')
+        .eq('show_id', input.eventId)
+        .eq('user_id', input.actorUserId)
+        .maybeSingle()
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Cast withdrawal authorization could not be checked.',
+        )
+      }
+      if (!data) throw appError('not_found', 'Cast membership was not found.')
+      if (data.status !== 'accepted' && data.status !== 'withdrawn') {
+        throw appError('conflict', 'Only an accepted Cast Member can withdraw.')
+      }
+    },
+    async authorizeRiskManagement(input) {
+      const supabase = createAuthenticatedClient()
+      const { data: event, error: eventError } = await supabase
+        .from('shows')
+        .select('theater_id')
+        .eq('id', input.eventId)
+        .maybeSingle()
+
+      if (eventError) {
+        throw appError(
+          'external_service_error',
+          'Risk management authorization could not be checked.',
+        )
+      }
+      if (!event) throw appError('not_found', 'Event was not found.')
+
+      const { data: membership, error } = await supabase
+        .from('theater_memberships')
+        .select('roles')
+        .eq('theater_id', event.theater_id)
+        .eq('user_id', input.actorUserId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Risk management authorization could not be checked.',
+        )
+      }
+      if (
+        !membership?.roles.some((role) => role === 'owner' || role === 'admin')
+      ) {
+        throw appError(
+          'forbidden',
+          'Owner or Admin access is required to manage an At Risk Event.',
+        )
+      }
+    },
+    async manage(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('manage_at_risk_event', {
+        p_action: input.action,
+        p_actor_user_id: input.actorUserId,
+        p_command_id: input.commandId,
+        p_expected_health_version: input.expectedHealthVersion,
+        p_reason: input.reason,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        if (error.code === '22023' || error.code === '23514') {
+          throw appError('validation_error', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'At Risk Event action could not be saved.',
+        )
+      }
+
+      const row = data.at(0)
+      if (!row) {
+        throw appError(
+          'external_service_error',
+          'At Risk Event state could not be loaded.',
+        )
+      }
+      return {
+        atRiskContinuationAllowed: row.at_risk_continuation_allowed,
+        eventId: row.event_id,
+        lifecycleStatus: row.lifecycle_status,
+        operationalHealth: row.operational_health,
+        operationalHealthVersion: row.operational_health_version,
+        publicationStatus: row.publication_status,
+      }
+    },
+    async withdraw(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc('withdraw_from_event_cast', {
+        p_actor_user_id: input.actorUserId,
+        p_command_id: input.commandId,
+        p_expected_health_version: input.expectedHealthVersion,
+        p_show_id: input.eventId,
+      })
+
+      if (error) {
+        if (error.code === 'P0002') throw appError('not_found', error.message)
+        if (error.code === '42501') throw appError('forbidden', error.message)
+        if (error.code === '55000' || error.code === '23505') {
+          throw appError('conflict', error.message)
+        }
+        throw appError(
+          'external_service_error',
+          'Cast withdrawal could not be saved.',
+        )
+      }
+
+      const row = data.at(0)
+      if (!row) {
+        throw appError(
+          'external_service_error',
+          'Cast withdrawal state could not be loaded.',
+        )
+      }
+      return {
+        eventId: row.event_id,
+        memberUserId: row.member_user_id,
+        operationalHealth: row.operational_health,
+        operationalHealthVersion: row.operational_health_version,
+        status: 'withdrawn',
       }
     },
   }

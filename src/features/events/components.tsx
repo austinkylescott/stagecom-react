@@ -5,6 +5,7 @@ import {
   createManagedEventFn,
   inviteEventCastMemberFn,
   issueProposalCounterofferFn,
+  manageAtRiskEventFn,
   publishEventFn,
   recordCandidateSlotAvailabilityFn,
   reviewProposalRevisionFn,
@@ -16,6 +17,7 @@ import {
   setOccurrenceCallFn,
   seedDeniedProposalReplacementFn,
   submitEventProposalRevisionFn,
+  withdrawFromEventCastFn,
 } from './server-functions'
 import { rankCandidateSlots } from './proposal-recommendations'
 
@@ -174,6 +176,7 @@ export function CreateManagedEventPage({
 
 export function PublishedEventPage({
   content,
+  event,
   theater,
 }: {
   content: {
@@ -195,6 +198,7 @@ export function PublishedEventPage({
     }>
     title: string
   }
+  event: { lifecycleStatus: string }
   theater: { name: string; slug: string }
 }) {
   return (
@@ -205,6 +209,15 @@ export function PublishedEventPage({
       <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
         {content.title}
       </h1>
+      {event.lifecycleStatus === 'cancelled' ? (
+        <div className="mt-6 rounded-md border border-red-300 bg-red-50 px-5 py-4 text-red-950">
+          <p className="font-extrabold">This Event has been cancelled.</p>
+          <p className="mt-1 text-sm">
+            The published listing remains available so audience members can see
+            the definitive cancellation notice.
+          </p>
+        </div>
+      ) : null}
       {content.imageUrl ? (
         <img
           alt=""
@@ -340,6 +353,7 @@ export function ManagedEventWorkspace({
     editOperationalPlan: boolean
     inviteCast: boolean
     issueCounteroffer: boolean
+    manageAtRisk: boolean
     respondToAvailability: boolean
     respondToInvitation: boolean
     respondToCounteroffer: boolean
@@ -348,13 +362,16 @@ export function ManagedEventWorkspace({
     selectProposedCast: boolean
     submitProposalRevision: boolean
     useOwnerSelfApproval: boolean
+    withdrawFromCast: boolean
   }
   event: {
     id: string
     approved_proposal_revision_id: string | null
     lifecycle_status: EventLifecycle
     minimum_viable_cast: number | null
+    at_risk_continuation_allowed: boolean
     operational_health: EventHealth
+    operational_health_version: number
     publication_status: EventPublication
     show_availability_responses: Array<{
       actor_user_id: string
@@ -411,6 +428,15 @@ export function ManagedEventWorkspace({
       position: number
       quantity: number
       resource_type: 'staff' | 'equipment' | 'other'
+    }>
+    show_risk_management_decisions: Array<{
+      action: 'revise' | 'reschedule' | 'allow' | 'cancel'
+      actor_user_id: string
+      created_at: string
+      id: string
+      prior_health_version: number
+      reason: string
+      resulting_health_version: number
     }>
     show_proposal_revisions: Array<{
       command_id: string
@@ -583,7 +609,6 @@ export function ManagedEventWorkspace({
   )
   const [publicContentSaved, setPublicContentSaved] = useState(false)
   const [isSavingPublicContent, setIsSavingPublicContent] = useState(false)
-  const [allowAtRisk, setAllowAtRisk] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [proposedCastUserIds, setProposedCastUserIds] = useState(
     event.show_proposed_cast.map(({ user_id }) => user_id),
@@ -597,6 +622,20 @@ export function ManagedEventWorkspace({
     null,
   )
   const [lifecycleStatus, setLifecycleStatus] = useState(event.lifecycle_status)
+  const [operationalHealth, setOperationalHealth] = useState(
+    event.operational_health,
+  )
+  const [operationalHealthVersion, setOperationalHealthVersion] = useState(
+    event.operational_health_version,
+  )
+  const [riskManagementReason, setRiskManagementReason] = useState('')
+  const [riskManagementError, setRiskManagementError] = useState<string | null>(
+    null,
+  )
+  const [riskManagementResult, setRiskManagementResult] = useState<
+    string | null
+  >(null)
+  const [isManagingRisk, setIsManagingRisk] = useState(false)
   const [completionError, setCompletionError] = useState<string | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [proposalRevisions, setProposalRevisions] = useState(
@@ -633,11 +672,105 @@ export function ManagedEventWorkspace({
           value={proposalRevisions[0]?.decision_state ?? 'not submitted'}
         />
         <StateCard label="Publication" value={event.publication_status} />
-        <StateCard
-          label="Operational health"
-          value={event.operational_health}
-        />
+        <StateCard label="Operational health" value={operationalHealth} />
       </div>
+      {operationalHealth === 'at_risk' ? (
+        <section className="mt-5 rounded-lg border border-amber-300 bg-amber-50 px-6 py-5 text-amber-950">
+          <h2 className="text-xl font-extrabold">Event is At Risk</h2>
+          <p className="mt-2 text-sm">
+            Operational Approval and Publication remain unchanged. Management
+            must explicitly revise, reschedule, allow, or cancel this Event.
+          </p>
+          {allowedActions.manageAtRisk ? (
+            <div className="mt-5 grid gap-4">
+              <label className="grid gap-2 text-sm font-bold">
+                At Risk management reason
+                <textarea
+                  className="min-h-24 rounded-md border border-amber-400 bg-white px-4 py-3"
+                  onChange={(change) =>
+                    setRiskManagementReason(change.target.value)
+                  }
+                  value={riskManagementReason}
+                />
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {(
+                  [
+                    ['allow', 'Allow continuation'],
+                    ['revise', 'Revise Event'],
+                    ['reschedule', 'Reschedule Event'],
+                    ['cancel', 'Cancel Event'],
+                  ] as const
+                ).map(([action, label]) => (
+                  <button
+                    className={`rounded-md px-4 py-3 font-extrabold text-white disabled:opacity-60 ${
+                      action === 'cancel' ? 'bg-red-800' : 'bg-[var(--sea-ink)]'
+                    }`}
+                    disabled={!riskManagementReason.trim() || isManagingRisk}
+                    key={action}
+                    onClick={async () => {
+                      setRiskManagementError(null)
+                      setRiskManagementResult(null)
+                      setIsManagingRisk(true)
+                      try {
+                        const result = await manageAtRiskEventFn({
+                          data: {
+                            action,
+                            commandId: crypto.randomUUID(),
+                            eventId: event.id,
+                            expectedHealthVersion: operationalHealthVersion,
+                            reason: riskManagementReason,
+                          },
+                        })
+                        if (!result.ok) {
+                          setRiskManagementError(result.error.message)
+                          return
+                        }
+                        setLifecycleStatus(result.data.lifecycleStatus)
+                        setOperationalHealth(result.data.operationalHealth)
+                        setOperationalHealthVersion(
+                          result.data.operationalHealthVersion,
+                        )
+                        setRiskManagementResult(
+                          action === 'allow'
+                            ? 'Continuation allowed with an audited reason. The Event remains At Risk.'
+                            : `${label} moved the Event into the requested management workflow.`,
+                        )
+                      } finally {
+                        setIsManagingRisk(false)
+                      }
+                    }}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {riskManagementResult ? (
+            <p className="mt-4 font-bold">{riskManagementResult}</p>
+          ) : null}
+          {riskManagementError ? (
+            <p className="mt-4 font-bold text-red-800">{riskManagementError}</p>
+          ) : null}
+          {event.show_risk_management_decisions.length > 0 ? (
+            <div className="mt-5 border-t border-amber-300 pt-4">
+              <h3 className="font-extrabold">Management history</h3>
+              <ul className="mt-2 grid gap-2 text-sm">
+                {event.show_risk_management_decisions.map((decision) => (
+                  <li key={decision.id}>
+                    <span className="font-bold capitalize">
+                      {decision.action}
+                    </span>{' '}
+                    — {decision.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       {allowedActions.completeEvent && lifecycleStatus !== 'completed' ? (
         <div className="island-shell mt-5 rounded-lg px-6 py-5">
           <h2 className="text-xl font-extrabold">Final Confirmed Slot ended</h2>
@@ -757,31 +890,23 @@ export function ManagedEventWorkspace({
             </article>
           ) : null}
           {publicContent.atRiskContinuationRequired ? (
-            <label className="mt-5 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-950">
-              <input
-                checked={allowAtRisk}
-                onChange={(change) => setAllowAtRisk(change.target.checked)}
-                type="checkbox"
-              />
-              Explicitly allow this At Risk Event to continue to Publication.
-            </label>
+            <p className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-950">
+              Record an audited management reason above before continuing this
+              At Risk Event to Publication.
+            </p>
           ) : null}
           {publicContent.allowedActions.publishEvent &&
           publicDraft.id &&
           publicDraft.version ? (
             <button
               className="mt-5 rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-              disabled={
-                isPublishing ||
-                (publicContent.atRiskContinuationRequired && !allowAtRisk)
-              }
+              disabled={isPublishing}
               onClick={async () => {
                 setPublicContentError(null)
                 setIsPublishing(true)
                 try {
                   const result = await publishEventFn({
                     data: {
-                      allowAtRisk,
                       commandId: crypto.randomUUID(),
                       eventId: event.id,
                       expectedVersion: publicDraft.version!,
@@ -1182,6 +1307,46 @@ export function ManagedEventWorkspace({
               </button>
             ))}
           </div>
+        ) : null}
+        {allowedActions.withdrawFromCast &&
+        ownInvitation?.status === 'accepted' ? (
+          <button
+            className="mt-5 rounded-md border border-red-300 bg-white px-5 py-3 font-extrabold text-red-800 disabled:opacity-60"
+            disabled={isCasting}
+            onClick={async () => {
+              setCastingError(null)
+              setIsCasting(true)
+              try {
+                const result = await withdrawFromEventCastFn({
+                  data: {
+                    commandId: crypto.randomUUID(),
+                    eventId: event.id,
+                    expectedHealthVersion: operationalHealthVersion,
+                  },
+                })
+                if (!result.ok) {
+                  setCastingError(result.error.message)
+                  return
+                }
+                setCast((current) =>
+                  current.map((castMember) =>
+                    castMember.user_id === actorUserId
+                      ? { ...castMember, status: 'withdrawn' }
+                      : castMember,
+                  ),
+                )
+                setOperationalHealth(result.data.operationalHealth)
+                setOperationalHealthVersion(
+                  result.data.operationalHealthVersion,
+                )
+              } finally {
+                setIsCasting(false)
+              }
+            }}
+            type="button"
+          >
+            Withdraw from Event
+          </button>
         ) : null}
         {castingError ? (
           <p className="mt-3 font-bold text-red-700">{castingError}</p>

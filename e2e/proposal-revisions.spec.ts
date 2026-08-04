@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
+import type { BrowserContext, Locator } from '@playwright/test'
 import type { Database } from '../src/server/db/database.types'
 
 const testEnv = loadEnv('development', process.cwd(), '')
@@ -42,7 +43,11 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       page.getByRole('heading', { name: 'Proposal Revision' }),
     ).toBeVisible()
     await expect(page.getByText('Pending Invitee').first()).toBeVisible()
-    await page.getByLabel('Accepted Cast', { exact: true }).check()
+    const acceptedCastCheckbox = page.getByLabel('Accepted Cast', {
+      exact: true,
+    })
+    await waitForReactHandler(acceptedCastCheckbox, 'onChange')
+    await acceptedCastCheckbox.check()
     await page.getByRole('button', { name: 'Save Proposed Cast' }).click()
     await expect
       .poll(async () => {
@@ -104,10 +109,11 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     expect(activity).toEqual([{ action: 'event.proposal_revision.submitted' }])
 
     await page.reload()
-    await page.waitForTimeout(500)
-    await page
-      .getByLabel('Explicitly invoke the audited Owner self-approval override')
-      .check()
+    const ownerOverrideCheckbox = page.getByLabel(
+      'Explicitly invoke the audited Owner self-approval override',
+    )
+    await waitForReactHandler(ownerOverrideCheckbox, 'onChange')
+    await ownerOverrideCheckbox.check()
     await page
       .getByLabel('Reason (required)')
       .fill('One-person Theater exception for this exact operational plan.')
@@ -183,7 +189,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     expect(theaterPublishError).toBeNull()
 
     await page.reload()
-    await page.waitForTimeout(500)
+    await waitForReactHandler(page.getByLabel('Public title'), 'onChange')
     await page.getByLabel('Public title').fill('The Exact Public Event')
     await page
       .getByLabel('Image URL')
@@ -205,6 +211,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     ).toBeVisible()
 
     await page.reload()
+    await waitForReactHandler(page.getByLabel('Public title'), 'onChange')
     const preview = page
       .getByRole('article')
       .filter({ hasText: 'Anonymous preview' })
@@ -238,15 +245,32 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await expect(
       page.getByText('Management must explicitly allow this At Risk Event.'),
     ).toBeVisible()
-    const allowAtRisk = page.getByLabel(
-      'Explicitly allow this At Risk Event to continue to Publication.',
-    )
     const publishButton = page.getByRole('button', {
       name: 'Publish anonymous snapshot',
     })
-    await expect(publishButton).toBeDisabled()
-    await allowAtRisk.check()
-    await expect(publishButton).toBeEnabled()
+    await expect(publishButton).toHaveCount(0)
+    await waitForReactHandler(
+      page.getByLabel('At Risk management reason'),
+      'onChange',
+    )
+    await page
+      .getByLabel('At Risk management reason')
+      .fill('The approved operational plan remains safe to publish.')
+    await page.getByRole('button', { name: 'Allow continuation' }).click()
+    await expect(
+      page.getByText(
+        'Continuation allowed with an audited reason. The Event remains At Risk.',
+      ),
+    ).toBeVisible()
+    await page.reload()
+    await page.waitForTimeout(500)
+    await expect(
+      page.getByRole('button', { name: 'Publish anonymous snapshot' }),
+    ).toBeEnabled()
+    await waitForReactHandler(
+      page.getByRole('button', { name: 'Publish anonymous snapshot' }),
+      'onClick',
+    )
     await page
       .getByRole('button', { name: 'Publish anonymous snapshot' })
       .click()
@@ -317,9 +341,9 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
         .select('action')
         .eq('entity_id', fixture.eventId)
         .eq('action', 'event.published'),
-        fixture.admin
-          .from('notifications')
-          .select('type, dedupe_key, user_id')
+      fixture.admin
+        .from('notifications')
+        .select('type, dedupe_key, user_id')
         .eq('entity_id', fixture.eventId)
         .eq('type', 'event.published'),
     ])
@@ -484,6 +508,249 @@ test('Reviewer Counteroffer holds the Primary Venue until explicit viable accept
     expect(offer).toMatchObject({ state: 'accepted' })
     expect(offer?.resulting_proposal_revision_id).toBeTruthy()
     expect(remainingHolds).toBe(0)
+  } finally {
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
+test('published approved Event becomes At Risk after Cast withdrawal without disappearing', async ({
+  context,
+  page,
+}) => {
+  test.setTimeout(90_000)
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const fixture = await createFixture(config!)
+
+  try {
+    const { error: proposedCastError } = await fixture.admin.rpc(
+      'save_event_proposed_cast',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_cast_user_ids: [fixture.acceptedUserId],
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(proposedCastError).toBeNull()
+    const { error: confirmedSlotError } = await fixture.admin
+      .from('show_occurrences')
+      .update({ confirmed_candidate_slot_id: fixture.viableSlotId })
+      .eq('id', fixture.occurrenceId)
+    expect(confirmedSlotError).toBeNull()
+    const { data: submitted, error: submissionError } = await fixture.admin.rpc(
+      'submit_event_proposal_revision',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(submissionError).toBeNull()
+    const proposalRevision = submitted!
+    const { error: revisionApprovalError } = await fixture.admin
+      .from('show_proposal_revisions')
+      .update({ decision_state: 'approved', decision_version: 2 })
+      .eq('id', proposalRevision.id)
+    expect(revisionApprovalError).toBeNull()
+    const { error: eventApprovalError } = await fixture.admin
+      .from('shows')
+      .update({
+        approved_proposal_revision_id: proposalRevision.id,
+        lifecycle_status: 'approved',
+        status: 'approved',
+      })
+      .eq('id', fixture.eventId)
+    expect(eventApprovalError).toBeNull()
+
+    const { error: theaterSetupError } = await fixture.admin
+      .from('theaters')
+      .update({
+        city: 'New York',
+        country: 'US',
+        postal_code: '10001',
+        state_region: 'NY',
+        street: '20 Risk Way',
+        tagline: 'A resilient public stage',
+        timezone_source: 'manual',
+      })
+      .eq('id', fixture.theaterId)
+    expect(theaterSetupError).toBeNull()
+    const { error: theaterPublishError } = await fixture.admin.rpc(
+      'publish_theater',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_theater_id: fixture.theaterId,
+      },
+    )
+    expect(theaterPublishError).toBeNull()
+
+    const { data: contentRevision, error: contentError } =
+      await fixture.admin.rpc('save_event_public_content_draft', {
+        p_actor_user_id: fixture.ownerUserId,
+        p_admission_price_cents: 1200,
+        p_command_id: crypto.randomUUID(),
+        p_credits: [
+          {
+            position: 0,
+            publicly_credited: true,
+            user_id: fixture.acceptedUserId,
+          },
+        ],
+        p_description: 'A published Event whose operational risk is visible.',
+        p_external_url: 'https://tickets.example/risk-event',
+        p_image_url: 'https://images.example/risk-event.jpg',
+        p_sales_channel: 'external',
+        p_show_id: fixture.eventId,
+        p_title: 'Published At Risk Event',
+      })
+    expect(contentError).toBeNull()
+    const { error: publicationError } = await fixture.admin.rpc(
+      'publish_event',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_allow_at_risk: false,
+        p_command_id: crypto.randomUUID(),
+        p_expected_version: contentRevision!.version,
+        p_public_content_revision_id: contentRevision!.id,
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(publicationError).toBeNull()
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.acceptedEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
+    const withdrawButton = page.getByRole('button', {
+      name: 'Withdraw from Event',
+    })
+    await waitForReactHandler(withdrawButton, 'onClick')
+    await withdrawButton.click()
+    await expect
+      .poll(async () => {
+        const { data } = await fixture.admin
+          .from('show_cast')
+          .select('status')
+          .eq('show_id', fixture.eventId)
+          .eq('user_id', fixture.acceptedUserId)
+          .single()
+        return data?.status
+      })
+      .toBe('withdrawn')
+    await expect
+      .poll(async () => {
+        const { data } = await fixture.admin
+          .from('shows')
+          .select('operational_health')
+          .eq('id', fixture.eventId)
+          .single()
+        return data?.operational_health
+      })
+      .toBe('at_risk')
+    const { data: atRiskState } = await fixture.admin
+      .from('shows')
+      .select(
+        'lifecycle_status, publication_status, operational_health, operational_health_version',
+      )
+      .eq('id', fixture.eventId)
+      .single()
+    expect(atRiskState).toEqual({
+      lifecycle_status: 'approved',
+      operational_health: 'at_risk',
+      operational_health_version: 2,
+      publication_status: 'published',
+    })
+    await expect(page.getByText('Event is At Risk')).toBeVisible()
+
+    const anonymousPage = await context.browser()!.newPage()
+    await anonymousPage.goto(
+      `/theater/${fixture.theaterSlug}/${fixture.eventSlug}`,
+    )
+    await expect(
+      anonymousPage.getByRole('heading', { name: 'Published At Risk Event' }),
+    ).toBeVisible()
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.ownerEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
+    await page.waitForTimeout(500)
+    await expect(
+      page.getByText('approved', { exact: true }).first(),
+    ).toBeVisible()
+    await expect(page.getByText('published', { exact: true })).toBeVisible()
+    await expect(page.getByText('at_risk', { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Revise Event' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Reschedule Event' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Cancel Event' }),
+    ).toBeVisible()
+
+    await waitForReactHandler(
+      page.getByLabel('At Risk management reason'),
+      'onChange',
+    )
+    await page
+      .getByLabel('At Risk management reason')
+      .fill('The understudy plan is confirmed for this Performance.')
+    await page.getByRole('button', { name: 'Allow continuation' }).click()
+    await expect(
+      page.getByText(
+        'Continuation allowed with an audited reason. The Event remains At Risk.',
+      ),
+    ).toBeVisible()
+
+    const [{ data: allowedState }, { data: decisions }, { data: riskEvents }] =
+      await Promise.all([
+        fixture.admin
+          .from('shows')
+          .select(
+            'lifecycle_status, publication_status, operational_health, at_risk_continuation_allowed',
+          )
+          .eq('id', fixture.eventId)
+          .single(),
+        fixture.admin
+          .from('show_risk_management_decisions')
+          .select('action, reason')
+          .eq('show_id', fixture.eventId),
+        fixture.admin
+          .from('activity_events')
+          .select('action')
+          .eq('entity_id', fixture.eventId)
+          .eq('action', 'event.operational_health.at_risk'),
+      ])
+    expect(allowedState).toEqual({
+      at_risk_continuation_allowed: true,
+      lifecycle_status: 'approved',
+      operational_health: 'at_risk',
+      publication_status: 'published',
+    })
+    expect(decisions).toEqual([
+      {
+        action: 'allow',
+        reason: 'The understudy plan is confirmed for this Performance.',
+      },
+    ])
+    expect(riskEvents).toEqual([{ action: 'event.operational_health.at_risk' }])
+    await anonymousPage.close()
   } finally {
     await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
     await Promise.all(
@@ -709,7 +976,7 @@ async function authenticateContext({
   supabaseUrl,
 }: {
   anonKey: string
-  context: import('@playwright/test').BrowserContext
+  context: BrowserContext
   email: string
   password: string
   supabaseUrl: string
@@ -732,4 +999,21 @@ async function authenticateContext({
       value: data.session!.access_token,
     },
   ])
+}
+
+async function waitForReactHandler(locator: Locator, handlerName: string) {
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element, name) =>
+          Object.keys(element).some((key) => {
+            if (!key.startsWith('__reactProps$')) return false
+            const props = Reflect.get(element, key) as
+              Record<string, unknown> | undefined
+            return typeof props?.[name] === 'function'
+          }),
+        handlerName,
+      ),
+    )
+    .toBe(true)
 }
