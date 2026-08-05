@@ -3,11 +3,13 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '@/integrations/tanstack-query/devtools'
+import { PublicNav } from '@/components/stage/app-nav'
 
 import appCss from '@/styles.css?url'
 
@@ -44,7 +46,18 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootRoute() {
-  return <Outlet />
+  const isAppRoute = useRouterState({
+    select: (state) =>
+      state.location.pathname === '/app' ||
+      state.location.pathname.startsWith('/app/'),
+  })
+
+  return (
+    <>
+      {isAppRoute ? null : <PublicNav />}
+      <Outlet />
+    </>
+  )
 }
 
 function RootNotFound() {

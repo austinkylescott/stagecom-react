@@ -1,15 +1,29 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { clearAuthSession, setAuthSession, updateDisplayName } from './commands'
-import { getCurrentUser, resolveAuthRedirect } from './queries'
+import {
+  clearAuthSession,
+  setAuthSession,
+  signInAsDemoPersona,
+  updateDisplayName,
+} from './commands'
+import {
+  getCurrentUser,
+  getDemoAccessStatus,
+  resolveAuthRedirect,
+} from './queries'
 import {
   authSessionInputSchema,
+  demoPersonaInputSchema,
   resolveAuthRedirectInputSchema,
   updateDisplayNameInputSchema,
 } from './schemas'
 
 export const getCurrentUserFn = createServerFn({ method: 'GET' }).handler(
   async () => getCurrentUser(),
+)
+
+export const getDemoAccessStatusFn = createServerFn({ method: 'GET' }).handler(
+  async () => getDemoAccessStatus(),
 )
 
 export const setAuthSessionFn = createServerFn({ method: 'POST' })
@@ -19,6 +33,10 @@ export const setAuthSessionFn = createServerFn({ method: 'POST' })
 export const clearAuthSessionFn = createServerFn({ method: 'POST' }).handler(
   async () => clearAuthSession(),
 )
+
+export const signInAsDemoPersonaFn = createServerFn({ method: 'POST' })
+  .validator(demoPersonaInputSchema)
+  .handler(async ({ data }) => signInAsDemoPersona(data))
 
 export const resolveAuthRedirectFn = createServerFn({ method: 'GET' })
   .validator(resolveAuthRedirectInputSchema)

@@ -3,20 +3,28 @@ import { useState } from 'react'
 
 import {
   resolveAuthRedirectFn,
+  signInAsDemoPersonaFn,
   updateDisplayNameFn,
 } from '@/features/auth/server-functions'
+import { DEMO_PERSONAS, DEMO_PERSONA_KEYS } from '@/features/auth/demo-personas'
 import {
   createSupabaseBrowserClient,
   getAuthCallbackUrl,
 } from '@/features/auth/client'
 
 type AuthPageProps = {
+  demoEnabled?: boolean
   inviteToken?: string
   mode: 'signup' | 'login'
   next?: string
 }
 
-export function AuthPage({ inviteToken, mode, next }: AuthPageProps) {
+export function AuthPage({
+  demoEnabled = false,
+  inviteToken,
+  mode,
+  next,
+}: AuthPageProps) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<
     | { tone: 'error' | 'success'; message: string }
@@ -110,6 +118,59 @@ export function AuthPage({ inviteToken, mode, next }: AuthPageProps) {
             )}
           </button>
         </form>
+        {demoEnabled && mode === 'login' ? (
+          <section className="mt-6 border-t border-[var(--line)] pt-6">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--kicker)]">
+              Demo access
+            </p>
+            <h2 className="mt-2 text-xl font-extrabold text-[var(--sea-ink)]">
+              Choose a seeded persona
+            </h2>
+            <div className="mt-4 grid gap-2">
+              {DEMO_PERSONA_KEYS.map((key) => {
+                const persona = DEMO_PERSONAS[key]
+
+                return (
+                  <button
+                    className="rounded-md border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-left hover:bg-[var(--theater-soft)] disabled:opacity-50"
+                    disabled={isSubmitting}
+                    key={key}
+                    onClick={async () => {
+                      setIsSubmitting(true)
+                      setStatus({ tone: 'idle' })
+
+                      try {
+                        const result = await signInAsDemoPersonaFn({
+                          data: { persona: key },
+                        })
+
+                        if (!result.ok) {
+                          setStatus({
+                            tone: 'error',
+                            message: result.error.message,
+                          })
+                          return
+                        }
+
+                        window.location.assign(result.data.path)
+                      } finally {
+                        setIsSubmitting(false)
+                      }
+                    }}
+                    type="button"
+                  >
+                    <span className="block font-extrabold text-[var(--sea-ink)]">
+                      {persona.label}
+                    </span>
+                    <span className="mt-1 block text-sm text-[var(--sea-ink-soft)]">
+                      {persona.description}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ) : null}
         {status.tone !== 'idle' ? (
           <p
             className={

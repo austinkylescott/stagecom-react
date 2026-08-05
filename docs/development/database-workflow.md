@@ -8,6 +8,10 @@ The shared remote Supabase dev project is the default source of truth for app in
 
 Local Supabase remains supported for isolated development, resets, experiments, and seed work. Local commands are named with `:local` and should be chosen explicitly.
 
+For deterministic user-testing data and persona access, see
+`docs/development/demo-environment.md`. Demo data is intentionally separate
+from the baseline `supabase/seed.sql` schema-reset seed.
+
 ## Codex And MCP Target
 
 Codex Supabase MCP should point at the hosted Supabase MCP endpoint scoped to the remote dev project:
