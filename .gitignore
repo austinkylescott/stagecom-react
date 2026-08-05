@@ -6,6 +6,8 @@ dist-ssr
 .env
 .codex/*
 !.codex/config.toml
+!.codex/rules/
+!.codex/rules/*.rules
 .playwright-mcp/
 .nitro
 .tanstack

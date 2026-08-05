@@ -233,5 +233,6 @@ Activity history uses explicit domain events with appropriate visibility. Availa
 Regenerate committed database types after applying local migrations:
 
 ```bash
-npm run db:types
+npm run db:types:local
+npm run db:types:check:local
 ```

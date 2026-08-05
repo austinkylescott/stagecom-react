@@ -1,0 +1,22 @@
+# Routine verification and local development.
+prefix_rule(pattern=["npm", "run", ["typecheck", "test", "test:e2e", "build", "check", "lint"]], decision="allow", justification="Routine repository checks are safe to run without repeated approval.")
+prefix_rule(pattern=["npm", "run", ["db:start:local", "db:status:local", "db:migrate:local", "db:test:local", "db:types:local", "db:types:check:local"]], decision="allow", justification="These scripts target the local Supabase development stack.")
+prefix_rule(pattern=["npx", "supabase", "test", "db"], decision="allow", justification="Database tests run against the local Supabase stack by default.")
+prefix_rule(pattern=["npx", "@tanstack/intent@latest", "load"], decision="allow", justification="Loading repository-selected TanStack guidance is a routine read operation.")
+
+# Normal ticket delivery. AGENTS.md and docs/agents/delivery-workflow.md define
+# when these mutations are authorized; these rules prevent redundant shell
+# approval prompts during an authorized implementation loop.
+prefix_rule(pattern=["git", "fetch", "origin"], decision="allow", justification="Refreshing the tracked remote is part of branch setup.")
+prefix_rule(pattern=["git", "switch"], decision="allow", justification="Switching focused work branches is part of ticket delivery.")
+prefix_rule(pattern=["git", "add"], decision="allow", justification="Staging remains limited by the documented ticket scope.")
+prefix_rule(pattern=["git", "commit", "-m"], decision="allow", justification="Ticket-scoped commits are authorized by the implement workflow.")
+prefix_rule(pattern=["git", "push", "-u", "origin"], decision="allow", justification="Publishing the ticket branch is authorized by the implement workflow.")
+prefix_rule(pattern=["gh", "auth", "status"], decision="allow", justification="Reading GitHub authentication state is non-mutating.")
+prefix_rule(pattern=["gh", "pr", ["view", "create"]], decision="allow", justification="Viewing or opening the ticket pull request is part of the implement workflow.")
+
+# High-impact operations always retain a human checkpoint, even if an older
+# global rule allowed them.
+prefix_rule(pattern=["gh", "pr", "merge"], decision="prompt", justification="Merging requires explicit approval under the delivery workflow.")
+prefix_rule(pattern=["npm", "run", ["db:migrate:remote", "db:types", "db:types:remote", "demo:seed:remote"]], decision="prompt", justification="This command targets the linked remote database and requires explicit approval.")
+prefix_rule(pattern=["npx", "supabase", "test", "db", "--linked"], decision="prompt", justification="Linked database tests touch the remote Supabase project and require explicit approval.")

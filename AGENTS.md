@@ -1,98 +1,42 @@
 <!-- stagecom:start -->
 
-# Stagecom Rebuild Agent Guide
+# Stagecom Agent Guide
 
-## Scope
+This repository is the TanStack Start rebuild of Stagecom. Keep this file as a
+small routing layer: durable detail belongs in the linked project documents.
 
-This repository is the TanStack Start rebuild of Stagecom. It replaces the previous Nuxt implementation direction while preserving the durable product, data, and design decisions documented in `docs/`, `wiki/`, and `docs/rebuild/`.
+## Start Here
 
-## Stack
+- Domain language and boundaries: `CONTEXT.md` and `docs/adr/`
+- Product and design synthesis: `wiki/_index.md`
+- Engineering conventions and local database workflow:
+  `docs/development/coding-rules.md`
+- Linear, branches, commits, pull requests, and approval boundaries:
+  `docs/agents/delivery-workflow.md`
+- Issue tracker operations: `docs/agents/issue-tracker.md`
 
-- TanStack Start
-- React
-- TypeScript
-- Supabase Auth/Postgres
-- shadcn/ui
-- Tailwind CSS
-- TanStack Query
-- TanStack Table
-- Vitest
-- Playwright
+Consult `docs/rebuild/` only when the current synthesis needs historical
+context.
 
-## Source Of Truth
+## Non-Negotiable Invariants
 
-Start with the wiki synthesis layer:
+- Call user-facing `shows` Events; keep the database table name `shows` unless
+  an explicit migration changes it.
+- A Producer is not implicitly a Cast Member. Cast membership requires an
+  explicit `show_cast` row.
+- Notifications originate from explicit domain events, never directly from UI
+  code.
+- Keep route files and TanStack server functions thin. Put product behavior in
+  feature commands and queries.
+- Use a Supabase service-role client only in server code after explicit
+  application-level authorization.
 
-- `wiki/_index.md`
-- `wiki/product/overview.md`
-- `wiki/features/first-slice.md`
-- `wiki/data/data-model.md`
-- `wiki/data/permissions-model.md`
-- `wiki/architecture/stack-and-layout.md`
-- `wiki/design/design-system.md`
+## Safety
 
-Use raw docs for more detail:
-
-- `docs/product/PRD.md`
-- `docs/data/data-model.md`
-- `docs/design/design-baseline.md`
-- `docs/development/coding-rules.md`
-- `docs/specs/first-slice.md`
-- `docs/rebuild/00-index.md`
-
-`docs/rebuild/` remains the planning record and should be consulted when a synthesis doc needs deeper context.
-
-## Product Rules
-
-- Product center: theater operator/admin first.
-- Product language: call user-facing `shows` Events, but keep the DB table name `shows` unless a future migration explicitly changes it.
-- Producers are never assumed to be cast.
-- Cast membership requires an explicit `show_cast` row.
-- Theater-level roles in the rebuild are `owner`, `admin`, and `member`.
-- Event-level roles include producer, staff assignment, and cast.
-- Producers manage event content/cast/acts by default; theater owner/admin manages publishing and event staff assignments.
-- All notifications must originate from explicit domain events; do not create notifications directly from UI code.
-
-## Architecture Rules
-
-- Keep route files thin.
-- Put product behavior in feature `commands.ts`, `queries.ts`, and `public-queries.ts`.
-- TanStack server functions in `server-functions.ts` are thin wrappers over commands/queries.
-- All mutations and private reads go through the app-owned API/server-function layer.
-- Public theater/event pages use separate anonymous-safe public queries.
-- Validate inputs with Zod at the command/server-function boundary.
-- Use typed `AppError` results/errors consistently.
-- Use Supabase service-role clients only after explicit app-level authorization.
-
-## Project Conventions
-
-- Routes live in `src/routes`.
-- Feature code lives in `src/features/*`.
-- shadcn primitives live in `src/components/ui`.
-- Stagecom reusable components live in `src/components/stage`.
-- Generated Supabase types live in `src/server/db/database.types.ts`.
-- Unit tests live beside command/query modules.
-- Playwright tests live in `e2e/`.
-- Use the `@/*` alias for `src/*`.
-
-## Workflow
-
-- Use focused feature branches from `main`.
-- Do not commit without permission.
-- Preserve docs and wiki updates with meaningful behavior, schema, architecture, or design changes.
-- Run relevant checks before calling work complete:
-  - `npm run typecheck`
-  - `npm run test`
-  - `npm run test:e2e`
-  - `npm run build`
-
-## Design Rules
-
-- Use the design baseline in `docs/design/design-baseline.md`.
-- Preserve Stagecom fonts and three semantic brand colors, refined for clarity.
-- Build `/dev/components` before product pages multiply.
-- Keep authenticated workflows calm and task-focused.
-- Save the marketing page until product components/screens exist.
+- Local Supabase is the default development target.
+- Remote migrations, remote seeding, production changes, merges, and releases
+  always require explicit approval for that operation.
+- Never print, commit, or expose credentials or service-role keys.
 
 <!-- stagecom:end -->
 

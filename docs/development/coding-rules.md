@@ -10,7 +10,9 @@ Status: active synthesis
 - Validate inputs with Zod.
 - Use typed AppError conventions.
 - Use Supabase service-role clients only after explicit app authorization.
-- Do not commit without permission.
+- Do not commit without explicit permission unless a ticket-scoped `implement`
+  invocation grants the standing approval described in
+  `docs/agents/delivery-workflow.md`.
 - Keep docs and wiki synchronized with meaningful product, data, architecture, or design changes.
 
 ## Source Layout
@@ -65,5 +67,9 @@ When schema migrations change the local database, also run:
 
 ```bash
 npm run db:migrate:local
-npm run db:types
+npm run db:types:local
+npm run db:types:check:local
 ```
+
+Remote migrations, remote type generation, remote seeding, and other production
+changes require explicit approval for that operation.
