@@ -1,4 +1,6 @@
 import { getCurrentUserFromRequest } from '@/server/auth/session'
+import { serverEnv } from '@/server/env'
+import { ok } from '@/server/errors'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 
 import { resolvePostAuthPath } from './redirects'
@@ -8,6 +10,10 @@ import type { z } from 'zod'
 
 export async function getCurrentUser() {
   return getCurrentUserFromRequest()
+}
+
+export async function getDemoAccessStatus() {
+  return ok({ enabled: serverEnv.STAGECOM_DEMO_MODE === 'true' })
 }
 
 export async function resolveAuthRedirect(
@@ -35,7 +41,8 @@ export async function resolveAuthRedirect(
     .order('home_rank', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: true })
 
-  const theaterIds = memberships?.map((membership) => membership.theater_id) ?? []
+  const theaterIds =
+    memberships?.map((membership) => membership.theater_id) ?? []
   const { data: theaters } = theaterIds.length
     ? await supabase
         .from('theaters')

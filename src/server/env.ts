@@ -14,6 +14,8 @@ const optionalSecretSchema = z.preprocess(
 )
 
 export const serverEnvSchema = z.object({
+  STAGECOM_DEMO_MODE: z.enum(['true', 'false']).optional(),
+  STAGECOM_DEMO_PASSWORD: optionalSecretSchema,
   SUPABASE_DB_URL: optionalUrlSchema,
   SUPABASE_PROJECT_ID: optionalSecretSchema,
   SUPABASE_SERVICE_ROLE_KEY: optionalSecretSchema,

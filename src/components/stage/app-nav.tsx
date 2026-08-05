@@ -45,6 +45,7 @@ type AppNavProps = {
 }
 
 type TheaterNavProps = {
+  theaterName: string
   theaterSlug: string
 }
 
@@ -133,6 +134,50 @@ const accentClassNames = {
   theater:
     '[&.is-active]:border-[var(--theater)] [&.is-active_svg]:text-[var(--theater-ink)] group-hover:[&_svg]:text-[var(--theater-ink)]',
 } satisfies Record<TheaterNavItem['accent'], string>
+
+export function PublicNav() {
+  return (
+    <header className="border-b border-[var(--line)] bg-[var(--header-bg)] backdrop-blur">
+      <div className="page-wrap flex min-h-16 items-center justify-between gap-3 py-3">
+        <Link
+          activeOptions={{ exact: true }}
+          className="inline-flex items-center gap-2 text-xl font-black text-[var(--sea-ink)] no-underline"
+          to="/"
+        >
+          <span className="grid size-9 place-items-center rounded-md border border-[var(--chip-line)] bg-[var(--theater-soft)] text-[var(--theater-ink)]">
+            <Theater className="size-5" />
+          </span>
+          <span className="display-title text-2xl">Stagecom</span>
+        </Link>
+
+        <nav
+          aria-label="Public navigation"
+          className="flex items-center justify-end gap-1 sm:gap-2"
+        >
+          <Link
+            className="hidden rounded-md px-3 py-2 text-sm font-extrabold text-[var(--sea-ink-soft)] no-underline hover:bg-[var(--theater-soft)] hover:text-[var(--theater-ink)] sm:inline-flex"
+            to="/app/callsheet"
+          >
+            My Callsheet
+          </Link>
+          <Link
+            className="rounded-md border border-[var(--line)] px-3 py-2 text-sm font-extrabold text-[var(--sea-ink)] no-underline hover:bg-[var(--surface-strong)]"
+            to="/login"
+          >
+            Sign in
+          </Link>
+          <Link
+            className="rounded-md bg-[var(--sea-ink)] px-3 py-2 text-sm font-extrabold text-white no-underline"
+            to="/signup"
+          >
+            <span className="sm:hidden">Join</span>
+            <span className="hidden sm:inline">Create account</span>
+          </Link>
+        </nav>
+      </div>
+    </header>
+  )
+}
 
 export function AppNav({ email }: AppNavProps) {
   const accountInitial = getAccountInitial(email)
@@ -243,7 +288,7 @@ export function AppNav({ email }: AppNavProps) {
   )
 }
 
-export function TheaterNav({ theaterSlug }: TheaterNavProps) {
+export function TheaterNav({ theaterName, theaterSlug }: TheaterNavProps) {
   return (
     <div className="border-b border-[var(--line)] bg-[var(--paper)]">
       <div className="page-wrap grid gap-3 py-4 lg:grid-cols-[minmax(180px,240px)_1fr] lg:items-center">
@@ -252,7 +297,7 @@ export function TheaterNav({ theaterSlug }: TheaterNavProps) {
             Theater workspace
           </p>
           <h2 className="mt-1 truncate text-lg font-black text-[var(--sea-ink)]">
-            {theaterSlug}
+            {theaterName}
           </h2>
         </div>
         <nav

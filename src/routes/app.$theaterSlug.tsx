@@ -28,6 +28,7 @@ export const Route = createFileRoute('/app/$theaterSlug')({
 
 function TheaterWorkspaceLayout() {
   const { theaterSlug } = Route.useParams()
+  const { theater } = Route.useRouteContext()
   const activeRouteId = useRouterState({
     select: (state) => state.matches.at(-1)?.routeId,
   })
@@ -35,7 +36,7 @@ function TheaterWorkspaceLayout() {
   if (activeRouteId === Route.id) {
     return (
       <>
-        <TheaterNav theaterSlug={theaterSlug} />
+        <TheaterNav theaterName={theater.name} theaterSlug={theaterSlug} />
         <RoutePlaceholder
           eyebrow="Theater workspace"
           title="Theater callsheet"
@@ -48,7 +49,7 @@ function TheaterWorkspaceLayout() {
 
   return (
     <>
-      <TheaterNav theaterSlug={theaterSlug} />
+      <TheaterNav theaterName={theater.name} theaterSlug={theaterSlug} />
       <Outlet />
     </>
   )
