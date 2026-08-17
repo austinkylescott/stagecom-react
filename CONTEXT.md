@@ -66,7 +66,7 @@ The Theater's default physical location and initial exclusive scheduling resourc
 ## Casting And Participation
 
 **Proposed Cast**:
-The accepted Cast Members deliberately selected by a Producer for a Proposal Revision.
+The durable set of accepted Cast Members deliberately selected by a Producer for the Event's next Proposal Revision. Temporary editor choices are not part of the Proposed Cast until recorded.
 
 **Minimum Viable Cast**:
 The smallest confirmed cast with which an Event can responsibly proceed.

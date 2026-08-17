@@ -194,6 +194,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await cast.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await expect(
+      cast.page.getByRole('heading', { name: 'Operational plan' }),
+    ).toBeVisible()
     await waitForReactHandler(
       cast.page.getByRole('button', { name: 'Accept invitation' }),
       'onClick',

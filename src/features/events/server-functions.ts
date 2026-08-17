@@ -26,6 +26,7 @@ import {
   getManagedEventWorkspace,
   listManagedEvents,
 } from './queries'
+import { getProposalPreparation } from './proposal-preparation/query'
 import { getEventPublicContentReadiness } from './public-content-queries'
 import { getPublishedEventBySlug } from './public-queries'
 import {
@@ -87,6 +88,10 @@ export const listManagedEventsFn = createServerFn({ method: 'GET' })
 export const getManagedEventWorkspaceFn = createServerFn({ method: 'GET' })
   .validator(eventWorkspaceInputSchema)
   .handler(async ({ data }) => getManagedEventWorkspace(data))
+
+export const getProposalPreparationFn = createServerFn({ method: 'GET' })
+  .validator(eventWorkspaceInputSchema)
+  .handler(async ({ data }) => getProposalPreparation(data))
 
 export const getEventPublicContentReadinessFn = createServerFn({
   method: 'GET',

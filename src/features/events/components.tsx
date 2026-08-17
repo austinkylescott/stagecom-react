@@ -14,16 +14,14 @@ import {
   respondToEventCastInvitationFn,
   respondToProposalCounterofferFn,
   saveEventPublicContentFn,
-  saveEventOperationalPlanFn,
-  saveEventProposedCastFn,
   setOccurrenceCallFn,
   seedDeniedProposalReplacementFn,
-  submitEventProposalRevisionFn,
   withdrawFromEventCastFn,
 } from './server-functions'
-import { rankCandidateSlots } from './proposal-recommendations'
+import { ProposalPreparation } from './proposal-preparation/production'
 
 import type { Database } from '@/server/db/database.types'
+import type { ProposalPreparationReadModel } from './proposal-preparation/types'
 
 type EventLeadershipRole = Database['public']['Enums']['event_leadership_role']
 type EventLifecycle = Database['public']['Enums']['show_lifecycle_status']
@@ -348,9 +346,8 @@ export function ManagedEventWorkspace({
   actorUserId,
   allowedActions,
   event,
+  proposalPreparation,
   publicContent,
-  primaryVenueCommitments,
-  recommendations,
   theater,
   view,
 }: {
@@ -499,6 +496,7 @@ export function ManagedEventWorkspace({
     target_cast_size: number | null
     title: string
   }
+  proposalPreparation: ProposalPreparationReadModel | null
   publicContent: {
     allowedActions: {
       editPublicContent: boolean
@@ -546,23 +544,6 @@ export function ManagedEventWorkspace({
       title: string
     } | null
   } | null
-  primaryVenueCommitments: Array<{
-    durationMinutes: number
-    startsAt: string
-  }>
-  recommendations: Array<{
-    availableCalledCastCount: number
-    evidence: Array<{ code: string; message: string }>
-    hasPrimaryVenueConflict: boolean
-    isViable: boolean
-    minimumViableCast: number
-    occurrenceId: string
-    rank: number
-    requiredAvailableCount: number
-    requiredCount: number
-    requiredUnconfirmedCount: number
-    slotId: string
-  }>
   theater: {
     primary_venue_id: string
     primary_venue_name: string | null
@@ -574,39 +555,6 @@ export function ManagedEventWorkspace({
   }
   view: 'operational' | 'accepted_cast' | 'pending_invitee'
 }) {
-  const [plan, setPlan] = useState(() => ({
-    minimumViableCast: event.minimum_viable_cast ?? 1,
-    occurrences: event.show_occurrences.map((occurrence) => ({
-      candidateSlots: occurrence.show_candidate_slots.map((slot) => ({
-        durationMinutes: slot.duration_minutes,
-        id: slot.id,
-        localStartsAt: slot.local_starts_at.slice(0, 16),
-        locationKind: slot.location_kind,
-        locationName: slot.location_name,
-        offSiteApproved: slot.off_site_approved,
-        position: slot.position,
-        ...(slot.resource_id ? { resourceId: slot.resource_id } : {}),
-        timezoneName: slot.timezone_name,
-        timezoneSource: slot.timezone_source,
-      })),
-      confirmedCandidateSlotId: occurrence.confirmed_candidate_slot_id,
-      id: occurrence.id,
-      position: occurrence.position,
-      type: occurrence.occurrence_type,
-      visibility: occurrence.visibility,
-    })),
-    resourceRequests: event.show_resource_requests.map((request) => ({
-      id: request.id,
-      label: request.label,
-      position: request.position,
-      quantity: request.quantity,
-      type: request.resource_type,
-    })),
-    targetCastSize: event.target_cast_size ?? 1,
-  }))
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [cast, setCast] = useState(event.show_cast)
   const [inviteeUserId, setInviteeUserId] = useState('')
   const [castingError, setCastingError] = useState<string | null>(null)
@@ -632,17 +580,6 @@ export function ManagedEventWorkspace({
   const [publicContentSaved, setPublicContentSaved] = useState(false)
   const [isSavingPublicContent, setIsSavingPublicContent] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
-  const [proposedCastUserIds, setProposedCastUserIds] = useState(
-    event.show_proposed_cast.map(({ user_id }) => user_id),
-  )
-  const [proposalError, setProposalError] = useState<string | null>(null)
-  const [proposalBlockers, setProposalBlockers] = useState<
-    Array<{ code: string; message: string }>
-  >([])
-  const [proposedCastSaved, setProposedCastSaved] = useState(false)
-  const [submittedRevision, setSubmittedRevision] = useState<number | null>(
-    null,
-  )
   const [lifecycleStatus, setLifecycleStatus] = useState(event.lifecycle_status)
   const [operationalHealth, setOperationalHealth] = useState(
     event.operational_health,
@@ -676,11 +613,6 @@ export function ManagedEventWorkspace({
   const [proposalRevisions, setProposalRevisions] = useState(
     event.show_proposal_revisions,
   )
-  const [isSavingProposal, setIsSavingProposal] = useState(false)
-  const [candidateRecommendations, setCandidateRecommendations] =
-    useState(recommendations)
-  const timezoneName = theater.timezone ?? 'UTC'
-  const venueName = theater.primary_venue_name ?? 'Primary Venue'
   const ownInvitation = cast.find(
     (castMember) => castMember.user_id === actorUserId,
   )
@@ -692,7 +624,7 @@ export function ManagedEventWorkspace({
     })),
   )
 
-  return (
+  const content = (
     <main className="page-wrap py-8 sm:py-12">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
         Event workspace
@@ -1522,244 +1454,12 @@ export function ManagedEventWorkspace({
           <p className="mt-3 font-bold text-red-700">{castingError}</p>
         ) : null}
       </section>
-      {view === 'operational' ? (
-        <section className="island-shell mt-5 rounded-lg px-6 py-6">
-          <h2 className="text-2xl font-extrabold">Proposal Revision</h2>
-          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-            Select accepted Cast Members deliberately, compare the evidence,
-            save the preferred Confirmed Slots in the operational plan, then
-            submit one immutable snapshot for review.
-          </p>
-
-          <fieldset className="mt-5 grid gap-2">
-            <legend className="font-extrabold">Proposed Cast</legend>
-            {acceptedCast.map((castMember) => (
-              <label
-                className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                key={castMember.user_id}
-              >
-                <input
-                  checked={proposedCastUserIds.includes(castMember.user_id)}
-                  disabled={!allowedActions.selectProposedCast}
-                  onChange={(change) =>
-                    setProposedCastUserIds((current) =>
-                      change.target.checked
-                        ? [...current, castMember.user_id]
-                        : current.filter(
-                            (userId) => userId !== castMember.user_id,
-                          ),
-                    )
-                  }
-                  type="checkbox"
-                />
-                {castMember.profiles.display_name}
-              </label>
-            ))}
-            {acceptedCast.length === 0 ? (
-              <p className="text-sm text-[var(--sea-ink-soft)]">
-                No accepted Cast Members are available for selection. Pending
-                and declined invitations do not block draft editing.
-              </p>
-            ) : null}
-          </fieldset>
-
-          {allowedActions.selectProposedCast ? (
-            <button
-              className="mt-4 rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold disabled:opacity-60"
-              disabled={isSavingProposal}
-              onClick={async () => {
-                setProposalError(null)
-                setProposedCastSaved(false)
-                setIsSavingProposal(true)
-                try {
-                  const result = await saveEventProposedCastFn({
-                    data: {
-                      castMemberUserIds: proposedCastUserIds,
-                      commandId: crypto.randomUUID(),
-                      eventId: event.id,
-                    },
-                  })
-                  if (!result.ok) {
-                    setProposalError(result.error.message)
-                    return
-                  }
-                  setProposedCastUserIds(result.data.castMemberUserIds)
-                  setProposedCastSaved(true)
-                  setCandidateRecommendations(
-                    rankCandidateSlots({
-                      availability: availabilityResponses.map((response) => ({
-                        candidateSlotId: response.candidate_slot_id,
-                        response: response.response,
-                        userId: response.user_id,
-                      })),
-                      calls: occurrenceCalls.map((call) => ({
-                        call: call.call,
-                        occurrenceId: call.occurrence_id,
-                        userId: call.user_id,
-                      })),
-                      commitments: primaryVenueCommitments,
-                      occurrences: event.show_occurrences.map((occurrence) => ({
-                        id: occurrence.id,
-                        minimumViableCast: event.minimum_viable_cast ?? 1,
-                        slots: occurrence.show_candidate_slots.map((slot) => ({
-                          durationMinutes: slot.duration_minutes,
-                          id: slot.id,
-                          locationKind: slot.location_kind,
-                          startsAt: slot.starts_at,
-                        })),
-                        type: occurrence.occurrence_type,
-                      })),
-                      proposedCastUserIds: result.data.castMemberUserIds,
-                      setupBufferMinutes: theater.setup_buffer_minutes,
-                      turnoverBufferMinutes: theater.turnover_buffer_minutes,
-                    }),
-                  )
-                } finally {
-                  setIsSavingProposal(false)
-                }
-              }}
-              type="button"
-            >
-              Save Proposed Cast
-            </button>
-          ) : null}
-          {proposedCastSaved ? (
-            <p className="mt-2 font-semibold text-emerald-800">
-              Proposed Cast saved.
-            </p>
-          ) : null}
-
-          <div className="mt-7 grid gap-4">
-            <h3 className="text-xl font-extrabold">
-              Candidate Slot recommendations
-            </h3>
-            {event.show_occurrences.map((occurrence, occurrenceIndex) => (
-              <article
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
-                key={occurrence.id}
-              >
-                <h4 className="font-extrabold">
-                  Occurrence {occurrenceIndex + 1} ·{' '}
-                  <span className="capitalize">
-                    {occurrence.occurrence_type}
-                  </span>
-                </h4>
-                <div className="mt-3 grid gap-3">
-                  {candidateRecommendations
-                    .filter(
-                      (recommendation) =>
-                        recommendation.occurrenceId === occurrence.id,
-                    )
-                    .map((recommendation) => {
-                      const slot = occurrence.show_candidate_slots.find(
-                        ({ id }) => id === recommendation.slotId,
-                      )
-                      if (!slot) return null
-                      return (
-                        <label
-                          className="grid gap-2 rounded-md bg-[var(--sand)]/40 px-4 py-3"
-                          key={recommendation.slotId}
-                        >
-                          <span className="flex items-center gap-3 font-bold">
-                            <input
-                              checked={
-                                plan.occurrences.find(
-                                  ({ id }) => id === occurrence.id,
-                                )?.confirmedCandidateSlotId ===
-                                recommendation.slotId
-                              }
-                              disabled={!allowedActions.editOperationalPlan}
-                              name={`recommended-${occurrence.id}`}
-                              onChange={() =>
-                                updateOccurrence(setPlan, occurrence.id, {
-                                  confirmedCandidateSlotId:
-                                    recommendation.slotId,
-                                })
-                              }
-                              type="radio"
-                            />
-                            Rank {recommendation.rank}: {slot.location_name} ·{' '}
-                            {recommendation.isViable ? 'Viable' : 'Blocked'}
-                          </span>
-                          <ul className="list-disc pl-5 text-sm text-[var(--sea-ink-soft)]">
-                            {recommendation.evidence.map((evidence) => (
-                              <li key={evidence.code}>{evidence.message}</li>
-                            ))}
-                          </ul>
-                        </label>
-                      )
-                    })}
-                </div>
-              </article>
-            ))}
-          </div>
-
-          {proposalBlockers.length > 0 ? (
-            <div className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-              <p className="font-bold text-amber-950">Submission blockers</p>
-              <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
-                {proposalBlockers.map((blocker, index) => (
-                  <li key={`${blocker.code}-${index}`}>{blocker.message}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {proposalError ? (
-            <p className="mt-3 font-bold text-red-700">{proposalError}</p>
-          ) : null}
-          {submittedRevision ? (
-            <p className="mt-3 font-bold text-emerald-800">
-              Proposal Revision {submittedRevision} submitted for review.
-            </p>
-          ) : null}
-          {allowedActions.submitProposalRevision ? (
-            <button
-              className="mt-5 rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-              disabled={isSavingProposal || submittedRevision !== null}
-              onClick={async () => {
-                setProposalError(null)
-                setProposalBlockers([])
-                setIsSavingProposal(true)
-                try {
-                  const result = await submitEventProposalRevisionFn({
-                    data: { commandId: crypto.randomUUID(), eventId: event.id },
-                  })
-                  if (!result.ok) {
-                    setProposalError(result.error.message)
-                    if (Array.isArray(result.error.details)) {
-                      setProposalBlockers(
-                        result.error.details.filter(
-                          (
-                            detail,
-                          ): detail is {
-                            code: string
-                            message: string
-                          } =>
-                            typeof detail === 'object' &&
-                            detail !== null &&
-                            'code' in detail &&
-                            typeof detail.code === 'string' &&
-                            'message' in detail &&
-                            typeof detail.message === 'string',
-                        ),
-                      )
-                    }
-                    return
-                  }
-                  setSubmittedRevision(result.data.revisionNumber)
-                } finally {
-                  setIsSavingProposal(false)
-                }
-              }}
-              type="button"
-            >
-              {isSavingProposal ? 'Submitting…' : 'Submit Proposal Revision'}
-            </button>
-          ) : null}
-
+      {view === 'operational' && proposalPreparation ? (
+        <>
+          <ProposalPreparation.RevisionSection />
           {proposalRevisions.length > 0 ? (
-            <div className="mt-7">
-              <h3 className="text-xl font-extrabold">Submitted revisions</h3>
+            <section className="island-shell mt-5 rounded-lg px-6 py-6">
+              <h2 className="text-2xl font-extrabold">Submitted revisions</h2>
               <ul className="mt-3 grid gap-2">
                 {proposalRevisions.map((revision) => (
                   <li
@@ -1870,9 +1570,9 @@ export function ManagedEventWorkspace({
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
           ) : null}
-        </section>
+        </>
       ) : null}
       <section className="island-shell mt-5 rounded-lg px-6 py-6">
         <h2 className="text-2xl font-extrabold">
@@ -2089,416 +1789,20 @@ export function ManagedEventWorkspace({
           <p className="mt-3 font-bold text-red-700">{coordinationError}</p>
         ) : null}
       </section>
-      <section className="island-shell mt-5 rounded-lg px-6 py-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-extrabold">Operational plan</h2>
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-              Candidate Slots use {timezoneName} and preserve the exact instant
-              plus its local-time provenance.
-            </p>
-          </div>
-          {!allowedActions.editOperationalPlan && view === 'operational' ? (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">
-              Only an eligible Producer can edit a draft or approved plan.
-            </p>
-          ) : null}
-        </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <NumberField
-            disabled={!allowedActions.editOperationalPlan}
-            label="Target cast size"
-            onChange={(targetCastSize) =>
-              setPlan((current) => ({ ...current, targetCastSize }))
-            }
-            value={plan.targetCastSize}
-          />
-          <NumberField
-            disabled={!allowedActions.editOperationalPlan}
-            label="Minimum Viable Cast"
-            onChange={(minimumViableCast) =>
-              setPlan((current) => ({ ...current, minimumViableCast }))
-            }
-            value={plan.minimumViableCast}
-          />
-        </div>
-
-        <div className="mt-7 grid gap-5">
-          {plan.occurrences.map((occurrence, occurrenceIndex) => (
-            <article
-              className="rounded-lg border border-[var(--line)] bg-white px-5 py-5"
-              key={occurrence.id}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-xl font-extrabold">
-                  Occurrence {occurrenceIndex + 1}
-                </h3>
-                {allowedActions.editOperationalPlan ? (
-                  <div className="flex flex-wrap gap-2">
-                    <SmallButton
-                      disabled={occurrenceIndex === 0}
-                      onClick={() =>
-                        setPlan((current) => ({
-                          ...current,
-                          occurrences: moveItem(
-                            current.occurrences,
-                            occurrenceIndex,
-                            occurrenceIndex - 1,
-                          ),
-                        }))
-                      }
-                    >
-                      Move up
-                    </SmallButton>
-                    <SmallButton
-                      disabled={occurrenceIndex === plan.occurrences.length - 1}
-                      onClick={() =>
-                        setPlan((current) => ({
-                          ...current,
-                          occurrences: moveItem(
-                            current.occurrences,
-                            occurrenceIndex,
-                            occurrenceIndex + 1,
-                          ),
-                        }))
-                      }
-                    >
-                      Move down
-                    </SmallButton>
-                    <SmallButton
-                      onClick={() =>
-                        setPlan((current) => ({
-                          ...current,
-                          occurrences: current.occurrences.filter(
-                            ({ id }) => id !== occurrence.id,
-                          ),
-                        }))
-                      }
-                    >
-                      Remove
-                    </SmallButton>
-                  </div>
-                ) : null}
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <SelectField
-                  disabled={!allowedActions.editOperationalPlan}
-                  label={`Occurrence ${occurrenceIndex + 1} type`}
-                  onChange={(type) =>
-                    updateOccurrence(setPlan, occurrence.id, { type })
-                  }
-                  options={['rehearsal', 'performance']}
-                  value={occurrence.type}
-                />
-                <SelectField
-                  disabled={!allowedActions.editOperationalPlan}
-                  label={`Occurrence ${occurrenceIndex + 1} visibility`}
-                  onChange={(visibility) =>
-                    updateOccurrence(setPlan, occurrence.id, { visibility })
-                  }
-                  options={['public', 'internal']}
-                  value={occurrence.visibility}
-                />
-              </div>
-
-              <div className="mt-5 grid gap-4">
-                {occurrence.candidateSlots.map((slot, slotIndex) => (
-                  <fieldset
-                    className="grid gap-4 rounded-md bg-[var(--sand)]/40 px-4 py-4 sm:grid-cols-2"
-                    key={slot.id}
-                  >
-                    <legend className="px-1 text-sm font-extrabold">
-                      Candidate Slot {slotIndex + 1}
-                    </legend>
-                    <label className="grid gap-2 text-sm font-bold">
-                      Local date and time
-                      <input
-                        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
-                        disabled={!allowedActions.editOperationalPlan}
-                        onChange={(change) =>
-                          updateSlot(setPlan, occurrence.id, slot.id, {
-                            localStartsAt: change.target.value,
-                          })
-                        }
-                        type="datetime-local"
-                        value={slot.localStartsAt}
-                      />
-                    </label>
-                    <NumberField
-                      disabled={!allowedActions.editOperationalPlan}
-                      label="Duration (minutes)"
-                      max={1440}
-                      min={15}
-                      onChange={(durationMinutes) =>
-                        updateSlot(setPlan, occurrence.id, slot.id, {
-                          durationMinutes,
-                        })
-                      }
-                      value={slot.durationMinutes}
-                    />
-                    <SelectField
-                      disabled={!allowedActions.editOperationalPlan}
-                      label="Location type"
-                      onChange={(locationKind) =>
-                        updateSlot(setPlan, occurrence.id, slot.id, {
-                          locationKind,
-                          locationName:
-                            locationKind === 'primary_venue' ? venueName : '',
-                          offSiteApproved: locationKind === 'off_site',
-                          ...(locationKind === 'primary_venue'
-                            ? { resourceId: theater.primary_venue_id }
-                            : { resourceId: undefined }),
-                        })
-                      }
-                      options={['primary_venue', 'off_site']}
-                      value={slot.locationKind}
-                    />
-                    <label className="grid gap-2 text-sm font-bold">
-                      Location
-                      <input
-                        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
-                        disabled={
-                          !allowedActions.editOperationalPlan ||
-                          slot.locationKind === 'primary_venue'
-                        }
-                        onChange={(change) =>
-                          updateSlot(setPlan, occurrence.id, slot.id, {
-                            locationName: change.target.value,
-                          })
-                        }
-                        value={slot.locationName}
-                      />
-                    </label>
-                    <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
-                      <input
-                        checked={
-                          occurrence.confirmedCandidateSlotId === slot.id
-                        }
-                        disabled={!allowedActions.editOperationalPlan}
-                        name={`confirmed-${occurrence.id}`}
-                        onChange={() =>
-                          updateOccurrence(setPlan, occurrence.id, {
-                            confirmedCandidateSlotId:
-                              occurrence.confirmedCandidateSlotId === slot.id
-                                ? null
-                                : slot.id,
-                          })
-                        }
-                        type="checkbox"
-                      />
-                      Confirm this Slot
-                    </label>
-                    {allowedActions.editOperationalPlan ? (
-                      <SmallButton
-                        onClick={() =>
-                          setPlan((current) => ({
-                            ...current,
-                            occurrences: current.occurrences.map((item) =>
-                              item.id === occurrence.id
-                                ? {
-                                    ...item,
-                                    candidateSlots: item.candidateSlots.filter(
-                                      ({ id }) => id !== slot.id,
-                                    ),
-                                    confirmedCandidateSlotId:
-                                      item.confirmedCandidateSlotId === slot.id
-                                        ? null
-                                        : item.confirmedCandidateSlotId,
-                                  }
-                                : item,
-                            ),
-                          }))
-                        }
-                      >
-                        Remove Candidate Slot
-                      </SmallButton>
-                    ) : null}
-                  </fieldset>
-                ))}
-              </div>
-              {allowedActions.editOperationalPlan ? (
-                <button
-                  className="mt-4 text-sm font-extrabold text-[var(--coral-deep)]"
-                  onClick={() =>
-                    setPlan((current) => ({
-                      ...current,
-                      occurrences: current.occurrences.map((item) =>
-                        item.id === occurrence.id
-                          ? {
-                              ...item,
-                              candidateSlots: [
-                                ...item.candidateSlots,
-                                newCandidateSlot(
-                                  item.candidateSlots.length,
-                                  theater,
-                                ),
-                              ],
-                            }
-                          : item,
-                      ),
-                    }))
-                  }
-                  type="button"
-                >
-                  Add Candidate Slot
-                </button>
-              ) : null}
-            </article>
-          ))}
-        </div>
-        {allowedActions.editOperationalPlan ? (
-          <button
-            className="mt-5 rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold"
-            onClick={() =>
-              setPlan((current) => ({
-                ...current,
-                occurrences: [
-                  ...current.occurrences,
-                  {
-                    candidateSlots: [],
-                    confirmedCandidateSlotId: null,
-                    id: crypto.randomUUID(),
-                    position: current.occurrences.length,
-                    type: 'rehearsal' as const,
-                    visibility: 'internal' as const,
-                  },
-                ],
-              }))
-            }
-            type="button"
-          >
-            Add Occurrence
-          </button>
-        ) : null}
-
-        {view === 'operational' ? (
-          <h3 className="mt-8 text-xl font-extrabold">Requested resources</h3>
-        ) : null}
-        <div className="mt-4 grid gap-3">
-          {plan.resourceRequests.map((request, requestIndex) => (
-            <div
-              className="grid gap-3 rounded-md border border-[var(--line)] px-4 py-4 sm:grid-cols-[10rem_1fr_7rem_auto]"
-              key={request.id}
-            >
-              <SelectField
-                disabled={!allowedActions.editOperationalPlan}
-                label={`Resource ${requestIndex + 1} type`}
-                onChange={(type) =>
-                  updateResource(setPlan, request.id, { type })
-                }
-                options={['staff', 'equipment', 'other']}
-                value={request.type}
-              />
-              <label className="grid gap-2 text-sm font-bold">
-                Requested resource
-                <input
-                  className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
-                  disabled={!allowedActions.editOperationalPlan}
-                  onChange={(change) =>
-                    updateResource(setPlan, request.id, {
-                      label: change.target.value,
-                    })
-                  }
-                  value={request.label}
-                />
-              </label>
-              <NumberField
-                disabled={!allowedActions.editOperationalPlan}
-                label="Quantity"
-                onChange={(quantity) =>
-                  updateResource(setPlan, request.id, { quantity })
-                }
-                value={request.quantity}
-              />
-              {allowedActions.editOperationalPlan ? (
-                <SmallButton
-                  onClick={() =>
-                    setPlan((current) => ({
-                      ...current,
-                      resourceRequests: current.resourceRequests.filter(
-                        ({ id }) => id !== request.id,
-                      ),
-                    }))
-                  }
-                >
-                  Remove
-                </SmallButton>
-              ) : null}
-            </div>
-          ))}
-        </div>
-        {allowedActions.editOperationalPlan ? (
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            <button
-              className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold"
-              onClick={() =>
-                setPlan((current) => ({
-                  ...current,
-                  resourceRequests: [
-                    ...current.resourceRequests,
-                    {
-                      id: crypto.randomUUID(),
-                      label: '',
-                      position: current.resourceRequests.length,
-                      quantity: 1,
-                      type: 'staff' as const,
-                    },
-                  ],
-                }))
-              }
-              type="button"
-            >
-              Add requested resource
-            </button>
-            <button
-              className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-              disabled={isSaving}
-              onClick={async () => {
-                setSaveError(null)
-                setSaved(false)
-                setIsSaving(true)
-
-                try {
-                  const result = await saveEventOperationalPlanFn({
-                    data: normalizePlan(event.id, plan),
-                  })
-
-                  if (!result.ok) {
-                    setSaveError(result.error.message)
-                    return
-                  }
-
-                  setPlan((current) => normalizePositions(current))
-                  setSaved(true)
-                } catch (error) {
-                  setSaveError(
-                    error instanceof Error
-                      ? error.message
-                      : 'Operational plan could not be saved.',
-                  )
-                } finally {
-                  setIsSaving(false)
-                }
-              }}
-              type="button"
-            >
-              {isSaving ? 'Saving…' : 'Save operational plan'}
-            </button>
-            {saved ? (
-              <p className="font-bold text-emerald-800">Plan saved.</p>
-            ) : null}
-            {saveError ? (
-              <p className="font-bold text-red-700">{saveError}</p>
-            ) : null}
-          </div>
-        ) : null}
-      </section>
+      {proposalPreparation ? <ProposalPreparation.PlanSection /> : null}
     </main>
   )
-}
 
-type OperationalPlan = Parameters<typeof normalizePositions>[0]
+  if (proposalPreparation) {
+    return (
+      <ProposalPreparation.Root initial={proposalPreparation}>
+        {content}
+      </ProposalPreparation.Root>
+    )
+  }
+
+  return content
+}
 
 function NumberField({
   disabled,
@@ -2528,59 +1832,6 @@ function NumberField({
         value={value}
       />
     </label>
-  )
-}
-
-function SelectField<T extends string>({
-  disabled,
-  label,
-  onChange,
-  options,
-  value,
-}: {
-  disabled: boolean
-  label: string
-  onChange: (value: T) => void
-  options: T[]
-  value: T
-}) {
-  return (
-    <label className="grid gap-2 text-sm font-bold">
-      {label}
-      <select
-        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value as T)}
-        value={value}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option.replace('_', ' ')}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
-function SmallButton({
-  children,
-  disabled = false,
-  onClick,
-}: {
-  children: React.ReactNode
-  disabled?: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      className="self-end rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-extrabold disabled:opacity-40"
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
-      {children}
-    </button>
   )
 }
 
@@ -3013,139 +2264,6 @@ function DeniedProposalReplacementForm({
       </button>
     </div>
   )
-}
-
-function newCandidateSlot(
-  position: number,
-  theater: {
-    primary_venue_id: string
-    primary_venue_name: string | null
-    timezone: string | null
-    timezone_source: 'unknown' | 'inferred' | 'manual'
-  },
-) {
-  return {
-    durationMinutes: 120,
-    id: crypto.randomUUID(),
-    localStartsAt: '',
-    locationKind: 'primary_venue' as const,
-    locationName: theater.primary_venue_name ?? 'Primary Venue',
-    offSiteApproved: false,
-    position,
-    resourceId: theater.primary_venue_id,
-    timezoneName: theater.timezone ?? 'UTC',
-    timezoneSource: theater.timezone_source,
-  }
-}
-
-function moveItem<T>(items: T[], from: number, to: number) {
-  const next = [...items]
-  const [item] = next.splice(from, 1)
-
-  if (item !== undefined) next.splice(to, 0, item)
-  return next
-}
-
-function updateOccurrence(
-  setPlan: React.Dispatch<React.SetStateAction<OperationalPlan>>,
-  occurrenceId: string,
-  update: Partial<OperationalPlan['occurrences'][number]>,
-) {
-  setPlan((current) => ({
-    ...current,
-    occurrences: current.occurrences.map((occurrence) =>
-      occurrence.id === occurrenceId
-        ? { ...occurrence, ...update }
-        : occurrence,
-    ),
-  }))
-}
-
-function updateSlot(
-  setPlan: React.Dispatch<React.SetStateAction<OperationalPlan>>,
-  occurrenceId: string,
-  slotId: string,
-  update: Partial<
-    OperationalPlan['occurrences'][number]['candidateSlots'][number]
-  >,
-) {
-  setPlan((current) => ({
-    ...current,
-    occurrences: current.occurrences.map((occurrence) =>
-      occurrence.id === occurrenceId
-        ? {
-            ...occurrence,
-            candidateSlots: occurrence.candidateSlots.map((slot) =>
-              slot.id === slotId ? { ...slot, ...update } : slot,
-            ),
-          }
-        : occurrence,
-    ),
-  }))
-}
-
-function updateResource(
-  setPlan: React.Dispatch<React.SetStateAction<OperationalPlan>>,
-  requestId: string,
-  update: Partial<OperationalPlan['resourceRequests'][number]>,
-) {
-  setPlan((current) => ({
-    ...current,
-    resourceRequests: current.resourceRequests.map((request) =>
-      request.id === requestId ? { ...request, ...update } : request,
-    ),
-  }))
-}
-
-function normalizePositions(plan: {
-  minimumViableCast: number
-  occurrences: Array<{
-    candidateSlots: Array<{
-      durationMinutes: number
-      id: string
-      localStartsAt: string
-      locationKind: 'primary_venue' | 'off_site'
-      locationName: string
-      offSiteApproved: boolean
-      position: number
-      resourceId?: string
-      timezoneName: string
-      timezoneSource: 'unknown' | 'inferred' | 'manual'
-    }>
-    confirmedCandidateSlotId: string | null
-    id: string
-    position: number
-    type: 'rehearsal' | 'performance'
-    visibility: 'public' | 'internal'
-  }>
-  resourceRequests: Array<{
-    id: string
-    label: string
-    position: number
-    quantity: number
-    type: 'staff' | 'equipment' | 'other'
-  }>
-  targetCastSize: number
-}) {
-  return {
-    ...plan,
-    occurrences: plan.occurrences.map((occurrence, position) => ({
-      ...occurrence,
-      candidateSlots: occurrence.candidateSlots.map((slot, slotPosition) => ({
-        ...slot,
-        position: slotPosition,
-      })),
-      position,
-    })),
-    resourceRequests: plan.resourceRequests.map((request, position) => ({
-      ...request,
-      position,
-    })),
-  }
-}
-
-function normalizePlan(eventId: string, plan: OperationalPlan) {
-  return { eventId, ...normalizePositions(plan) }
 }
 
 function StateCard({ label, value }: { label: string; value: string }) {

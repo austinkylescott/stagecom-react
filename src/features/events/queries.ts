@@ -7,7 +7,12 @@ import {
   createSupabaseAnonClient,
   createSupabaseServiceRoleClient,
 } from '@/server/supabase/client'
-import { rankCandidateSlots } from './proposal-recommendations'
+import {
+  createProposalPreparationRecommendations,
+  createProposalPreparationReadModel,
+  orderByPosition,
+  orderOccurrences,
+} from './proposal-preparation/read-model'
 
 import type { z } from 'zod'
 import type {
@@ -305,29 +310,11 @@ export async function getManagedEventWorkspace(
   )
   const recommendations =
     view === 'operational'
-      ? rankCandidateSlots({
-          availability: availabilityResult.data.map((response) => ({
-            candidateSlotId: response.candidate_slot_id,
-            response: response.response,
-            userId: response.user_id,
-          })),
-          calls: callsResult.data.map((call) => ({
-            call: call.call,
-            occurrenceId: call.occurrence_id,
-            userId: call.user_id,
-          })),
+      ? createProposalPreparationRecommendations({
+          availability: availabilityResult.data,
+          calls: callsResult.data,
           commitments: primaryVenueCommitments,
-          occurrences: managedEvent.show_occurrences.map((occurrence) => ({
-            id: occurrence.id,
-            minimumViableCast: managedEvent.minimum_viable_cast ?? 1,
-            slots: occurrence.candidate_slots.map((slot) => ({
-              durationMinutes: slot.duration_minutes,
-              id: slot.id,
-              locationKind: slot.location_kind,
-              startsAt: slot.starts_at,
-            })),
-            type: occurrence.occurrence_type,
-          })),
+          event: managedEvent,
           proposedCastUserIds: managedEvent.show_proposed_cast.map(
             ({ user_id }) => user_id,
           ),
@@ -335,6 +322,43 @@ export async function getManagedEventWorkspace(
           turnoverBufferMinutes: access.data.theater.turnover_buffer_minutes,
         })
       : []
+  const orderedOccurrences = orderOccurrences(managedEvent.show_occurrences)
+  const orderedResourceRequests = orderByPosition(
+    managedEvent.show_resource_requests,
+  )
+  const proposalPreparation = createProposalPreparationReadModel({
+    acceptedCastMembers: visibleCast
+      .filter(({ status }) => status === 'accepted')
+      .map((castMember) => ({
+        displayName: castMember.profiles.display_name,
+        userId: castMember.user_id,
+      })),
+    capabilities: {
+      editOperationalPlan: canEditOperationalPlan,
+      selectProposedCast: canEditDraftProposal,
+      submitProposalRevision: canEditDraftProposal,
+      viewResourceRequests: view === 'operational',
+    },
+    event: {
+      ...managedEvent,
+      show_occurrences: orderedOccurrences,
+      show_resource_requests: orderedResourceRequests,
+    },
+    includeResourceRequests: view === 'operational',
+    proposedCastUserIds:
+      view === 'pending_invitee'
+        ? []
+        : managedEvent.show_proposed_cast.map(({ user_id }) => user_id),
+    recommendations,
+    theater: {
+      primaryVenueId: access.data.theater.primary_venue_id,
+      primaryVenueName:
+        access.data.theater.primary_venue_name ?? 'Primary Venue',
+      slug: access.data.theater.slug,
+      timezoneName: access.data.theater.timezone ?? 'UTC',
+      timezoneSource: access.data.theater.timezone_source,
+    },
+  })
 
   return ok({
     activeMembers:
@@ -375,23 +399,15 @@ export async function getManagedEventWorkspace(
       show_cast: visibleCast,
       show_leadership:
         view === 'pending_invitee' ? [] : managedEvent.show_leadership,
-      show_occurrences: managedEvent.show_occurrences
-        .sort((left, right) => left.position - right.position)
-        .map((occurrence) => ({
-          ...occurrence,
-          show_occurrence_calls: callsResult.data.filter(
-            (call) => call.occurrence_id === occurrence.id,
-          ),
-          show_candidate_slots: occurrence.candidate_slots.sort(
-            (left, right) => left.position - right.position,
-          ),
-        })),
+      show_occurrences: orderedOccurrences.map((occurrence) => ({
+        ...occurrence,
+        show_occurrence_calls: callsResult.data.filter(
+          (call) => call.occurrence_id === occurrence.id,
+        ),
+        show_candidate_slots: occurrence.candidate_slots,
+      })),
       show_resource_requests:
-        view === 'operational'
-          ? managedEvent.show_resource_requests.sort(
-              (left, right) => left.position - right.position,
-            )
-          : [],
+        view === 'operational' ? orderedResourceRequests : [],
       show_risk_management_decisions:
         view === 'operational'
           ? managedEvent.show_risk_management_decisions.sort((left, right) =>
@@ -413,9 +429,7 @@ export async function getManagedEventWorkspace(
       show_proposed_cast:
         view === 'pending_invitee' ? [] : managedEvent.show_proposed_cast,
     },
-    recommendations,
-    primaryVenueCommitments:
-      view === 'operational' ? primaryVenueCommitments : [],
+    proposalPreparation,
     theater: access.data.theater,
     view,
   })
