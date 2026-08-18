@@ -1,3 +1,8 @@
+/**
+ * One contract-driven interaction prototype, switchable by `scenario`,
+ * `surface`, and `viewport` on the dedicated dev route. STA-27 validates the
+ * approved actor/state matrix rather than comparing alternative visual designs.
+ */
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
@@ -39,6 +44,12 @@ import type {
 } from '../scenario-contract'
 
 type SeededScenario = (typeof operationalScenarios)[number]
+
+type ScenarioActionReference = {
+  action: ScenarioAction
+  focus: string
+  key: string
+}
 
 const prototypeRoute = '/dev/operational-workspaces-prototype'
 
@@ -112,10 +123,18 @@ function findScenario(value: unknown) {
 }
 
 function findSurface(value: unknown, scenario: SeededScenario) {
-  return (
-    operationalSurfaceIds.find((surface) => surface === value) ??
-    scenario.allowedStartingSurfaces[0]
+  const requestedSurface = operationalSurfaceIds.find(
+    (surface) => surface === value,
   )
+
+  if (
+    requestedSurface &&
+    getAllowedSurfaces(scenario).some((surface) => surface === requestedSurface)
+  ) {
+    return requestedSurface
+  }
+
+  return scenario.allowedStartingSurfaces[0]
 }
 
 function findViewport(value: unknown, scenario: SeededScenario) {
@@ -132,7 +151,7 @@ export function validateOperationalPrototypeSearch(
   const scenario = findScenario(search.scenario)
 
   return {
-    focus: typeof search.focus === 'string' ? search.focus : undefined,
+    focus: getFocusedAction(scenario, search.focus)?.focus,
     scenario: scenario.id,
     surface: findSurface(search.surface, scenario),
     viewport: findViewport(search.viewport, scenario),
@@ -151,9 +170,9 @@ export function OperationalWorkspacesPrototype({
   const scenario = findScenario(search.scenario)
   const surface = findSurface(search.surface, scenario)
   const isPhone = search.viewport === 'phone'
-  const [completedActions, setCompletedActions] = useState<readonly string[]>(
-    [],
-  )
+  const [completedOutcomes, setCompletedOutcomes] = useState<
+    Readonly<Partial<Record<string, string>>>
+  >({})
   const [dismissedNotifications, setDismissedNotifications] = useState<
     readonly OperationalConditionId[]
   >([])
@@ -164,10 +183,8 @@ export function OperationalWorkspacesPrototype({
       classification !== 'notification' || !dismissedNotifications.includes(id),
   )
 
-  function completeAction(label: string) {
-    setCompletedActions((current) =>
-      current.includes(label) ? current : [...current, label],
-    )
+  function completeAction(key: string, outcome: string) {
+    setCompletedOutcomes((current) => ({ ...current, [key]: outcome }))
   }
 
   function dismissNotification(id: OperationalConditionId) {
@@ -178,7 +195,9 @@ export function OperationalWorkspacesPrototype({
 
   return (
     <main className="min-h-screen bg-[#e7dfd1] pb-10 text-[var(--sea-ink)]">
-      <PrototypeControls scenario={scenario} search={search} />
+      {import.meta.env.DEV ? (
+        <PrototypeControls scenario={scenario} search={search} />
+      ) : null}
 
       <section
         aria-label={`${search.viewport} prototype preview`}
@@ -198,7 +217,7 @@ export function OperationalWorkspacesPrototype({
         ) : (
           <AuthenticatedExperience
             availableConditions={availableConditions}
-            completedActions={completedActions}
+            completedOutcomes={completedOutcomes}
             dismissNotification={dismissNotification}
             focusedAction={focusedAction}
             isPhone={isPhone}
@@ -211,9 +230,9 @@ export function OperationalWorkspacesPrototype({
 
       {focusedAction ? (
         <ActionPanel
-          action={focusedAction}
-          completed={completedActions.includes(focusedAction.label)}
+          actionReference={focusedAction}
           completeAction={completeAction}
+          selectedOutcome={completedOutcomes[focusedAction.key]}
           scenario={scenario}
           search={search}
         />
@@ -408,7 +427,7 @@ function PrototypeAppHeader({
 
 function AuthenticatedExperience({
   availableConditions,
-  completedActions,
+  completedOutcomes,
   dismissNotification,
   focusedAction,
   isPhone,
@@ -417,9 +436,9 @@ function AuthenticatedExperience({
   surface,
 }: {
   availableConditions: readonly SurfaceCondition[]
-  completedActions: readonly string[]
+  completedOutcomes: Readonly<Partial<Record<string, string>>>
   dismissNotification: (id: OperationalConditionId) => void
-  focusedAction?: ScenarioAction
+  focusedAction?: ScenarioActionReference
   isPhone: boolean
   scenario: SeededScenario
   search: PrototypeSearch
@@ -462,7 +481,7 @@ function AuthenticatedExperience({
           <JourneyContext scenario={scenario} surface={surface} />
           <SurfaceContent
             availableConditions={availableConditions}
-            completedActions={completedActions}
+            completedOutcomes={completedOutcomes}
             dismissNotification={dismissNotification}
             focusedAction={focusedAction}
             isPhone={isPhone}
@@ -611,6 +630,8 @@ function ScopeNavigation({
   search: PrototypeSearch
   surface: OperationalSurfaceId
 }) {
+  const allowedSurfaces = getAllowedSurfaces(scenario)
+
   return (
     <div className="border-b border-[var(--line)] bg-[var(--paper-strong)] px-4 py-3 sm:px-6">
       <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-[var(--theater-ink)]">
@@ -623,15 +644,19 @@ function ScopeNavigation({
           !isPhone && 'flex-wrap',
         )}
       >
-        {items.map((target) => (
-          <SurfaceLink
-            current={surface}
-            key={target}
-            scenario={scenario}
-            search={search}
-            target={target}
-          />
-        ))}
+        {items
+          .filter((target) =>
+            allowedSurfaces.some((allowed) => allowed === target),
+          )
+          .map((target) => (
+            <SurfaceLink
+              current={surface}
+              key={target}
+              scenario={scenario}
+              search={search}
+              target={target}
+            />
+          ))}
       </nav>
     </div>
   )
@@ -711,7 +736,7 @@ function JourneyContext({
 
 function SurfaceContent({
   availableConditions,
-  completedActions,
+  completedOutcomes,
   dismissNotification,
   focusedAction,
   isPhone,
@@ -720,9 +745,9 @@ function SurfaceContent({
   surface,
 }: {
   availableConditions: readonly SurfaceCondition[]
-  completedActions: readonly string[]
+  completedOutcomes: Readonly<Partial<Record<string, string>>>
   dismissNotification: (id: OperationalConditionId) => void
-  focusedAction?: ScenarioAction
+  focusedAction?: ScenarioActionReference
   isPhone: boolean
   scenario: SeededScenario
   search: PrototypeSearch
@@ -730,9 +755,9 @@ function SurfaceContent({
 }) {
   const isCalendar =
     surface === 'personal-calendar' || surface === 'theater-calendar'
-  const actions = [scenario.primaryAction, ...scenario.secondaryActions]
+  const actions = getScenarioActionReferences(scenario)
   const relevantActions = actions.filter(
-    (action) =>
+    ({ action }) =>
       action.destination === surface ||
       surface === scenario.allowedStartingSurfaces[0] ||
       scenario.navigationPath.some((pathSurface) => pathSurface === surface),
@@ -741,7 +766,7 @@ function SurfaceContent({
   if (surface === 'callsheet') {
     return (
       <CallsheetSurface
-        completedActions={completedActions}
+        completedOutcomes={completedOutcomes}
         conditions={availableConditions}
         dismissNotification={dismissNotification}
         isPhone={isPhone}
@@ -802,14 +827,14 @@ function SurfaceContent({
 }
 
 function CallsheetSurface({
-  completedActions,
+  completedOutcomes,
   conditions,
   dismissNotification,
   isPhone,
   scenario,
   search,
 }: {
-  completedActions: readonly string[]
+  completedOutcomes: Readonly<Partial<Record<string, string>>>
   conditions: readonly SurfaceCondition[]
   dismissNotification: (id: OperationalConditionId) => void
   isPhone: boolean
@@ -853,8 +878,8 @@ function CallsheetSurface({
           />
         ) : null}
         <ActionList
-          actions={[scenario.primaryAction, ...scenario.secondaryActions]}
-          completedActions={completedActions}
+          actions={getScenarioActionReferences(scenario)}
+          completedOutcomes={completedOutcomes}
           scenario={scenario}
           search={search}
           title="Your next paths"
@@ -1126,15 +1151,15 @@ function ClassificationIcon({
 
 function ActionList({
   actions,
-  completedActions = [],
+  completedOutcomes = {},
   focusedAction,
   scenario,
   search,
   title,
 }: {
-  actions: readonly ScenarioAction[]
-  completedActions?: readonly string[]
-  focusedAction?: ScenarioAction
+  actions: readonly ScenarioActionReference[]
+  completedOutcomes?: Readonly<Partial<Record<string, string>>>
+  focusedAction?: ScenarioActionReference
   scenario: SeededScenario
   search: PrototypeSearch
   title: string
@@ -1146,10 +1171,9 @@ function ActionList({
         <h2 className="text-base font-black">{title}</h2>
       </div>
       <div className="mt-3 grid gap-2">
-        {actions.map((action, index) => {
-          const focus = index === 0 ? 'primary' : `secondary-${index - 1}`
-          const completed = completedActions.includes(action.label)
-          const active = focusedAction?.label === action.label
+        {actions.map(({ action, focus, key }, index) => {
+          const completed = completedOutcomes[key] !== undefined
+          const active = focusedAction?.key === key
 
           return (
             <Link
@@ -1160,7 +1184,7 @@ function ActionList({
                   : 'border-[var(--line)] bg-white text-[var(--sea-ink)] hover:border-[var(--theater)]',
                 active && 'ring-2 ring-[var(--focus)]/30',
               )}
-              key={`${action.label}-${index}`}
+              key={key}
               search={{
                 ...search,
                 focus,
@@ -1275,6 +1299,9 @@ function CalendarSurface({
   const disclosure = personal
     ? scenario.calendarDisclosure.personalCalendar
     : scenario.calendarDisclosure.theaterCalendar
+  const occupancy = conditions.filter(
+    ({ classification }) => classification === 'calendar-occupancy',
+  )
 
   return (
     <div className="grid gap-5">
@@ -1295,11 +1322,8 @@ function CalendarSurface({
         </div>
       </div>
       <div className={cn('grid gap-3', !isPhone && !personal && 'grid-cols-5')}>
-        {(conditions.length > 0 ? conditions : getScenarioConditions(scenario))
-          .filter(
-            ({ classification }) => classification === 'calendar-occupancy',
-          )
-          .map((condition, index) => (
+        {occupancy.length > 0 ? (
+          occupancy.map((condition, index) => (
             <article
               className={cn(
                 'rounded-md border-l-4 bg-white p-4 shadow-sm',
@@ -1321,7 +1345,12 @@ function CalendarSurface({
                   : '6:30–9:00 PM · Primary Venue'}
               </p>
             </article>
-          ))}
+          ))
+        ) : (
+          <div className="rounded-md border border-dashed border-[var(--line)] bg-white/60 p-6 text-center text-sm font-semibold text-[var(--sea-ink-soft)]">
+            No Calendar occupancy is disclosed for this person in this scope.
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1481,12 +1510,12 @@ function PublicExperience({
               Lantern Theater presents
             </p>
             <h1 className="display-title mt-5 text-5xl leading-[0.95] text-[#39270d] sm:text-7xl">
-              {cancelled ? 'Night Music' : 'The Tempest'}
+              {cancelled ? 'Night Music' : 'The Winter’s Tale'}
             </h1>
             <p className="mt-5 max-w-lg text-lg font-bold leading-7 text-[#4e3511]">
               {cancelled
                 ? 'This program remains discoverable so patrons can verify its status.'
-                : 'A storm, an island, and one last chance to set the past right.'}
+                : 'A story of time, repair, and one improbable reunion.'}
             </p>
           </section>
           <aside className="grid content-center gap-5 bg-[var(--paper-strong)] p-6 sm:p-10">
@@ -1561,7 +1590,7 @@ function PublicExperience({
             cancelled={false}
             scenario={scenario}
             search={search}
-            title="The Tempest"
+            title="The Winter’s Tale"
           />
           <PublicEventCard
             cancelled
@@ -1629,18 +1658,19 @@ function PublicEventCard({
 }
 
 function ActionPanel({
-  action,
-  completed,
+  actionReference,
   completeAction,
   scenario,
   search,
+  selectedOutcome,
 }: {
-  action: ScenarioAction
-  completed: boolean
-  completeAction: (label: string) => void
+  actionReference: ScenarioActionReference
+  completeAction: (key: string, outcome: string) => void
   scenario: SeededScenario
   search: PrototypeSearch
+  selectedOutcome?: string
 }) {
+  const { action, key } = actionReference
   const outcomes = getActionOutcomes(action)
   const alternateOutcomes =
     'alternateOutcomes' in scenario ? scenario.alternateOutcomes : undefined
@@ -1652,7 +1682,7 @@ function ActionPanel({
     >
       <div className="flex items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-md bg-[var(--event-soft)] text-[var(--event-ink)]">
-          {completed ? (
+          {selectedOutcome ? (
             <Check className="size-5" />
           ) : (
             <Sparkles className="size-5" />
@@ -1660,7 +1690,7 @@ function ActionPanel({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-[var(--event-ink)]">
-            {completed
+            {selectedOutcome
               ? 'Prototype outcome recorded'
               : surfaceLabels[action.destination]}
           </p>
@@ -1678,9 +1708,9 @@ function ActionPanel({
           <X className="size-4" />
         </Link>
       </div>
-      {completed ? (
+      {selectedOutcome ? (
         <p className="mt-4 rounded-md bg-green-50 px-4 py-3 text-sm font-bold text-green-800">
-          The shared state changed independently; any related Notification
+          {getOutcomeResult(action, selectedOutcome)} Any related Notification
           remains a personal alert until dismissed.
         </p>
       ) : (
@@ -1688,7 +1718,7 @@ function ActionPanel({
           {outcomes.map((outcome, index) => (
             <Button
               key={outcome}
-              onClick={() => completeAction(action.label)}
+              onClick={() => completeAction(key, outcome)}
               variant={index === 0 ? 'default' : 'outline'}
             >
               {outcome}
@@ -1714,17 +1744,24 @@ function ActionPanel({
   )
 }
 
-function getFocusedAction(scenario: SeededScenario, focus?: string) {
-  if (focus === 'primary') {
-    return scenario.primaryAction
-  }
+function getScenarioActionReferences(scenario: SeededScenario) {
+  return [scenario.primaryAction, ...scenario.secondaryActions].map(
+    (action, index) => {
+      const focus = index === 0 ? 'primary' : `secondary-${index - 1}`
+      return {
+        action,
+        focus,
+        key: `${scenario.id}:${focus}`,
+      }
+    },
+  )
+}
 
-  if (focus?.startsWith('secondary-')) {
-    const index = Number(focus.replace('secondary-', ''))
-    return scenario.secondaryActions[index]
-  }
-
-  return undefined
+function getFocusedAction(scenario: SeededScenario, focus: unknown) {
+  if (typeof focus !== 'string') return undefined
+  return getScenarioActionReferences(scenario).find(
+    (actionReference) => actionReference.focus === focus,
+  )
 }
 
 function getActionOutcomes(action: ScenarioAction) {
@@ -1759,6 +1796,34 @@ function getActionOutcomes(action: ScenarioAction) {
   return ['Continue']
 }
 
+function getOutcomeResult(action: ScenarioAction, outcome: string) {
+  if (action.conditionId === 'admin-invitation-awaits-response') {
+    return outcome.startsWith('Accept')
+      ? 'Admin authority is accepted; Operator navigation and shared work become available.'
+      : 'Admin authority is declined; the recipient remains a base Theater Member.'
+  }
+
+  if (action.conditionId === 'ownership-transfer-awaits-response') {
+    return outcome.startsWith('Accept')
+      ? 'Ownership transfers atomically; the former Owner remains an Admin by default.'
+      : 'The transfer is declined; the current Owner retains final authority.'
+  }
+
+  if (action.conditionId === 'cast-invitation-awaits-response') {
+    return outcome.startsWith('Accept')
+      ? 'Cast membership is accepted; authorized Candidate Slots and Calls become visible.'
+      : 'The invitation is declined; ordinary Theater membership remains unchanged.'
+  }
+
+  if (action.conditionId === 'staff-assignment-awaits-response') {
+    return outcome.startsWith('Accept')
+      ? 'The Event Staff Assignment is accepted; scoped responsibility and Calls become visible.'
+      : 'The assignment is declined; the staffing need returns to the Work Queue.'
+  }
+
+  return `${outcome} is recorded as this walkthrough’s distinct state transition.`
+}
+
 type SurfaceCondition = {
   classification: OperationalConditionClassification
   expectedResolution: string
@@ -1775,6 +1840,66 @@ function getScenarioConditions(scenario: SeededScenario) {
       label: operationalConditions[id].label,
     })),
   )
+}
+
+function getAllowedSurfaces(scenario: SeededScenario) {
+  if (
+    scenario.allowedStartingSurfaces.some(
+      (startingSurface) => startingSurface === 'public-theater',
+    )
+  ) {
+    return ['public-theater', 'public-event'] as const
+  }
+
+  const allowed = new Set<OperationalSurfaceId>([
+    'callsheet',
+    'personal-calendar',
+  ])
+
+  for (const surface of scenario.navigationPath) allowed.add(surface)
+  for (const { action } of getScenarioActionReferences(scenario)) {
+    allowed.add(action.destination)
+  }
+  for (const { id } of getScenarioConditions(scenario)) {
+    for (const surface of operationalConditions[id].surfaces) {
+      if (surface !== 'public-theater' && surface !== 'public-event') {
+        allowed.add(surface)
+      }
+    }
+  }
+
+  const isOperator = scenario.relationshipLabels.some(
+    (relationship) => relationship === 'Theater Operator',
+  )
+  if (isOperator) {
+    for (const surface of [
+      ...theaterNavigation,
+      ...eventNavigation,
+      'people-invitations',
+      'people-access-and-roles',
+      'settings-event-policy',
+      'settings-venue-and-calendar',
+      'settings-ownership-and-security',
+    ] as const) {
+      allowed.add(surface)
+    }
+  }
+
+  const hasEventRelationship = scenario.personas.some((persona) =>
+    [
+      'producer',
+      'director',
+      'cast-member',
+      'reviewer',
+      'event-staff-member',
+      'multi-role-person',
+    ].some((eventPersona) => eventPersona === persona),
+  )
+  if (hasEventRelationship) {
+    for (const surface of eventNavigation) allowed.add(surface)
+  }
+
+  return operationalSurfaceIds.filter((surface) => allowed.has(surface))
 }
 
 function getConditionsForSurface(
