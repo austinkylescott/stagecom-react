@@ -149,14 +149,14 @@ export const operationalConditions = defineOperationalConditions({
     surfaces: ['callsheet', 'theater-operations', 'event-cast-and-team'],
   },
   'cast-invitation-awaits-response': {
-    authorizedAudience: ['Invited Cast Member'],
+    authorizedAudience: ['Cast invitee'],
     classification: 'personal-commitment',
     expectedResolution: 'Accept or decline the Cast invitation.',
     label: 'Cast invitation awaits response',
     surfaces: ['callsheet', 'event-overview', 'event-cast-and-team'],
   },
   'staff-assignment-awaits-response': {
-    authorizedAudience: ['Invited Event staff member'],
+    authorizedAudience: ['Event staff offer recipient'],
     classification: 'personal-commitment',
     expectedResolution: 'Accept or decline the Event Staff Assignment.',
     label: 'Event Staff Assignment awaits response',
@@ -253,7 +253,7 @@ export const operationalConditions = defineOperationalConditions({
     surfaces: ['theater-operations', 'event-overview', 'event-history'],
   },
   'cast-invitation-notification': {
-    authorizedAudience: ['Invited Cast Member'],
+    authorizedAudience: ['Cast invitee'],
     classification: 'notification',
     expectedResolution:
       'Read or dismiss the alert without changing the invitation state.',
@@ -269,7 +269,7 @@ export const operationalConditions = defineOperationalConditions({
     surfaces: ['callsheet'],
   },
   'staff-assignment-notification': {
-    authorizedAudience: ['Invited Event staff member'],
+    authorizedAudience: ['Event staff offer recipient'],
     classification: 'notification',
     expectedResolution:
       'Read or dismiss the alert without changing the assignment state.',
@@ -382,7 +382,7 @@ export const operationalConditions = defineOperationalConditions({
     surfaces: ['event-overview', 'event-cast-and-team'],
   },
   'staff-assignment-offer-summary': {
-    authorizedAudience: ['Invited Event staff member'],
+    authorizedAudience: ['Event staff offer recipient'],
     classification: 'ordinary-information',
     expectedResolution:
       'Use the responsibility and necessary Event summary to decide the assignment.',
@@ -805,7 +805,7 @@ export const operationalScenarios = defineOperationalScenarios([
     ],
     title: 'Director coordinates Cast and participation',
     visibleInformation: [
-      'Accepted and invited Cast needed to build the Proposed Cast',
+      'Accepted Cast and Cast invitees needed to build the Proposed Cast',
       'Availability Responses for authorized Candidate Slots',
       'Occurrence Call assignments for the Event',
       'No role switcher between personal and Event context',
@@ -844,9 +844,9 @@ export const operationalScenarios = defineOperationalScenarios([
       conditionId: 'cast-invitation-awaits-response',
       destination: 'event-cast-and-team',
       label: 'Accept or decline The Tempest Cast invitation',
-      relationshipLabel: 'Lantern Theater · The Tempest · invited Cast Member',
+      relationshipLabel: 'Lantern Theater · The Tempest · Cast invitee',
     },
-    relationshipLabels: ['Theater Member', 'Invited Cast Member'],
+    relationshipLabels: ['Theater Member', 'Cast invitee'],
     relevantScope: [
       'Cross-Theater Callsheet',
       'The Tempest Cast invitation preview',
@@ -857,8 +857,7 @@ export const operationalScenarios = defineOperationalScenarios([
         conditionId: 'cast-invitation-awaits-response',
         destination: 'event-overview',
         label: 'Review the Event summary included with the invitation',
-        relationshipLabel:
-          'Lantern Theater · The Tempest · invited Cast Member',
+        relationshipLabel: 'Lantern Theater · The Tempest · Cast invitee',
       },
     ],
     title: 'Theater Member decides a Cast invitation',
@@ -1028,9 +1027,9 @@ export const operationalScenarios = defineOperationalScenarios([
       destination: 'event-cast-and-team',
       label: 'Accept or decline The Tempest stage manager assignment',
       relationshipLabel:
-        'Lantern Theater · The Tempest · invited Event staff member',
+        'Lantern Theater · The Tempest · Event staff offer recipient',
     },
-    relationshipLabels: ['Theater Member', 'Invited Event staff member'],
+    relationshipLabels: ['Theater Member', 'Event staff offer recipient'],
     relevantScope: [
       'Cross-Theater Callsheet',
       'The Tempest assignment offer and necessary Event summary',
@@ -1042,7 +1041,7 @@ export const operationalScenarios = defineOperationalScenarios([
         destination: 'event-overview',
         label: 'Review the proposed responsibility and necessary Event summary',
         relationshipLabel:
-          'Lantern Theater · The Tempest · invited Event staff member',
+          'Lantern Theater · The Tempest · Event staff offer recipient',
       },
     ],
     title: 'Theater Member decides an Event Staff Assignment',
@@ -1215,9 +1214,9 @@ export const operationalScenarios = defineOperationalScenarios([
       conditionId: 'admin-invitation-awaits-response',
       destination: 'callsheet',
       label: 'Accept or decline Lantern Theater Admin authority',
-      relationshipLabel: 'Lantern Theater · invited Admin',
+      relationshipLabel: 'Lantern Theater · Admin Invitation recipient',
     },
-    relationshipLabels: ['Theater Member', 'Invited Admin'],
+    relationshipLabels: ['Theater Member', 'Admin Invitation recipient'],
     relevantScope: [
       'Cross-Theater Callsheet',
       'Lantern Theater Member-visible destinations before acceptance',
