@@ -57,9 +57,12 @@ base Member, no-Theater, and public journeys, it includes:
 - Producer + Director + Cast Member and Admin + Reviewer + Producer multi-role
   combinations;
 - pending Admin acceptance and declined invitation outcomes;
+- separate pending and accepted Cast/Event-staff phases so acceptance gates Calls
+  and scoped disclosure;
 - revoked Admin access with immediate Member-level fallback;
 - both eligible and blocked self-authored Proposal review;
 - both Theater and Event Publication readiness;
+- pre-submission planning and post-review requested Proposal edits;
 - upcoming Calls as personal commitments and Calendar occupancy; and
 - upcoming and cancelled public Event discovery.
 

@@ -170,6 +170,14 @@ export const operationalConditions = defineOperationalConditions({
     label: 'Event plan needs Producer work',
     surfaces: ['callsheet', 'event-overview', 'event-schedule-and-plan'],
   },
+  'proposal-edits-requested': {
+    authorizedAudience: ['Producer'],
+    classification: 'personal-commitment',
+    expectedResolution:
+      'Address the requested changes and submit a new immutable Proposal Revision.',
+    label: 'Proposal Revision changes were requested',
+    surfaces: ['callsheet', 'event-overview', 'event-review'],
+  },
   'director-cast-plan-needs-work': {
     authorizedAudience: ['Director'],
     classification: 'personal-commitment',
@@ -373,6 +381,14 @@ export const operationalConditions = defineOperationalConditions({
     label: 'Accepted Event Staff Assignment',
     surfaces: ['event-overview', 'event-cast-and-team'],
   },
+  'staff-assignment-offer-summary': {
+    authorizedAudience: ['Invited Event staff member'],
+    classification: 'ordinary-information',
+    expectedResolution:
+      'Use the responsibility and necessary Event summary to decide the assignment.',
+    label: 'Proposed Event Staff Assignment',
+    surfaces: ['event-overview', 'event-cast-and-team'],
+  },
   'owner-governance-summary': {
     authorizedAudience: ['Owner'],
     classification: 'ordinary-information',
@@ -386,7 +402,7 @@ export const operationalConditions = defineOperationalConditions({
     classification: 'ordinary-information',
     expectedResolution: 'Open the canonical published Event page.',
     label: 'Upcoming published Event',
-    surfaces: ['public-theater', 'public-event'],
+    surfaces: ['theater-events', 'public-theater', 'public-event'],
   },
   'published-event-cancelled': {
     authorizedAudience: ['Public visitor'],
@@ -551,9 +567,10 @@ export const operationalScenarios = defineOperationalScenarios([
       {
         conditionId: 'owner-self-approval-override-eligible',
         destination: 'event-review',
-        label: 'Use the eligible, reasoned self-approval override',
+        label:
+          'Use the eligible, reasoned override for The Seagull Proposal Revision 1',
         relationshipLabel:
-          'Lantern Theater · eligible Owner and Proposal author',
+          'Lantern Theater · The Seagull · eligible Owner and Proposal author',
       },
       {
         conditionId: 'owner-governance-summary',
@@ -664,6 +681,7 @@ export const operationalScenarios = defineOperationalScenarios([
         'counteroffer-awaits-producer',
         'producer-public-content-incomplete',
         'producer-plan-needs-work',
+        'proposal-edits-requested',
       ],
       'work-queue': [],
       'operational-exception': ['counteroffer-nears-expiry'],
@@ -716,8 +734,15 @@ export const operationalScenarios = defineOperationalScenarios([
         label: 'Complete the operational plan for The Tempest',
         relationshipLabel: 'Lantern Theater · The Tempest · Producer',
       },
+      {
+        conditionId: 'proposal-edits-requested',
+        destination: 'event-review',
+        label: 'Address requested edits for Night Music Proposal Revision 2',
+        relationshipLabel: 'Harbor Players · Night Music · Producer',
+      },
     ],
-    title: 'Producer resolves plan, Counteroffer, and public-content work',
+    title:
+      'Producer resolves plan, requested edits, Counteroffer, and public-content work',
     visibleInformation: [
       'Independent Proposal, schedule, operational, and Publication state for led Events',
       'Counteroffer expiry and temporary-hold context',
@@ -790,19 +815,75 @@ export const operationalScenarios = defineOperationalScenarios([
     allowedStartingSurfaces: ['callsheet'],
     calendarDisclosure: {
       personalCalendar:
-        'Shows accepted Event participation and the person’s required and optional Calls.',
+        'Adds no Event commitment or Call before the invitation is accepted.',
+      theaterCalendar:
+        'Retains base-Member opaque occupancy until Cast participation is accepted.',
+    },
+    conditions: {
+      'personal-commitment': ['cast-invitation-awaits-response'],
+      'work-queue': [],
+      'operational-exception': [],
+      notification: ['cast-invitation-notification'],
+      'calendar-occupancy': ['opaque-primary-venue-occupancy'],
+      'ordinary-information': [],
+    },
+    forbiddenDisclosures: [
+      'Other Cast Members’ private Availability Responses',
+      'Candidate Slots, Calls, and accepted-Cast information before acceptance',
+      'Internal Proposal review controls and deliberation',
+      'Unrelated private Event and Schedule Block details',
+    ],
+    id: 'cast-invitation-awaits-theater-member',
+    alternateOutcomes: [
+      'Decline the Cast invitation and retain ordinary Theater membership.',
+    ],
+    navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
+    personas: ['theater-member'],
+    primaryViewport: 'phone',
+    primaryAction: {
+      conditionId: 'cast-invitation-awaits-response',
+      destination: 'event-cast-and-team',
+      label: 'Accept or decline The Tempest Cast invitation',
+      relationshipLabel: 'Lantern Theater · The Tempest · invited Cast Member',
+    },
+    relationshipLabels: ['Theater Member', 'Invited Cast Member'],
+    relevantScope: [
+      'Cross-Theater Callsheet',
+      'The Tempest Cast invitation preview',
+      'Member-level Calendar disclosure before acceptance',
+    ],
+    secondaryActions: [
+      {
+        conditionId: 'cast-invitation-awaits-response',
+        destination: 'event-overview',
+        label: 'Review the Event summary included with the invitation',
+        relationshipLabel:
+          'Lantern Theater · The Tempest · invited Cast Member',
+      },
+    ],
+    title: 'Theater Member decides a Cast invitation',
+    visibleInformation: [
+      'Invitation state, inviter, role, and enough Event summary to decide',
+      'No Cast membership before explicit acceptance',
+      'The effect of accepting or declining participation',
+    ],
+  },
+  {
+    allowedStartingSurfaces: ['callsheet'],
+    calendarDisclosure: {
+      personalCalendar:
+        'Shows accepted Event participation and the Cast Member’s required and optional Calls.',
       theaterCalendar:
         'Shows full detail for the Cast Member’s Event and opaque occupancy for unrelated private Events.',
     },
     conditions: {
       'personal-commitment': [
-        'cast-invitation-awaits-response',
         'availability-response-required',
         'occurrence-call-needs-review',
       ],
       'work-queue': [],
       'operational-exception': [],
-      notification: ['cast-invitation-notification'],
+      notification: [],
       'calendar-occupancy': [
         'personal-event-commitment',
         'personal-occurrence-call',
@@ -815,20 +896,17 @@ export const operationalScenarios = defineOperationalScenarios([
       'Internal Proposal review controls and deliberation',
       'Unrelated private Event and Schedule Block details',
     ],
-    id: 'cast-member-invitation-availability-and-calls',
-    alternateOutcomes: [
-      'Decline the Cast invitation and retain ordinary Theater membership.',
-    ],
-    navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
+    id: 'accepted-cast-availability-calls-and-withdrawal',
+    navigationPath: ['callsheet', 'event-overview', 'event-schedule-and-plan'],
     personas: ['cast-member'],
     primaryViewport: 'phone',
     primaryAction: {
-      conditionId: 'cast-invitation-awaits-response',
-      destination: 'event-cast-and-team',
-      label: 'Accept or decline The Tempest Cast invitation',
-      relationshipLabel: 'Lantern Theater · The Tempest · invited Cast Member',
+      conditionId: 'availability-response-required',
+      destination: 'event-schedule-and-plan',
+      label: 'Respond to The Tempest first-rehearsal Candidate Slots',
+      relationshipLabel: 'Lantern Theater · The Tempest · Cast Member',
     },
-    relationshipLabels: ['Invited Cast Member', 'Cast Member after acceptance'],
+    relationshipLabels: ['Cast Member'],
     relevantScope: [
       'Cross-Theater Callsheet',
       'The Tempest Event summary and authorized Cast information',
@@ -836,24 +914,23 @@ export const operationalScenarios = defineOperationalScenarios([
     ],
     secondaryActions: [
       {
-        conditionId: 'availability-response-required',
-        destination: 'event-schedule-and-plan',
-        label: 'Respond to the first-rehearsal Candidate Slots',
+        conditionId: 'personal-occurrence-call',
+        destination: 'personal-calendar',
+        label: 'Review The Tempest’s next required rehearsal Call',
         relationshipLabel: 'Lantern Theater · The Tempest · Cast Member',
       },
       {
-        conditionId: 'personal-occurrence-call',
-        destination: 'personal-calendar',
-        label: 'Review the next required rehearsal Call',
+        destination: 'event-cast-and-team',
+        label: 'Withdraw from The Tempest when participation cannot continue',
         relationshipLabel: 'Lantern Theater · The Tempest · Cast Member',
       },
     ],
-    title: 'Cast Member responds to invitation, availability, and Calls',
+    title: 'Accepted Cast Member manages availability, Calls, and withdrawal',
     visibleInformation: [
-      'Invitation state before participation begins',
       'Authorized Event summary and role-appropriate Cast information',
       'Only Candidate Slots that require this person’s response',
       'Personal required, optional, and not-called participation',
+      'A truthful withdrawal action with its operational consequences',
     ],
   },
   {
@@ -921,18 +998,73 @@ export const operationalScenarios = defineOperationalScenarios([
     allowedStartingSurfaces: ['callsheet'],
     calendarDisclosure: {
       personalCalendar:
+        'Adds no Event commitment or Call before the assignment is accepted.',
+      theaterCalendar:
+        'Retains base-Member opaque occupancy until the assignment is accepted.',
+    },
+    conditions: {
+      'personal-commitment': ['staff-assignment-awaits-response'],
+      'work-queue': [],
+      'operational-exception': [],
+      notification: ['staff-assignment-notification'],
+      'calendar-occupancy': ['opaque-primary-venue-occupancy'],
+      'ordinary-information': ['staff-assignment-offer-summary'],
+    },
+    forbiddenDisclosures: [
+      'Automatic Cast membership or Cast-only participation detail',
+      'Assigned Occurrences, Calls, and accepted responsibility before acceptance',
+      'Occurrences to which the staff member is not assigned or called',
+      'Proposal review, Publication, and Theater administration controls',
+    ],
+    id: 'staff-assignment-awaits-theater-member',
+    alternateOutcomes: [
+      'Decline the Event Staff Assignment; the staffing need returns to unresolved.',
+    ],
+    navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
+    personas: ['theater-member'],
+    primaryViewport: 'phone',
+    primaryAction: {
+      conditionId: 'staff-assignment-awaits-response',
+      destination: 'event-cast-and-team',
+      label: 'Accept or decline The Tempest stage manager assignment',
+      relationshipLabel:
+        'Lantern Theater · The Tempest · invited Event staff member',
+    },
+    relationshipLabels: ['Theater Member', 'Invited Event staff member'],
+    relevantScope: [
+      'Cross-Theater Callsheet',
+      'The Tempest assignment offer and necessary Event summary',
+      'Member-level Calendar disclosure before acceptance',
+    ],
+    secondaryActions: [
+      {
+        conditionId: 'staff-assignment-offer-summary',
+        destination: 'event-overview',
+        label: 'Review the proposed responsibility and necessary Event summary',
+        relationshipLabel:
+          'Lantern Theater · The Tempest · invited Event staff member',
+      },
+    ],
+    title: 'Theater Member decides an Event Staff Assignment',
+    visibleInformation: [
+      'Assignment responsibility, inviter, and response state',
+      'Enough Event summary to decide without accepted-only logistics',
+      'No Event staff relationship before explicit acceptance',
+    ],
+  },
+  {
+    allowedStartingSurfaces: ['callsheet'],
+    calendarDisclosure: {
+      personalCalendar:
         'Shows only accepted Event Staff Assignments and selected Occurrence Calls.',
       theaterCalendar:
         'Shows Event detail needed for the assignment and opaque unrelated occupancy.',
     },
     conditions: {
-      'personal-commitment': [
-        'staff-assignment-awaits-response',
-        'occurrence-call-needs-review',
-      ],
+      'personal-commitment': ['occurrence-call-needs-review'],
       'work-queue': [],
       'operational-exception': [],
-      notification: ['staff-assignment-notification'],
+      notification: [],
       'calendar-occupancy': [
         'personal-occurrence-call',
         'authorized-event-occupancy',
@@ -947,24 +1079,17 @@ export const operationalScenarios = defineOperationalScenarios([
       'Occurrences to which the staff member is not assigned or called',
       'Proposal review, Publication, and Theater administration controls',
     ],
-    id: 'event-staff-assignment-and-calls',
-    alternateOutcomes: [
-      'Decline the Event Staff Assignment; the staffing need returns to unresolved.',
-    ],
-    navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
+    id: 'accepted-event-staff-responsibility-and-calls',
+    navigationPath: ['callsheet', 'event-overview'],
     personas: ['event-staff-member'],
     primaryViewport: 'phone',
     primaryAction: {
-      conditionId: 'staff-assignment-awaits-response',
-      destination: 'event-cast-and-team',
-      label: 'Accept or decline The Tempest stage manager assignment',
-      relationshipLabel:
-        'Lantern Theater · The Tempest · invited Event staff member',
+      conditionId: 'occurrence-call-needs-review',
+      destination: 'event-overview',
+      label: 'Review The Tempest’s first technical rehearsal Call',
+      relationshipLabel: 'Lantern Theater · The Tempest · stage manager',
     },
-    relationshipLabels: [
-      'Invited Event staff member',
-      'Event staff member after acceptance',
-    ],
+    relationshipLabels: ['Event staff member', 'Stage manager'],
     relevantScope: [
       'Cross-Theater Callsheet',
       'The Tempest summary and scoped Cast & Team information',
@@ -974,21 +1099,20 @@ export const operationalScenarios = defineOperationalScenarios([
       {
         conditionId: 'personal-occurrence-call',
         destination: 'personal-calendar',
-        label: 'Review the first technical rehearsal Call',
+        label: 'Open The Tempest’s first technical rehearsal occupancy',
         relationshipLabel: 'Lantern Theater · The Tempest · stage manager',
       },
       {
         conditionId: 'accepted-staff-responsibility',
-        destination: 'event-overview',
-        label: 'Review responsibility and necessary logistics',
+        destination: 'event-cast-and-team',
+        label: 'Review The Tempest stage manager responsibility and logistics',
         relationshipLabel: 'Lantern Theater · The Tempest · stage manager',
       },
     ],
-    title: 'Event staff member accepts bounded responsibility',
+    title: 'Accepted Event staff member fulfills bounded responsibility',
     visibleInformation: [
-      'Assignment responsibility and response state',
-      'Event summary needed to fulfill the assignment',
-      'Only selected Occurrences, Calls, and necessary logistics',
+      'Accepted assignment responsibility and necessary Event summary',
+      'Only assigned Occurrences, Calls, and necessary logistics',
       'Staff relationship kept separate from Cast membership',
     ],
   },
