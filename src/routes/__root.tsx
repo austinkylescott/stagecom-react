@@ -46,15 +46,19 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootRoute() {
-  const isAppRoute = useRouterState({
-    select: (state) =>
-      state.location.pathname === '/app' ||
-      state.location.pathname.startsWith('/app/'),
+  const { isAppRoute, isOperationalPrototype } = useRouterState({
+    select: (state) => ({
+      isAppRoute:
+        state.location.pathname === '/app' ||
+        state.location.pathname.startsWith('/app/'),
+      isOperationalPrototype:
+        state.location.pathname === '/dev/operational-workspaces-prototype',
+    }),
   })
 
   return (
     <>
-      {isAppRoute ? null : <PublicNav />}
+      {isAppRoute || isOperationalPrototype ? null : <PublicNav />}
       <Outlet />
     </>
   )
