@@ -4,7 +4,7 @@
  * approved actor/state matrix rather than comparing alternative visual designs.
  */
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -167,6 +167,7 @@ type OperationalWorkspacesPrototypeProps = {
 export function OperationalWorkspacesPrototype({
   search,
 }: OperationalWorkspacesPrototypeProps) {
+  const navigate = useNavigate({ from: prototypeRoute })
   const scenario = findScenario(search.scenario)
   const surface = findSurface(search.surface, scenario)
   const isPhone = search.viewport === 'phone'
@@ -180,11 +181,35 @@ export function OperationalWorkspacesPrototype({
   const focusedAction = getFocusedAction(scenario, search.focus)
   const availableConditions = getConditionsForSurface(scenario, surface).filter(
     ({ classification, id }) =>
-      classification !== 'notification' || !dismissedNotifications.includes(id),
+      (classification !== 'notification' ||
+        !dismissedNotifications.includes(id)) &&
+      !getScenarioActionReferences(scenario).some(
+        ({ action, key }) =>
+          getActionConditionId(action) === id &&
+          completedOutcomes[key] !== undefined,
+      ),
   )
 
   function completeAction(key: string, outcome: string) {
     setCompletedOutcomes((current) => ({ ...current, [key]: outcome }))
+    const actionReference = getScenarioActionReferences(scenario).find(
+      (candidate) => candidate.key === key,
+    )
+    const transition = actionReference
+      ? getOutcomeTransition(actionReference.action, outcome)
+      : undefined
+
+    if (transition) {
+      void navigate({
+        search: {
+          focus: undefined,
+          scenario: transition.id,
+          surface: transition.allowedStartingSurfaces[0],
+          viewport: transition.primaryViewport,
+        },
+        to: prototypeRoute,
+      })
+    }
   }
 
   function dismissNotification(id: OperationalConditionId) {
@@ -1757,6 +1782,10 @@ function getScenarioActionReferences(scenario: SeededScenario) {
   )
 }
 
+function getActionConditionId(action: ScenarioAction) {
+  return action.conditionId
+}
+
 function getFocusedAction(scenario: SeededScenario, focus: unknown) {
   if (typeof focus !== 'string') return undefined
   return getScenarioActionReferences(scenario).find(
@@ -1824,6 +1853,44 @@ function getOutcomeResult(action: ScenarioAction, outcome: string) {
   return `${outcome} is recorded as this walkthrough’s distinct state transition.`
 }
 
+function getOutcomeTransition(action: ScenarioAction, outcome: string) {
+  const accepted = outcome.startsWith('Accept')
+
+  if (action.conditionId === 'admin-invitation-awaits-response') {
+    return findScenario(
+      accepted
+        ? 'admin-staffing-calendar-and-successorship'
+        : 'base-member-calendar-and-people',
+    )
+  }
+
+  if (action.conditionId === 'ownership-transfer-awaits-response') {
+    return findScenario(
+      accepted
+        ? 'owner-operator-pressure'
+        : 'admin-staffing-calendar-and-successorship',
+    )
+  }
+
+  if (action.conditionId === 'cast-invitation-awaits-response') {
+    return findScenario(
+      accepted
+        ? 'accepted-cast-availability-calls-and-withdrawal'
+        : 'base-member-calendar-and-people',
+    )
+  }
+
+  if (action.conditionId === 'staff-assignment-awaits-response') {
+    return findScenario(
+      accepted
+        ? 'accepted-event-staff-responsibility-and-calls'
+        : 'base-member-calendar-and-people',
+    )
+  }
+
+  return undefined
+}
+
 type SurfaceCondition = {
   classification: OperationalConditionClassification
   expectedResolution: string
@@ -1860,14 +1927,6 @@ function getAllowedSurfaces(scenario: SeededScenario) {
   for (const { action } of getScenarioActionReferences(scenario)) {
     allowed.add(action.destination)
   }
-  for (const { id } of getScenarioConditions(scenario)) {
-    for (const surface of operationalConditions[id].surfaces) {
-      if (surface !== 'public-theater' && surface !== 'public-event') {
-        allowed.add(surface)
-      }
-    }
-  }
-
   const isOperator = scenario.relationshipLabels.some(
     (relationship) => relationship === 'Theater Operator',
   )
@@ -1883,20 +1942,6 @@ function getAllowedSurfaces(scenario: SeededScenario) {
     ] as const) {
       allowed.add(surface)
     }
-  }
-
-  const hasEventRelationship = scenario.personas.some((persona) =>
-    [
-      'producer',
-      'director',
-      'cast-member',
-      'reviewer',
-      'event-staff-member',
-      'multi-role-person',
-    ].some((eventPersona) => eventPersona === persona),
-  )
-  if (hasEventRelationship) {
-    for (const surface of eventNavigation) allowed.add(surface)
   }
 
   return operationalSurfaceIds.filter((surface) => allowed.has(surface))
