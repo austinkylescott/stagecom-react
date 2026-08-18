@@ -86,6 +86,14 @@ export const operationalConditions = defineOperationalConditions({
     label: 'Another Reviewer is required',
     surfaces: ['event-overview', 'event-review'],
   },
+  'owner-self-approval-override-eligible': {
+    authorizedAudience: ['Eligible Owner'],
+    classification: 'work-queue',
+    expectedResolution:
+      'Use the configured, separately reasoned, and audited override or wait for another Reviewer.',
+    label: 'Owner self-approval override is eligible',
+    surfaces: ['callsheet', 'theater-operations', 'event-review'],
+  },
   'event-at-risk': {
     authorizedAudience: ['Theater Operator'],
     classification: 'work-queue',
@@ -107,6 +115,14 @@ export const operationalConditions = defineOperationalConditions({
     expectedResolution: 'Preview and publish the exact eligible snapshot.',
     label: 'Event is ready for Publication',
     surfaces: ['callsheet', 'theater-operations', 'event-public-page'],
+  },
+  'theater-ready-for-publication': {
+    authorizedAudience: ['Theater Operator'],
+    classification: 'work-queue',
+    expectedResolution:
+      'Preview and publish the exact eligible Theater snapshot.',
+    label: 'Theater is ready for Publication',
+    surfaces: ['callsheet', 'theater-operations', 'settings-public-presence'],
   },
   'producer-public-content-incomplete': {
     authorizedAudience: ['Producer'],
@@ -168,6 +184,14 @@ export const operationalConditions = defineOperationalConditions({
     expectedResolution: 'Respond available, unavailable, or uncertain.',
     label: 'Candidate Slot needs an Availability Response',
     surfaces: ['callsheet', 'event-overview', 'event-schedule-and-plan'],
+  },
+  'occurrence-call-needs-review': {
+    authorizedAudience: ['Called Cast Member', 'called Event staff member'],
+    classification: 'personal-commitment',
+    expectedResolution:
+      'Review the required, optional, or not-called expectation.',
+    label: 'Upcoming Occurrence Call needs review',
+    surfaces: ['callsheet', 'event-overview'],
   },
   'counteroffer-awaits-producer': {
     authorizedAudience: ['Producer'],
@@ -260,6 +284,14 @@ export const operationalConditions = defineOperationalConditions({
     label: 'Ownership transfer proposed',
     surfaces: ['callsheet'],
   },
+  'admin-invitation-notification': {
+    authorizedAudience: ['Invited Theater Member'],
+    classification: 'notification',
+    expectedResolution:
+      'Read or dismiss the alert without changing the Admin Invitation.',
+    label: 'Admin Invitation received',
+    surfaces: ['callsheet'],
+  },
   'personal-occurrence-call': {
     authorizedAudience: ['Called Cast Member', 'called Event staff member'],
     classification: 'calendar-occupancy',
@@ -317,6 +349,14 @@ export const operationalConditions = defineOperationalConditions({
     label: 'Active Theater Member directory',
     surfaces: ['people-directory'],
   },
+  'revoked-admin-remains-member': {
+    authorizedAudience: ['Former Admin who remains a Theater Member'],
+    classification: 'ordinary-information',
+    expectedResolution:
+      'Return to Member-visible destinations; removed Admin access is effective immediately.',
+    label: 'Admin authority was removed',
+    surfaces: ['callsheet', 'people-directory'],
+  },
   'authorized-event-summary': {
     authorizedAudience: ['Authorized Event collaborator'],
     classification: 'ordinary-information',
@@ -342,7 +382,7 @@ export const operationalConditions = defineOperationalConditions({
     surfaces: ['people-access-and-roles', 'settings-ownership-and-security'],
   },
   'published-event-summary': {
-    authorizedAudience: ['Public visitor'],
+    authorizedAudience: ['Anyone'],
     classification: 'ordinary-information',
     expectedResolution: 'Open the canonical published Event page.',
     label: 'Upcoming published Event',
@@ -393,6 +433,7 @@ export type ScenarioAction = {
 
 export type OperationalScenario = {
   allowedStartingSurfaces: readonly ('callsheet' | 'public-theater')[]
+  alternateOutcomes?: readonly string[]
   calendarDisclosure: {
     personalCalendar: string
     theaterCalendar: string
@@ -403,6 +444,7 @@ export type OperationalScenario = {
   navigationPath: readonly OperationalSurfaceId[]
   personas: readonly OperationalPersonaId[]
   primaryAction: ScenarioAction
+  primaryViewport: 'desktop' | 'phone'
   relationshipLabels: readonly string[]
   relevantScope: readonly string[]
   secondaryActions: readonly ScenarioAction[]
@@ -437,6 +479,8 @@ export const operationalScenarios = defineOperationalScenarios([
         'producer-cancellation-request',
         'proposal-awaits-review',
         'event-ready-for-publication',
+        'theater-ready-for-publication',
+        'owner-self-approval-override-eligible',
       ],
       'operational-exception': [
         'operator-observes-missing-public-content',
@@ -455,6 +499,7 @@ export const operationalScenarios = defineOperationalScenarios([
         'authorized-event-summary',
         'owner-governance-summary',
         'automatic-completion-succeeded',
+        'self-authored-proposal-blocked',
       ],
     },
     forbiddenDisclosures: [
@@ -465,6 +510,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'owner-operator-pressure',
     navigationPath: ['callsheet', 'theater-operations', 'event-overview'],
     personas: ['owner'],
+    primaryViewport: 'desktop',
     primaryAction: {
       conditionId: 'event-at-risk',
       destination: 'event-overview',
@@ -495,6 +541,19 @@ export const operationalScenarios = defineOperationalScenarios([
         destination: 'event-public-page',
         label: 'Preview and publish The Winter’s Tale',
         relationshipLabel: 'Lantern Theater · Owner',
+      },
+      {
+        conditionId: 'theater-ready-for-publication',
+        destination: 'settings-public-presence',
+        label: 'Preview and publish Lantern Theater',
+        relationshipLabel: 'Lantern Theater · Owner',
+      },
+      {
+        conditionId: 'owner-self-approval-override-eligible',
+        destination: 'event-review',
+        label: 'Use the eligible, reasoned self-approval override',
+        relationshipLabel:
+          'Lantern Theater · eligible Owner and Proposal author',
       },
       {
         conditionId: 'owner-governance-summary',
@@ -547,8 +606,12 @@ export const operationalScenarios = defineOperationalScenarios([
       'Private information from Events outside the Admin’s Theater authority',
     ],
     id: 'admin-staffing-calendar-and-successorship',
+    alternateOutcomes: [
+      'Decline the ownership transfer; the current Owner retains authority.',
+    ],
     navigationPath: ['callsheet'],
     personas: ['admin'],
+    primaryViewport: 'desktop',
     primaryAction: {
       conditionId: 'ownership-transfer-awaits-response',
       destination: 'callsheet',
@@ -621,8 +684,13 @@ export const operationalScenarios = defineOperationalScenarios([
       'Private titles and details for unrelated Calendar occupancy',
     ],
     id: 'producer-counteroffer-and-public-content',
+    alternateOutcomes: [
+      'Decline the Counteroffer before expiry.',
+      'Encounter a stale or expired Counteroffer and recover without a dead end.',
+    ],
     navigationPath: ['callsheet', 'event-overview', 'event-review'],
     personas: ['producer'],
+    primaryViewport: 'desktop',
     primaryAction: {
       conditionId: 'counteroffer-awaits-producer',
       destination: 'event-review',
@@ -685,6 +753,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'director-cast-and-participation',
     navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
     personas: ['director'],
+    primaryViewport: 'desktop',
     primaryAction: {
       conditionId: 'director-cast-plan-needs-work',
       destination: 'event-cast-and-team',
@@ -729,6 +798,7 @@ export const operationalScenarios = defineOperationalScenarios([
       'personal-commitment': [
         'cast-invitation-awaits-response',
         'availability-response-required',
+        'occurrence-call-needs-review',
       ],
       'work-queue': [],
       'operational-exception': [],
@@ -746,8 +816,12 @@ export const operationalScenarios = defineOperationalScenarios([
       'Unrelated private Event and Schedule Block details',
     ],
     id: 'cast-member-invitation-availability-and-calls',
+    alternateOutcomes: [
+      'Decline the Cast invitation and retain ordinary Theater membership.',
+    ],
     navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
     personas: ['cast-member'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'cast-invitation-awaits-response',
       destination: 'event-cast-and-team',
@@ -786,7 +860,7 @@ export const operationalScenarios = defineOperationalScenarios([
     allowedStartingSurfaces: ['callsheet'],
     calendarDisclosure: {
       personalCalendar:
-        'Does not invent attendance merely because the person is a Reviewer.',
+        'Does not invent an Occurrence Call or personal commitment merely because the person is a Reviewer.',
       theaterCalendar:
         'Shows Event detail needed for the reviewed Proposal and opaque unrelated occupancy.',
     },
@@ -809,6 +883,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'designated-reviewer-exact-revision',
     navigationPath: ['callsheet', 'event-overview', 'event-review'],
     personas: ['reviewer'],
+    primaryViewport: 'desktop',
     primaryAction: {
       conditionId: 'proposal-awaits-review',
       destination: 'event-review',
@@ -851,7 +926,10 @@ export const operationalScenarios = defineOperationalScenarios([
         'Shows Event detail needed for the assignment and opaque unrelated occupancy.',
     },
     conditions: {
-      'personal-commitment': ['staff-assignment-awaits-response'],
+      'personal-commitment': [
+        'staff-assignment-awaits-response',
+        'occurrence-call-needs-review',
+      ],
       'work-queue': [],
       'operational-exception': [],
       notification: ['staff-assignment-notification'],
@@ -870,8 +948,12 @@ export const operationalScenarios = defineOperationalScenarios([
       'Proposal review, Publication, and Theater administration controls',
     ],
     id: 'event-staff-assignment-and-calls',
+    alternateOutcomes: [
+      'Decline the Event Staff Assignment; the staffing need returns to unresolved.',
+    ],
     navigationPath: ['callsheet', 'event-overview', 'event-cast-and-team'],
     personas: ['event-staff-member'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'staff-assignment-awaits-response',
       destination: 'event-cast-and-team',
@@ -939,6 +1021,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'base-member-calendar-and-people',
     navigationPath: ['callsheet', 'theater-calendar'],
     personas: ['theater-member'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'opaque-primary-venue-occupancy',
       destination: 'theater-calendar',
@@ -975,6 +1058,117 @@ export const operationalScenarios = defineOperationalScenarios([
   },
   {
     allowedStartingSurfaces: ['callsheet'],
+    alternateOutcomes: [
+      'Decline the Admin Invitation and remain a base Theater Member.',
+    ],
+    calendarDisclosure: {
+      personalCalendar:
+        'Shows only the invited Member’s own commitments; pending Admin authority adds no occupancy.',
+      theaterCalendar:
+        'Shows Member-level opaque occupancy until Admin authority is accepted.',
+    },
+    conditions: {
+      'personal-commitment': ['admin-invitation-awaits-response'],
+      'work-queue': [],
+      'operational-exception': [],
+      notification: ['admin-invitation-notification'],
+      'calendar-occupancy': ['opaque-primary-venue-occupancy'],
+      'ordinary-information': [
+        'cross-theater-membership-summary',
+        'active-member-directory',
+      ],
+    },
+    forbiddenDisclosures: [
+      'Admin navigation, Work Queue, and detailed Calendar occupancy before acceptance',
+      'Owner-only governance controls after acceptance',
+      'Another person’s Admin Invitation or response state',
+    ],
+    id: 'base-member-admin-invitation',
+    navigationPath: ['callsheet'],
+    personas: ['theater-member'],
+    primaryViewport: 'phone',
+    primaryAction: {
+      conditionId: 'admin-invitation-awaits-response',
+      destination: 'callsheet',
+      label: 'Accept or decline Lantern Theater Admin authority',
+      relationshipLabel: 'Lantern Theater · invited Admin',
+    },
+    relationshipLabels: ['Theater Member', 'Invited Admin'],
+    relevantScope: [
+      'Cross-Theater Callsheet',
+      'Lantern Theater Member-visible destinations before acceptance',
+    ],
+    secondaryActions: [
+      {
+        conditionId: 'active-member-directory',
+        destination: 'people-directory',
+        label: 'Identify the current Owner and Admins',
+        relationshipLabel: 'Lantern Theater · Theater Member',
+      },
+    ],
+    title: 'Base Member chooses whether to accept Admin authority',
+    visibleInformation: [
+      'The invited authority and who issued it',
+      'The consequences of accepting or declining',
+      'No Admin capability until explicit acceptance',
+    ],
+  },
+  {
+    allowedStartingSurfaces: ['callsheet'],
+    calendarDisclosure: {
+      personalCalendar:
+        'Retains only the former Admin’s personal commitments after authority is removed.',
+      theaterCalendar:
+        'Immediately returns to Member-level opaque disclosure for unrelated private work.',
+    },
+    conditions: {
+      'personal-commitment': [],
+      'work-queue': [],
+      'operational-exception': [],
+      notification: [],
+      'calendar-occupancy': ['opaque-primary-venue-occupancy'],
+      'ordinary-information': [
+        'revoked-admin-remains-member',
+        'active-member-directory',
+      ],
+    },
+    forbiddenDisclosures: [
+      'Stale Theater Operations, Work Queue, People access, or Settings data',
+      'Detailed Calendar occupancy granted only by former Admin authority',
+      'An authorization-error dead end from retained Admin navigation',
+    ],
+    id: 'revoked-admin-member-access',
+    navigationPath: ['callsheet', 'people-directory'],
+    personas: ['theater-member'],
+    primaryViewport: 'phone',
+    primaryAction: {
+      conditionId: 'revoked-admin-remains-member',
+      destination: 'people-directory',
+      label: 'Continue in Lantern Theater as a Theater Member',
+      relationshipLabel: 'Lantern Theater · Theater Member',
+    },
+    relationshipLabels: ['Former Admin', 'Theater Member'],
+    relevantScope: [
+      'Cross-Theater Callsheet',
+      'Lantern Theater Member-visible Events, Calendar, and People',
+    ],
+    secondaryActions: [
+      {
+        conditionId: 'opaque-primary-venue-occupancy',
+        destination: 'theater-calendar',
+        label: 'Use the Theater Calendar with Member-level disclosure',
+        relationshipLabel: 'Lantern Theater · Theater Member',
+      },
+    ],
+    title: 'Revoked Admin access falls back to Theater membership',
+    visibleInformation: [
+      'Immediate removal of administrative destinations and shared work',
+      'Preserved Theater membership and ordinary Member navigation',
+      'A clear explanation instead of a forbidden-route dead end',
+    ],
+  },
+  {
+    allowedStartingSurfaces: ['callsheet'],
     calendarDisclosure: {
       personalCalendar:
         'Combines this person’s Producer, Director, and Cast commitments without duplicating an Occurrence.',
@@ -985,6 +1179,7 @@ export const operationalScenarios = defineOperationalScenarios([
       'personal-commitment': [
         'counteroffer-awaits-producer',
         'availability-response-required',
+        'occurrence-call-needs-review',
         'director-cast-plan-needs-work',
         'producer-public-content-incomplete',
       ],
@@ -1004,8 +1199,12 @@ export const operationalScenarios = defineOperationalScenarios([
       'Other Cast Members’ private Availability Responses',
     ],
     id: 'multi-role-producer-director-cast',
+    alternateOutcomes: [
+      'Decline the Producer Counteroffer without hiding Cast or Director commitments.',
+    ],
     navigationPath: ['callsheet', 'event-overview', 'event-review'],
     personas: ['multi-role-person', 'producer', 'director', 'cast-member'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'counteroffer-awaits-producer',
       destination: 'event-review',
@@ -1081,6 +1280,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'multi-role-admin-reviewer-producer',
     navigationPath: ['callsheet', 'theater-operations', 'event-review'],
     personas: ['multi-role-person', 'admin', 'reviewer', 'producer'],
+    primaryViewport: 'desktop',
     primaryAction: {
       conditionId: 'proposal-awaits-review',
       destination: 'event-review',
@@ -1146,6 +1346,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'authenticated-without-theater-scope',
     navigationPath: ['callsheet'],
     personas: ['authenticated-without-theater'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'no-theater-membership',
       destination: 'callsheet',
@@ -1191,6 +1392,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'public-upcoming-event-discovery',
     navigationPath: ['public-theater', 'public-event'],
     personas: ['public-visitor'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'published-event-summary',
       destination: 'public-event',
@@ -1235,6 +1437,7 @@ export const operationalScenarios = defineOperationalScenarios([
     id: 'public-cancelled-event-discovery',
     navigationPath: ['public-theater', 'public-event'],
     personas: ['public-visitor'],
+    primaryViewport: 'phone',
     primaryAction: {
       conditionId: 'published-event-cancelled',
       destination: 'public-event',
@@ -1264,52 +1467,11 @@ export const operationalScenarios = defineOperationalScenarios([
 
 export type OperationalScenarioId = (typeof operationalScenarios)[number]['id']
 
-type ScenarioIdForPersona<TPersona extends OperationalPersonaId> =
-  (typeof operationalScenarios)[number] extends infer Scenario
-    ? Scenario extends (typeof operationalScenarios)[number]
-      ? TPersona extends Scenario['personas'][number]
-        ? Scenario['id']
-        : never
-      : never
-    : never
-
-/** A complete persona index for prototype controls and acceptance sessions. */
-export const operationalScenarioIdsByPersona = {
-  owner: ['owner-operator-pressure'],
-  admin: [
-    'admin-staffing-calendar-and-successorship',
-    'multi-role-admin-reviewer-producer',
-  ],
-  producer: [
-    'producer-counteroffer-and-public-content',
-    'multi-role-producer-director-cast',
-    'multi-role-admin-reviewer-producer',
-  ],
-  director: [
-    'director-cast-and-participation',
-    'multi-role-producer-director-cast',
-  ],
-  'cast-member': [
-    'cast-member-invitation-availability-and-calls',
-    'multi-role-producer-director-cast',
-  ],
-  reviewer: [
-    'designated-reviewer-exact-revision',
-    'multi-role-admin-reviewer-producer',
-  ],
-  'event-staff-member': ['event-staff-assignment-and-calls'],
-  'theater-member': ['base-member-calendar-and-people'],
-  'multi-role-person': [
-    'multi-role-producer-director-cast',
-    'multi-role-admin-reviewer-producer',
-  ],
-  'authenticated-without-theater': ['authenticated-without-theater-scope'],
-  'public-visitor': [
-    'public-upcoming-event-discovery',
-    'public-cancelled-event-discovery',
-  ],
-} as const satisfies {
-  readonly [
-    Persona in OperationalPersonaId
-  ]: readonly ScenarioIdForPersona<Persona>[]
+/** Selects scenarios without maintaining a second, drift-prone persona index. */
+export function getOperationalScenariosForPersona(
+  persona: OperationalPersonaId,
+) {
+  return operationalScenarios.filter((scenario) =>
+    scenario.personas.some((scenarioPersona) => scenarioPersona === persona),
+  )
 }

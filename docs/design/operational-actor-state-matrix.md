@@ -37,31 +37,31 @@ Every condition has exactly one of these classifications:
 - a visible navigation path to the primary action;
 - visible information and all six classified condition collections;
 - personal and Theater Calendar disclosure;
-- one primary action and relationship-labelled secondary actions; and
+- one primary action and relationship-labelled secondary actions;
+- a primary viewport with required usability at the alternate width;
+- focused alternate outcomes such as declined or stale decisions; and
 - explicit forbidden disclosures.
 
 Stable surface identifiers keep the contract independent from route structure.
-`operationalScenarioIdsByPersona` is exhaustive, so a prototype persona picker
-or acceptance-session driver can select scenarios without duplicating its own
-actor list.
+`getOperationalScenariosForPersona` derives selections from the scenario data,
+so a prototype persona picker or acceptance-session driver does not maintain a
+second actor index.
 
 ## Seeded actor and state coverage
 
-| Scenario                                        | Personas and relationships                        | Primary path                                    | Primary action                             | Key secondary coverage                                                            |
-| ----------------------------------------------- | ------------------------------------------------- | ----------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------- |
-| `owner-operator-pressure`                       | Owner, Theater Operator                           | Callsheet → Theater Operations → Event Overview | Resolve an At Risk Event                   | Proposal review, cancellation, Publication, Admins, ownership transfer            |
-| `admin-staffing-calendar-and-successorship`     | Admin, Theater Operator, proposed successor       | Callsheet                                       | Accept or decline ownership transfer       | Staffing, detailed Theater Calendar, peer Admin access                            |
-| `producer-counteroffer-and-public-content`      | Producer                                          | Callsheet → Event Overview → Review             | Respond to an expiring Counteroffer        | Operational plan and public-content commitments                                   |
-| `director-cast-and-participation`               | Director                                          | Callsheet → Event Overview → Cast & Team        | Complete a viable cast plan                | Availability Responses and Occurrence Calls                                       |
-| `cast-member-invitation-availability-and-calls` | Invited/accepted Cast Member                      | Callsheet → Event Overview → Cast & Team        | Respond to a Cast invitation               | Availability and personal Calls                                                   |
-| `designated-reviewer-exact-revision`            | Reviewer without unrelated Admin authority        | Callsheet → Event Overview → Review             | Decide the exact Proposal Revision         | Counteroffer and hold-expiry context                                              |
-| `event-staff-assignment-and-calls`              | Invited/accepted Event staff member               | Callsheet → Event Overview → Cast & Team        | Respond to an Event Staff Assignment       | Bounded responsibility, logistics, and selected Calls                             |
-| `base-member-calendar-and-people`               | Base Theater Member                               | Callsheet → Theater Calendar                    | Plan around opaque Primary Venue occupancy | Published/related Events and privacy-safe People directory                        |
-| `multi-role-producer-director-cast`             | Producer, Director, Cast Member                   | Callsheet → Event Overview → Review             | Respond to the Producer Counteroffer       | Separate Cast availability, Director casting, and Producer content actions        |
-| `multi-role-admin-reviewer-producer`            | Admin, Reviewer, Producer                         | Callsheet → Theater Operations → Review         | Review an eligible revision                | Producer commitment, shared staffing, blocked self-review, per-Theater disclosure |
-| `authenticated-without-theater-scope`           | Authenticated person with no Theater relationship | Callsheet                                       | Create a Theater                           | Join by invitation or Reusable Join Link; no Theater navigation                   |
-| `public-upcoming-event-discovery`               | Public visitor                                    | Public Theater → Public Event                   | Open an upcoming published Event           | Published admission action and allowlisted content                                |
-| `public-cancelled-event-discovery`              | Public visitor                                    | Public Theater → Public Event                   | Open a clearly cancelled published Event   | Continued discovery until the final scheduled Performance passes                  |
+The executable collection covers every required persona and keeps state variants
+as separate scenarios where the permitted experience changes. In addition to
+the primary Owner, Admin, Producer, Director, Cast Member, Reviewer, Event staff,
+base Member, no-Theater, and public journeys, it includes:
+
+- Producer + Director + Cast Member and Admin + Reviewer + Producer multi-role
+  combinations;
+- pending Admin acceptance and declined invitation outcomes;
+- revoked Admin access with immediate Member-level fallback;
+- both eligible and blocked self-authored Proposal review;
+- both Theater and Event Publication readiness;
+- upcoming Calls as personal commitments and Calendar occupancy; and
+- upcoming and cancelled public Event discovery.
 
 ## Reuse rules
 
@@ -84,5 +84,6 @@ step after validation:
 - condition classification and authorized audience;
 - allowed starting surface and visible navigation path;
 - primary versus secondary action priority and relationship labels;
+- primary viewport and alternate outcomes;
 - personal versus Theater Calendar detail; and
 - forbidden disclosures.
