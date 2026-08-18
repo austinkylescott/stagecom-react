@@ -12,18 +12,52 @@ _Avoid_: Company, tenant, account, organization
 A person with active membership in a Theater. A person may belong to multiple Theaters.
 _Avoid_: User, performer, employee
 
+**Former Theater Member**:
+A person whose Theater membership has ended while their Theater-local participation and history remain preserved.
+_Avoid_: Inactive Member
+
 **Owner**:
-The Theater Member with final authority for the Theater.
+The single Theater Member with final authority for the Theater. Ownership may be transferred to another Theater Member.
 
 **Admin**:
-A Theater Member authorized to manage the Theater without holding ownership.
+A Theater Member who has accepted authority to manage the Theater without holding ownership.
 _Avoid_: Manager
+
+**Admin Invitation**:
+A pending offer of Admin authority to an active Theater Member. Admin authority begins only when the recipient accepts.
+_Avoid_: Targeted Invitation
+
+**Theater Operator**:
+An Owner or Admin acting with Theater-wide operational responsibility.
+_Avoid_: Manager, when referring collectively to Owners and Admins
+
+**Callsheet**:
+A person's cross-Theater view of current commitments, relevant Events, decisions, and schedule.
+_Avoid_: Theater Callsheet
+
+**Theater Operations**:
+The Theater-wide view of current decisions, exceptions, Event work, and schedule available to Theater Operators.
+_Avoid_: Theater Callsheet
+
+**Work Queue**:
+The shared set of unresolved, actionable Theater decisions derived from current Theater and Event state. It is distinct from personal Notifications and watch-only Operational Exceptions.
+
+**Operational Exception**:
+A time-sensitive or potentially risky Theater condition that warrants attention but does not currently require a Theater Operator decision.
+_Avoid_: Work Queue item
+
+**Notification**:
+A personal alert derived from a domain event. Reading or dismissing it does not alter the underlying Theater or Event state.
 
 **Producer**:
 An Event collaborator responsible for its proposal, logistics, public presentation, and communication with Theater management.
 
 **Director**:
 An Event collaborator responsible for casting and artistic participation across the Event's Occurrences.
+
+**Event Staff Assignment**:
+A Theater Member's accepted operational responsibility for an Event, initiated by a Theater Operator. The assignment may carry Calls for selected Occurrences.
+_Avoid_: Resource request
 
 **Cast Member**:
 A Theater Member who has explicitly accepted participation in an Event.
@@ -60,6 +94,12 @@ _Avoid_: Occurrence, proposed date
 **Confirmed Slot**:
 The date, time, and place committed to an Occurrence.
 
+**Theater Calendar**:
+A resource-aware schedule of committed Occurrences, temporary holds, and Schedule Blocks. Active Members may see that a resource is unavailable even when they are not authorized to see the underlying details.
+
+**Schedule Block**:
+A committed interval during which a Theater resource is unavailable without belonging to an Event Occurrence.
+
 **Primary Venue**:
 The Theater's default physical location and initial exclusive scheduling resource.
 
@@ -73,7 +113,7 @@ The smallest confirmed cast with which an Event can responsibly proceed.
 _Avoid_: Minimum attendance
 
 **Occurrence Call**:
-A Cast Member's participation expectation for one Occurrence: required, optional, or not called.
+A Cast Member's or assigned Event staff member's participation expectation for one Occurrence: required, optional, or not called.
 _Avoid_: Attendance
 
 **Availability Response**:

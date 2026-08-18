@@ -43,5 +43,6 @@ Stagecom is being rebuilt as a TanStack Start, React, TypeScript, and Supabase a
 - Design baseline: `docs/design/design-baseline.md`
 - Coding rules: `docs/development/coding-rules.md`
 - First slice spec: `docs/specs/first-slice.md`
+- Operational workspaces spec: `docs/specs/operational-workspaces.md`
 - Event publication milestone decision: `docs/product/event-publication-milestone.md`
 - Rebuild planning index: `docs/rebuild/00-index.md`
