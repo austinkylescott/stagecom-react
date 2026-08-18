@@ -29,6 +29,7 @@ Every wiki page declares one of these implementation states:
 - Permissions: `wiki/data/permissions-model.md`
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
+- Operational actor/state matrix: `docs/design/operational-actor-state-matrix.md`
 - Decisions: `wiki/decisions/`
 
 ## Current Direction
