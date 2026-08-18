@@ -532,6 +532,11 @@ function WorkspaceNavigation({
   surface: OperationalSurfaceId
 }) {
   const hasTheaterScope = scenario.id !== 'authenticated-without-theater-scope'
+  const allowedSurfaces = getAllowedSurfaces(scenario)
+  const isOperator = scenario.relationshipLabels.some(
+    (relationship) => relationship === 'Theater Operator',
+  )
+  const scopedHome = isOperator ? 'theater-operations' : 'theater-events'
 
   if (isPhone) {
     return (
@@ -551,24 +556,14 @@ function WorkspaceNavigation({
           search={search}
           target="personal-calendar"
         />
-        {hasTheaterScope ? (
-          scenario.relationshipLabels.some(
-            (relationship) => relationship === 'Theater Operator',
-          ) ? (
-            <SurfaceLink
-              current={surface}
-              scenario={scenario}
-              search={search}
-              target="theater-operations"
-            />
-          ) : (
-            <SurfaceLink
-              current={surface}
-              scenario={scenario}
-              search={search}
-              target="theater-events"
-            />
-          )
+        {hasTheaterScope &&
+        allowedSurfaces.some((allowed) => allowed === scopedHome) ? (
+          <SurfaceLink
+            current={surface}
+            scenario={scenario}
+            search={search}
+            target={scopedHome}
+          />
         ) : null}
       </nav>
     )
@@ -602,24 +597,26 @@ function WorkspaceNavigation({
             Lantern Theater
           </p>
           <nav className="mt-2 grid gap-1">
-            {(scenario.relationshipLabels.some(
-              (relationship) => relationship === 'Theater Operator',
-            )
+            {(isOperator
               ? theaterNavigation
               : ([
                   'theater-events',
                   'theater-calendar',
                   'people-directory',
                 ] as const)
-            ).map((target) => (
-              <SurfaceLink
-                current={surface}
-                key={target}
-                scenario={scenario}
-                search={search}
-                target={target}
-              />
-            ))}
+            )
+              .filter((target) =>
+                allowedSurfaces.some((allowed) => allowed === target),
+              )
+              .map((target) => (
+                <SurfaceLink
+                  current={surface}
+                  key={target}
+                  scenario={scenario}
+                  search={search}
+                  target={target}
+                />
+              ))}
           </nav>
         </>
       ) : null}
