@@ -450,6 +450,11 @@ export type ScenarioAction = {
 export type OperationalScenario = {
   allowedStartingSurfaces: readonly ('callsheet' | 'public-theater')[]
   alternateOutcomes?: readonly string[]
+  /**
+   * The Theater Calendar presentation that this scenario validates. Omitted
+   * scenarios use the standard week/resource view on desktop.
+   */
+  calendarView?: 'week' | 'month'
   calendarDisclosure: {
     personalCalendar: string
     theaterCalendar: string
@@ -480,6 +485,65 @@ function defineOperationalScenarios<
  * must not reinterpret classifications, disclosure, priority, or navigation.
  */
 export const operationalScenarios = defineOperationalScenarios([
+  {
+    allowedStartingSurfaces: ['callsheet'],
+    alternateOutcomes: [
+      'Use the same authorized occupancy detail on phone without relying on a dense resource grid.',
+    ],
+    calendarDisclosure: {
+      personalCalendar:
+        'Shows only the Admin’s own accepted commitments, not all Theater occupancy.',
+      theaterCalendar:
+        'Shows full authorized occupancy in a month horizon, including Events, active holds, and Schedule Blocks.',
+    },
+    calendarView: 'month',
+    conditions: {
+      'personal-commitment': [],
+      'work-queue': [],
+      'operational-exception': [],
+      notification: [],
+      'calendar-occupancy': [
+        'authorized-event-occupancy',
+        'operator-schedule-block',
+      ],
+      'ordinary-information': ['operator-event-pipeline'],
+    },
+    forbiddenDisclosures: [
+      'Private Event details from another Theater',
+      'Another person’s personal Notification read or dismissed state',
+      'A double-booking override or any control that silently creates a conflict',
+    ],
+    id: 'admin-calendar-month-planning',
+    navigationPath: ['callsheet', 'theater-calendar'],
+    personas: ['admin'],
+    primaryViewport: 'desktop',
+    primaryAction: {
+      conditionId: 'operator-schedule-block',
+      destination: 'theater-calendar',
+      label: 'Review Lantern Theater’s month of Primary Venue occupancy',
+      relationshipLabel: 'Lantern Theater · Admin · Theater Operator',
+    },
+    relationshipLabels: ['Admin', 'Theater Operator'],
+    relevantScope: [
+      'Cross-Theater Callsheet',
+      'Lantern Theater Calendar month overview',
+      'Primary Venue occupancy and Schedule Blocks',
+    ],
+    secondaryActions: [
+      {
+        conditionId: 'operator-schedule-block',
+        destination: 'theater-calendar',
+        label: 'Inspect the maintenance Schedule Block in its month context',
+        relationshipLabel: 'Lantern Theater · Admin',
+      },
+    ],
+    title: 'Admin plans Primary Venue occupancy across a month',
+    visibleInformation: [
+      'A month-level view of authorized Event, hold, and Schedule Block occupancy',
+      'The same disclosure rule as the week/resource Calendar',
+      'A responsive path that keeps the Calendar useful when the desktop grid is unavailable',
+    ],
+  },
   {
     allowedStartingSurfaces: ['callsheet'],
     calendarDisclosure: {
