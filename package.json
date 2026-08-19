@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev --port 3000",
+    "prototype:operational-workspaces": "vite dev --port 3000 --open '/dev/operational-workspaces-prototype'",
     "build": "vite build",
     "preview": "vite preview",
     "db:start:local": "supabase start --yes",

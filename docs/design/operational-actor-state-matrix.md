@@ -90,3 +90,18 @@ step after validation:
 - primary viewport and alternate outcomes;
 - personal versus Theater Calendar detail; and
 - forbidden disclosures.
+
+## STA-27 prototype
+
+The throwaway interactive prototype lives at
+`/dev/operational-workspaces-prototype` on the STA-27 branch. Run it with:
+
+```bash
+npm run prototype:operational-workspaces
+```
+
+Use the seeded-journey selector to move among all contract scenarios. The URL
+records the `scenario`, `surface`, and preview `viewport`, so a validation note
+can link to the exact state under discussion. Phone and desktop controls switch
+the same journey between its primary and alternate width without changing the
+scenario contract.
