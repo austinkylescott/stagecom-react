@@ -1,6 +1,6 @@
 # Operational actor and state matrix
 
-Status: seeded contract for prototype and acceptance work
+Status: reconciled contract for prototype, production planning, and acceptance work (STA-29)
 
 The executable matrix lives in
 `src/features/operational-workspaces/scenario-contract.ts`. It is the single
@@ -64,7 +64,31 @@ base Member, no-Theater, and public journeys, it includes:
 - both Theater and Event Publication readiness;
 - pre-submission planning and post-review requested Proposal edits;
 - upcoming Calls as personal commitments and Calendar occupancy; and
-- upcoming and cancelled public Event discovery.
+- upcoming and cancelled public Event discovery;
+- a desktop-first Admin month-planning Calendar scenario, with the same
+  disclosure rule on its phone fallback; and
+- a phone-first pending Cast-invitation decision, including the exact
+  pre-acceptance disclosure boundary.
+
+## STA-29 reconciliation
+
+The internal validation evidence retained the interaction model and introduced
+two explicit coverage requirements. `admin-calendar-month-planning` starts on
+Callsheet, reaches the Theater Calendar through visible navigation, selects the
+Month presentation, and keeps the Operator’s full authorized occupancy detail
+as in the week/resource view. The primary viewport is desktop; the alternate
+phone outcome preserves that authorization without requiring a dense grid.
+
+`cast-invitation-awaits-theater-member` is the contract for a pending Cast
+offer: it starts on Callsheet, classifies the offer as a personal commitment,
+uses a phone-primary viewport, shows an invitation state, inviter, role, and
+enough Event summary to decide, and withholds Candidate Slots, Calls, and
+accepted-Cast information until acceptance. This is not a Work Queue item and
+does not grant Cast participation before the recipient explicitly accepts.
+
+The recorded request for a visual-design pass and the absence of uncoached
+sessions are follow-ups outside this reconciliation. They do not reinterpret
+the matrix’s navigation, action priority, disclosure, or responsive contract.
 
 ## Reuse rules
 

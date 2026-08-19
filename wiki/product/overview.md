@@ -8,6 +8,35 @@ Stagecom is a theater-ops-first SaaS product for improv theaters, comedy theater
 
 The foundation slice helps a theater operator create, preview, and publish a credible public Theater home. The first meaningful product milestone goes further: a Theater Member develops a viable performance Event with a cast and schedule, submits it to management, responds to review, and receives approval before an Owner or Admin publishes it.
 
+## Operational Workspaces Contract
+
+Implementation status: specified, not implemented
+
+The next product frontier is a personal-first, role-aware operating experience.
+Every authenticated person starts at Callsheet, where their personal
+commitments remain separate from shared Theater decisions they can resolve.
+Entering a Theater is explicit; Theater Operations presents the Operator Work
+Queue before watch-only Operational Exceptions, schedule pressure, portfolio,
+and activity. There is no role mode: actions state the Theater, Event, and
+relationship that make them relevant.
+
+The Theater Calendar defaults to a desktop week/resource view and offers list
+and month alternatives with identical authorization and opaque-occupancy
+redaction. Personal Calendar stays agenda/upcoming-first. A pending Cast
+invitation is a phone-first personal commitment from Callsheet: it gives the
+recipient the invitation state, inviter, role, and enough Event summary to
+accept or decline, without granting Calls, Candidate Slots, or accepted-Cast
+details first.
+
+This contract retains the existing public playbill and calm authenticated
+direction. A focused visual-design pass and uncoached Operator validation are
+follow-ups. Internal validation plus the published reconciliation opens the
+first implementation frontier; neither follow-up is evidence for weakening
+navigation, action priority, disclosure, or responsive requirements. See the [operational-workspaces
+specification](../../docs/specs/operational-workspaces.md), [actor/state
+matrix](../../docs/design/operational-actor-state-matrix.md), and
+[validation record](../design/operational-workspaces-validation.md).
+
 ## Audience
 
 The rebuild starts with theater owner/admin workflows. Producers, staff, cast, and public visitors are important actors, but the product should first solve theater-level trust, publishing, and coordination.

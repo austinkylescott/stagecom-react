@@ -52,17 +52,21 @@ protected URL or navigation coaching. For each participant, record:
 - their understanding of detailed versus opaque Calendar occupancy; and
 - any unauthorized destination or dead end, including how they recover.
 
-## Findings and recommended changes
+## Findings and reconciliation
 
-1. Keep the current interaction model as the basis for continued prototype
-   validation; no blocking interaction correction is supported by the current
-   internal evidence.
-2. Add a month-view scenario to test Operator planning and Calendar disclosure
-   at a broader time horizon.
-3. Add a cast-invitation scenario before treating the prototype as coverage for
-   Cast Member participation.
-4. Plan a focused visual-design pass after validation identifies the
-   information hierarchy and interaction states that must be preserved.
+STA-29 reconciled every material finding into the accepted product contract:
+
+| Finding                                                        | STA-29 resolution                                                                                                                                                                                                             |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The interaction model is a good basis for Operator management. | Accepted; retain the model without a blocking interaction correction.                                                                                                                                                         |
+| The presentation needs a deliberate design pass.               | Documented post-validation follow-up outside this milestone; it is not a reason to rebrand or delay the contract.                                                                                                             |
+| A month view is not represented.                               | Accepted change; add the desktop-first Operator month-planning scenario and preserve Calendar disclosure on its phone fallback.                                                                                               |
+| Cast invitation behavior is not established.                   | Accepted change; use the phone-first Callsheet scenario that states the deciding information, explicit response, and pre-acceptance redaction.                                                                                |
+| No uncoached sessions are recorded.                            | Accepted planning change and documented follow-up outside this milestone: internal validation plus STA-29 opens the first implementation frontier, while sessions remain required before claiming discoverability graduation. |
+
+The accepted details now live in the operational-workspaces specification and
+actor/state matrix. This page remains an evidence record rather than a second
+product contract.
 
 ## Open questions
 
@@ -70,15 +74,11 @@ protected URL or navigation coaching. For each participant, record:
   a public Theater page within roughly 30 seconds?
 - Do participants understand why an action applies to them and distinguish
   shared work from personal alerts without explanation?
-- Which month-view information is appropriate for each role and disclosure
-  level?
-- What invitation details, decision states, and follow-up actions allow Cast
-  Members to respond with confidence?
 - Do unauthorized routes create recoverable, comprehensible outcomes?
 
 ## Next evidence needed
 
 Run several uncoached sessions with real Theater Operators or close proxies,
 then update this page with anonymized per-session observations and any
-resulting prototype changes. Update the operational-workspaces specification
-only when those findings validate a change to the product contract.
+resulting prototype changes. Any newly validated behavior must be reconciled
+through the operational-workspaces specification and actor/state matrix.

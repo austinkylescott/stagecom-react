@@ -3,7 +3,7 @@
  * `surface`, and `viewport` on the dedicated dev route. STA-27 validates the
  * approved actor/state matrix rather than comparing alternative visual designs.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   AlertTriangle,
@@ -44,6 +44,7 @@ import type {
 } from '../scenario-contract'
 
 type SeededScenario = (typeof operationalScenarios)[number]
+type CalendarView = 'agenda' | 'list' | 'month' | 'week'
 
 type ScenarioActionReference = {
   action: ScenarioAction
@@ -1307,7 +1308,7 @@ function UpcomingPanel({
   )
 }
 
-function CalendarSurface({
+export function CalendarSurface({
   conditions,
   isPhone,
   personal,
@@ -1318,6 +1319,16 @@ function CalendarSurface({
   personal: boolean
   scenario: SeededScenario
 }) {
+  const defaultCalendarView: CalendarView = personal
+    ? 'agenda'
+    : (('calendarView' in scenario ? scenario.calendarView : undefined) ??
+      (isPhone ? 'list' : 'week'))
+  const [calendarView, setCalendarView] =
+    useState<CalendarView>(defaultCalendarView)
+
+  useEffect(() => {
+    setCalendarView(defaultCalendarView)
+  }, [defaultCalendarView])
   const disclosure = personal
     ? scenario.calendarDisclosure.personalCalendar
     : scenario.calendarDisclosure.theaterCalendar
@@ -1336,14 +1347,47 @@ function CalendarSurface({
             {disclosure}
           </p>
         </div>
-        <div className="flex gap-1 rounded-md bg-[var(--paper-muted)] p-1 text-xs font-bold">
-          <span className="rounded bg-white px-3 py-2">
-            {personal || isPhone ? 'Agenda' : 'Week'}
+        {personal ? (
+          <span className="rounded bg-[var(--paper-muted)] px-3 py-2 text-xs font-bold">
+            Agenda
           </span>
-          <span className="px-3 py-2 text-[var(--sea-ink-soft)]">Month</span>
-        </div>
+        ) : (
+          <div
+            aria-label="Theater Calendar view"
+            className="flex gap-1 rounded-md bg-[var(--paper-muted)] p-1 text-xs font-bold"
+            role="group"
+          >
+            {(['week', 'month', 'list'] as const).map((view) => (
+              <button
+                aria-pressed={calendarView === view}
+                className={cn(
+                  'rounded px-3 py-2',
+                  calendarView === view && 'bg-white',
+                  calendarView !== view && 'text-[var(--sea-ink-soft)]',
+                )}
+                key={view}
+                onClick={() => setCalendarView(view)}
+                type="button"
+              >
+                {view[0].toUpperCase() + view.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      <div className={cn('grid gap-3', !isPhone && !personal && 'grid-cols-5')}>
+      {calendarView === 'month' ? (
+        <p className="-mt-2 text-sm font-semibold text-[var(--sea-ink-soft)]">
+          Month planning keeps the same authorized detail and opaque occupancy
+          rules as the week/resource view.
+        </p>
+      ) : null}
+      <div
+        className={cn(
+          'grid gap-3',
+          !isPhone && !personal && calendarView === 'week' && 'grid-cols-5',
+          !isPhone && !personal && calendarView === 'month' && 'grid-cols-7',
+        )}
+      >
         {occupancy.length > 0 ? (
           occupancy.map((condition, index) => (
             <article

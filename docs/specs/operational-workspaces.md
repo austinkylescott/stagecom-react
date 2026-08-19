@@ -1,6 +1,6 @@
 # Operational Workspaces And Role-Aware Experience Spec
 
-Status: accepted and published to Linear as STA-25
+Status: accepted and published to Linear as STA-25; reconciled by STA-29 on 2026-08-19
 
 ## Problem Statement
 
@@ -28,7 +28,54 @@ Each Theater will have exactly one transferable Owner. Owner and Admin remain se
 
 The milestone will retain the existing visual direction: public surfaces have civic poster/playbill energy and authenticated surfaces feel calm, readable, and operational. The redesign prioritizes information architecture, task hierarchy, interaction, disclosure, responsive behavior, empty states, loading states, and error recovery before broader visual rebranding.
 
-Before production restructuring, the complete experience will be represented through an actor/job/state/next-action matrix and a throwaway interactive prototype. The prototype must be validated through uncoached scenario walkthroughs. Prototype and validation work may block implementation tickets derived from this spec.
+Before production restructuring, the complete experience will be represented through an actor/job/state/next-action matrix and a throwaway interactive prototype. Internal validation and this reconciliation gate the first implementation frontier. Uncoached scenario walkthroughs remain a separately documented research follow-up; they do not silently claim discoverability graduation or block the reconciled first implementation slices.
+
+## Reconciled Validation Decisions
+
+STA-28 recorded one internal walkthrough, not completed uncoached Operator
+research. STA-29 resolves every material observation without overstating that
+limited evidence. The contract below is the source for production planning;
+the remaining behavioral research is a follow-up, not evidence that the
+experience has graduated discoverability validation.
+
+| Validation finding                                               | Resolution                                                                                                                                                         | Contract effect                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The interaction model is a good basis for Operator management.   | **Accepted.** The walkthrough found no blocking interaction defect.                                                                                                | Retain personal-first navigation, the separate personal-commitment, Work Queue, Operational Exception, and Notification classifications, and deterministic primary-action priority.                                                                                                                                      |
+| The prototype needs a deliberate design pass.                    | **Documented follow-up outside this milestone.** The feedback was directional and did not identify a behavioral defect.                                            | Preserve the current visual direction while a post-validation design pass refines hierarchy and interaction states; do not delay the production contract or expand this milestone into a rebrand.                                                                                                                        |
+| Calendar planning lacks a month view.                            | **Accepted change.**                                                                                                                                               | Theater Calendar keeps its desktop week/resource default and adds a month alternative with the same authorization and opaque-occupancy rules. The matrix includes a desktop-first Operator month-planning scenario with a functional phone fallback. Personal Calendar remains agenda/upcoming-first.                    |
+| The prototype does not establish the Cast-invitation experience. | **Accepted change.**                                                                                                                                               | A pending Cast invitation is a phone-first personal commitment entered from Callsheet. It shows invitation state, inviter, role, and enough Event summary to decide; acceptance and decline are explicit; Candidate Slots, Calls, accepted-Cast information, and unrelated private details stay hidden until acceptance. |
+| No uncoached Operator or close-proxy sessions are recorded.      | **Accepted planning change and documented follow-up outside this milestone.** The evidence identifies a research gap, not a competing behavior or recorded defect. | Internal validation plus this reconciliation opens the first implementation frontier. Run and record uncoached sessions as follow-up research before claiming that Stagecom has graduated discoverability validation; their absence is not an unspoken blocker on the reconciled production slices.                      |
+
+### Production Frontier Check
+
+STA-30 (role-aware personal-first application shell) and STA-55 (public
+Theater Event discovery) remain blocked by STA-29 until this reconciliation is
+published. Their current boundaries remain valid:
+
+- STA-30 implements the accepted Callsheet-first navigation, stable
+  relationship-aware destinations, and responsive foundation. It must preserve
+  the Cast-invitation phone path and make the Theater Calendar reachable as an
+  explicit Theater scope change. Its STA-29 edge therefore remains required.
+- STA-39 (authorized Theater Calendar) already owns the new month alternative,
+  view switching, viewer-specific detail, opaque redaction, keyboard access,
+  and mobile behavior. It is indirectly protected by the existing
+  STA-29 → STA-30 → STA-38 → STA-39 path; no direct STA-29 edge is necessary.
+- STA-31 (cross-Theater Callsheet) owns the invitation’s personal-commitment
+  entry and phone-practical path; STA-45 (Cast & Team) owns the decision
+  workspace and pre-acceptance relationship disclosure. The existing
+  STA-29 → STA-30 → STA-31 and STA-29 → STA-30 → STA-41 → STA-45 paths keep
+  both slices behind the reconciliation without inventing duplicate blockers.
+- STA-55 implements anonymous-safe public Event discovery. The reconciliation
+  adds no public disclosure or action-priority change, so its allowlisted read
+  boundary, canonical Event link, cancellation visibility, and public-Theater
+  starting surface remain unchanged.
+
+No new production blocking edge is needed from these findings: the calendar
+and Cast-invitation paths already flow through STA-30 and the focused slices
+above. This is an explicit gate change: internal validation plus STA-29 opens
+the first implementation frontier, while the visual-design and uncoached
+research follow-ups remain visible but do not silently become completed work or
+hidden production blockers.
 
 ### Actor, Job, State, And Next-Action Matrix
 
@@ -234,7 +281,7 @@ Before production restructuring, the complete experience will be represented thr
 - Candidate Slots do not occupy the Primary Venue unless a domain workflow has created an exclusive hold or commitment.
 - The initial exclusive resource remains the Primary Venue. Interfaces and copy remain resource-aware so multiple rooms or venues can be added later without redefining Calendar language.
 - Personal Calendar defaults to agenda/upcoming and includes only entries involving the person.
-- Theater Calendar defaults to a week/resource grid and also offers list and month views.
+- Theater Calendar defaults to a week/resource grid and also offers list and month views. Month preserves the same viewer-specific detail and opaque-occupancy redaction as week; it is represented by a desktop-first Operator planning scenario and remains functional on phone.
 - Theater Operators see all operational details. Involved people see relationship-authorized details. Other active Members see time and resource only. Public visitors see only published public Occurrences.
 - Opaque entries are not clickable paths to unauthorized Events and do not expose Event title, private label, notes, or creator identity.
 - Only Theater Operators may create, modify, release, or cancel explicit Schedule Blocks.
@@ -289,19 +336,19 @@ Before production restructuring, the complete experience will be represented thr
 
 - Existing fonts, source colors, tokens, public playbill direction, and calm authenticated direction are retained.
 - The prototype and implementation redesign information architecture, page hierarchy, component composition, action priority, disclosure, and interaction states before broader visual polish.
-- Callsheet, personal Calendar, invitations, and responses are mobile-first.
+- Callsheet, personal Calendar, invitations, and responses are mobile-first. A pending Cast invitation begins from Callsheet and presents its state, inviter, role, enough Event summary to decide, and explicit accept/decline outcomes without exposing pre-acceptance participation details.
 - Theater Operations, planning, review, and resource scheduling are desktop-optimized but fully functional on mobile.
 - State is never communicated by color alone. Keyboard navigation, semantic labels, focus management, and accessible loading/error feedback are required.
 - Reusable components preserve interaction consistency across roles without forcing every role into identical page content.
 
 ### Prototype And Validation
 
-- Before dependent production restructuring begins, create the complete actor/job/state/next-action matrix represented by this spec and a throwaway interactive prototype.
+- Before dependent production restructuring begins, create the complete actor/job/state/next-action matrix represented by this spec, complete internal validation, reconcile its material findings, and create a throwaway interactive prototype.
 - The prototype uses seeded Owner, Admin, Producer, Director, Cast Member, Reviewer, Event staff, base Member, multi-role, and public visitor scenarios.
-- Required prototype scenarios are: Operator review/Publication/cancellation/At Risk work; Admin operations/staffing/Calendar/Admin access; multi-role transitions; base-Member Calendar and People disclosure; ownership transfer; and public discovery including cancellation.
+- Required prototype scenarios are: Operator review/Publication/cancellation/At Risk work; Admin operations/staffing/Calendar/Admin access; a desktop-first Operator month-planning Calendar with phone fallback; pending Cast invitation decision; multi-role transitions; base-Member Calendar and People disclosure; ownership transfer; and public discovery including cancellation.
 - Participants begin from Callsheet or the public Theater page and navigate using visible affordances. Direct protected URLs and coaching are not allowed during validation.
 - Graduation evidence is: highest-priority work found within roughly 30 seconds; correct navigation from Callsheet or Theater Operations; correct distinction among personal commitments, shared Work Queue, Operational Exceptions, and Notifications; correct understanding of Calendar detail versus opaque occupancy; and no unauthorized dead ends.
-- Run internal scenario walkthroughs first, then validate with several real Theater Operators or close proxies.
+- Run internal scenario walkthroughs first. The current internal walkthrough retained the interaction model and reconciled the Calendar and Cast-invitation gaps above; together with STA-29, it opens the first implementation frontier but does not graduate uncoached discoverability validation. Run and record several real Theater Operator or close-proxy sessions as follow-up research.
 - Capture findings in an exploratory operational-workspaces wiki page. Validated behavior updates this spec before dependent implementation tickets proceed.
 - The comprehensive ticket graph may be drafted from this spec, but prototype and validation tickets block production tickets whose boundaries or interactions depend on their findings.
 
@@ -331,7 +378,7 @@ Before production restructuring, the complete experience will be represented thr
 - Existing Proposal-preparation read-model tests are prior art for testing ordered, role-sensitive projections without coupling to UI implementation.
 - Component tests cover interaction behavior only where a component owns meaningful local state, such as switching Calendar views or displaying primary versus secondary actions. They do not duplicate server authorization tests.
 - Accessibility checks cover keyboard reachability, visible focus, semantic names, headings, dialog focus management, non-color state communication, and responsive reflow.
-- Prototype validation is human behavioral evidence, not an automated test substitute. Findings must be recorded and reconciled with this spec before dependent implementation begins.
+- Internal prototype validation is human behavioral evidence, not an automated test substitute. Findings must be recorded and reconciled with this spec before dependent implementation begins. Uncoached Operator research remains a documented follow-up after the first implementation frontier opens.
 - Standard verification is type checking, unit/integration tests, end-to-end tests, and production build. Schema tickets additionally run local migration, database, and generated-type checks.
 
 ## Out Of Scope
@@ -354,7 +401,7 @@ Before production restructuring, the complete experience will be represented thr
 ## Further Notes
 
 - This is one comprehensive product spec. Ticket generation must include the design matrix, prototype, validation, documentation reconciliation, enabling domain capabilities, and production experience rather than treating the prototype as a separate feature spec.
-- Prototype and validation tickets should block production tickets whose interaction boundaries depend on their results. Tickets for clearly independent domain foundations may proceed only when their behavior is already fixed by this spec and their interfaces do not pre-empt prototype findings.
+- The actor/state matrix, prototype, internal validation, and reconciliation tickets block production tickets whose interaction boundaries depend on their results. Uncoached research is a visible follow-up rather than a hidden production blocker. Tickets for clearly independent domain foundations may proceed only when their behavior is already fixed by this spec and their interfaces do not pre-empt prototype findings.
 - The governance model follows the accepted decision “Single transferable Theater Owner.” The work model follows the accepted decision “Separate shared work from personal alerts.”
 - The canonical glossary includes Theater Operator, Callsheet, Theater Operations, Work Queue, Operational Exception, Notification, Theater Calendar, Schedule Block, Admin Invitation, Former Theater Member, and Event Staff Assignment.
 - The current Event-publication capability path remains valuable prior art. This milestone is not a backend rewrite; it reorganizes and deepens the product around existing commands and fills the specific seams required for a coherent operating experience.
