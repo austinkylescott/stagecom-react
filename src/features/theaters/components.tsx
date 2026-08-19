@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -219,13 +220,14 @@ export function TheaterHubPage({
   return (
     <main className="page-wrap py-10 sm:py-14">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
-        Workspace
+        Personal workspace
       </p>
       <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
-        My Theaters
+        Callsheet
       </h1>
       <p className="mt-3 max-w-2xl text-[var(--sea-ink-soft)]">
-        Open a Theater workspace or choose the default used for navigation.
+        Your Theater memberships are available when you choose to enter a
+        Theater. Callsheet always remains your personal starting point.
       </p>
       <div className="mt-7 grid gap-4 md:grid-cols-2">
         {theaters.map((theater) => (
@@ -244,7 +246,7 @@ export function TheaterHubPage({
                 className="rounded-md bg-[var(--sea-ink)] px-4 py-2 text-sm font-extrabold text-white no-underline"
                 href={`/app/${theater.slug}`}
               >
-                Open workspace
+                Enter Theater
               </a>
               {!theater.isDefault ? (
                 <button
@@ -272,9 +274,15 @@ export function TheaterHubPage({
         ))}
       </div>
       {theaters.length === 0 ? (
-        <p className="mt-7 rounded-lg border border-dashed border-[var(--line)] px-5 py-7 text-[var(--sea-ink-soft)]">
-          No Theater memberships yet. Create a Theater to begin.
-        </p>
+        <section className="mt-7 rounded-lg border border-dashed border-[var(--line)] px-5 py-7 text-[var(--sea-ink-soft)]">
+          <p>No Theater memberships yet. Create a Theater to begin.</p>
+          <Link
+            className="mt-4 inline-flex rounded-md bg-[var(--sea-ink)] px-4 py-2 text-sm font-extrabold text-white no-underline focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/35"
+            to="/onboarding/theater"
+          >
+            Create a Theater
+          </Link>
+        </section>
       ) : null}
       {error ? (
         <p className="mt-4 text-sm font-semibold text-red-800">{error}</p>

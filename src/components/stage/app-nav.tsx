@@ -4,12 +4,10 @@ import {
   CalendarDays,
   ChevronDown,
   ClipboardList,
-  Eye,
   LogOut,
   Menu,
   Settings,
   Theater,
-  UserRound,
   UsersRound,
 } from 'lucide-react'
 
@@ -39,14 +37,25 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { getTheaterNavigation } from '@/features/application-shell/navigation'
+
+import type { TheaterSummary } from '@/features/theaters/commands'
+import type { TheaterNavigationId } from '@/features/application-shell/navigation'
+import type { Database } from '@/server/db/database.types'
 
 type AppNavProps = {
   email?: string
+  theaters: Array<
+    Pick<TheaterSummary, 'id' | 'name' | 'slug' | 'status'> & {
+      isDefault: boolean
+    }
+  >
 }
 
 type TheaterNavProps = {
   theaterName: string
   theaterSlug: string
+  roles: Database['public']['Enums']['theater_role'][]
 }
 
 type IconComponent = ComponentType<{ className?: string }>
@@ -54,16 +63,18 @@ type IconComponent = ComponentType<{ className?: string }>
 type AppNavItem = {
   icon: IconComponent
   label: string
-  to: '/app/callsheet' | '/onboarding'
+  to: '/app/calendar' | '/app/callsheet'
 }
 
 type TheaterNavItem = {
   accent: 'event' | 'performer' | 'theater'
   exact?: boolean
   icon: IconComponent
+  id: TheaterNavigationId
   label: string
   to:
     | '/app/$theaterSlug'
+    | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
     | '/app/$theaterSlug/settings'
@@ -73,13 +84,13 @@ type TheaterNavItem = {
 const appNavItems: AppNavItem[] = [
   {
     icon: ClipboardList,
-    label: 'My Callsheet',
+    label: 'Callsheet',
     to: '/app/callsheet',
   },
   {
-    icon: Theater,
-    label: 'Onboarding',
-    to: '/onboarding',
+    icon: CalendarDays,
+    label: 'Calendar',
+    to: '/app/calendar',
   },
 ]
 
@@ -88,32 +99,37 @@ const theaterNavItems: TheaterNavItem[] = [
     accent: 'theater',
     exact: true,
     icon: ClipboardList,
-    label: 'Callsheet',
+    id: 'operations',
+    label: 'Theater Operations',
     to: '/app/$theaterSlug',
+  },
+  {
+    accent: 'theater',
+    icon: CalendarDays,
+    id: 'calendar',
+    label: 'Calendar',
+    to: '/app/$theaterSlug/calendar',
   },
   {
     accent: 'event',
     icon: CalendarDays,
+    id: 'events',
     label: 'Events',
     to: '/app/$theaterSlug/events',
   },
   {
     accent: 'performer',
     icon: UsersRound,
+    id: 'people',
     label: 'Members',
     to: '/app/$theaterSlug/members',
   },
   {
     accent: 'theater',
     icon: Settings,
+    id: 'settings',
     label: 'Settings',
     to: '/app/$theaterSlug/settings',
-  },
-  {
-    accent: 'event',
-    icon: Eye,
-    label: 'Preview',
-    to: '/app/$theaterSlug/preview',
   },
 ]
 
@@ -179,7 +195,7 @@ export function PublicNav() {
   )
 }
 
-export function AppNav({ email }: AppNavProps) {
+export function AppNav({ email, theaters }: AppNavProps) {
   const accountInitial = getAccountInitial(email)
 
   return (
@@ -209,6 +225,7 @@ export function AppNav({ email }: AppNavProps) {
         </NavigationMenu>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <TheaterSwitcher theaters={theaters} />
           <AccountMenu accountInitial={accountInitial} email={email} />
         </div>
 
@@ -255,6 +272,7 @@ export function AppNav({ email }: AppNavProps) {
             </nav>
             <Separator className="bg-[var(--line)]" />
             <div className="grid gap-3 px-4">
+              <TheaterSwitcher theaters={theaters} />
               <div className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-[var(--surface-strong)] p-3">
                 <AccountAvatar accountInitial={accountInitial} />
                 <div className="min-w-0">
@@ -288,7 +306,13 @@ export function AppNav({ email }: AppNavProps) {
   )
 }
 
-export function TheaterNav({ theaterName, theaterSlug }: TheaterNavProps) {
+export function TheaterNav({
+  theaterName,
+  theaterSlug,
+  roles,
+}: TheaterNavProps) {
+  const availableLabels = getTheaterNavigation(roles)
+
   return (
     <div className="border-b border-[var(--line)] bg-[var(--paper)]">
       <div className="page-wrap grid gap-3 py-4 lg:grid-cols-[minmax(180px,240px)_1fr] lg:items-center">
@@ -304,13 +328,15 @@ export function TheaterNav({ theaterName, theaterSlug }: TheaterNavProps) {
           aria-label="Theater navigation"
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:justify-end"
         >
-          {theaterNavItems.map((item) => (
-            <TheaterNavLink
-              item={item}
-              key={item.to}
-              theaterSlug={theaterSlug}
-            />
-          ))}
+          {theaterNavItems
+            .filter((item) => availableLabels.includes(item.id))
+            .map((item) => (
+              <TheaterNavLink
+                item={item}
+                key={item.to}
+                theaterSlug={theaterSlug}
+              />
+            ))}
         </nav>
       </div>
     </div>
@@ -390,13 +416,7 @@ function AccountMenu({
         <DropdownMenuItem asChild>
           <Link className="cursor-pointer" to="/app/callsheet">
             <ClipboardList className="size-4" />
-            My Callsheet
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link className="cursor-pointer" to="/onboarding">
-            <UserRound className="size-4" />
-            Onboarding
+            Callsheet
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-[var(--line)]" />
@@ -406,6 +426,49 @@ function AccountMenu({
             Sign out
           </Link>
         </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function TheaterSwitcher({ theaters }: { theaters: AppNavProps['theaters'] }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label="Change Theater scope"
+          className="h-10 gap-2 border-[var(--line)] bg-[var(--surface-strong)] px-3 text-[var(--sea-ink)] hover:bg-[var(--theater-soft)]"
+          variant="outline"
+        >
+          <Theater className="size-4 text-[var(--theater-ink)]" />
+          <span className="text-sm font-extrabold">Theater scope</span>
+          <ChevronDown className="size-4 text-[var(--sea-ink-soft)]" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-64 border-[var(--line)] bg-[var(--paper-strong)]"
+      >
+        <DropdownMenuLabel>Enter a Theater</DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-[var(--line)]" />
+        {theaters.length > 0 ? (
+          theaters.map((theater) => (
+            <DropdownMenuItem asChild key={theater.id}>
+              <Link
+                className="cursor-pointer"
+                params={{ theaterSlug: theater.slug }}
+                to="/app/$theaterSlug"
+              >
+                <Theater className="size-4" />
+                <span className="truncate">{theater.name}</span>
+              </Link>
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <p className="px-2 py-3 text-sm font-medium text-[var(--sea-ink-soft)]">
+            You have no Theater memberships yet.
+          </p>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -25,12 +25,14 @@ import { Route as DevOperationalWorkspacesPrototypeRouteImport } from './routes/
 import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppCallsheetRouteImport } from './routes/app.callsheet'
+import { Route as AppCalendarRouteImport } from './routes/app.calendar'
 import { Route as AppTheaterSlugRouteImport } from './routes/app.$theaterSlug'
 import { Route as TheaterTheaterSlugEventSlugRouteImport } from './routes/theater.$theaterSlug.$eventSlug'
 import { Route as AppTheaterSlugSettingsRouteImport } from './routes/app.$theaterSlug.settings'
 import { Route as AppTheaterSlugPreviewRouteImport } from './routes/app.$theaterSlug.preview'
 import { Route as AppTheaterSlugMembersRouteImport } from './routes/app.$theaterSlug.members'
 import { Route as AppTheaterSlugEventsRouteImport } from './routes/app.$theaterSlug.events'
+import { Route as AppTheaterSlugCalendarRouteImport } from './routes/app.$theaterSlug.calendar'
 import { Route as AppTheaterSlugEventsNewRouteImport } from './routes/app.$theaterSlug.events.new'
 import { Route as AppTheaterSlugEventsEventSlugRouteImport } from './routes/app.$theaterSlug.events.$eventSlug'
 
@@ -115,6 +117,11 @@ const AppCallsheetRoute = AppCallsheetRouteImport.update({
   path: '/callsheet',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTheaterSlugRoute = AppTheaterSlugRouteImport.update({
   id: '/$theaterSlug',
   path: '/$theaterSlug',
@@ -146,6 +153,11 @@ const AppTheaterSlugEventsRoute = AppTheaterSlugEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => AppTheaterSlugRoute,
 } as any)
+const AppTheaterSlugCalendarRoute = AppTheaterSlugCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppTheaterSlugRoute,
+} as any)
 const AppTheaterSlugEventsNewRoute = AppTheaterSlugEventsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -168,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/theater': typeof TheaterRouteWithChildren
   '/app/$theaterSlug': typeof AppTheaterSlugRouteWithChildren
+  '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
@@ -176,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
+  '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
@@ -194,6 +208,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/theater': typeof TheaterRouteWithChildren
   '/app/$theaterSlug': typeof AppTheaterSlugRouteWithChildren
+  '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
@@ -202,6 +217,7 @@ export interface FileRoutesByTo {
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
+  '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
@@ -221,6 +237,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/theater': typeof TheaterRouteWithChildren
   '/app/$theaterSlug': typeof AppTheaterSlugRouteWithChildren
+  '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
@@ -229,6 +246,7 @@ export interface FileRoutesById {
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
+  '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
@@ -249,6 +267,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/theater'
     | '/app/$theaterSlug'
+    | '/app/calendar'
     | '/app/callsheet'
     | '/auth/callback'
     | '/dev/components'
@@ -257,6 +276,7 @@ export interface FileRouteTypes {
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
+    | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
     | '/app/$theaterSlug/preview'
@@ -275,6 +295,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/theater'
     | '/app/$theaterSlug'
+    | '/app/calendar'
     | '/app/callsheet'
     | '/auth/callback'
     | '/dev/components'
@@ -283,6 +304,7 @@ export interface FileRouteTypes {
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
+    | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
     | '/app/$theaterSlug/preview'
@@ -301,6 +323,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/theater'
     | '/app/$theaterSlug'
+    | '/app/calendar'
     | '/app/callsheet'
     | '/auth/callback'
     | '/dev/components'
@@ -309,6 +332,7 @@ export interface FileRouteTypes {
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
+    | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
     | '/app/$theaterSlug/preview'
@@ -448,6 +472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCallsheetRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/calendar': {
+      id: '/app/calendar'
+      path: '/calendar'
+      fullPath: '/app/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/$theaterSlug': {
       id: '/app/$theaterSlug'
       path: '/$theaterSlug'
@@ -490,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTheaterSlugEventsRouteImport
       parentRoute: typeof AppTheaterSlugRoute
     }
+    '/app/$theaterSlug/calendar': {
+      id: '/app/$theaterSlug/calendar'
+      path: '/calendar'
+      fullPath: '/app/$theaterSlug/calendar'
+      preLoaderRoute: typeof AppTheaterSlugCalendarRouteImport
+      parentRoute: typeof AppTheaterSlugRoute
+    }
     '/app/$theaterSlug/events/new': {
       id: '/app/$theaterSlug/events/new'
       path: '/new'
@@ -521,6 +559,7 @@ const AppTheaterSlugEventsRouteWithChildren =
   AppTheaterSlugEventsRoute._addFileChildren(AppTheaterSlugEventsRouteChildren)
 
 interface AppTheaterSlugRouteChildren {
+  AppTheaterSlugCalendarRoute: typeof AppTheaterSlugCalendarRoute
   AppTheaterSlugEventsRoute: typeof AppTheaterSlugEventsRouteWithChildren
   AppTheaterSlugMembersRoute: typeof AppTheaterSlugMembersRoute
   AppTheaterSlugPreviewRoute: typeof AppTheaterSlugPreviewRoute
@@ -528,6 +567,7 @@ interface AppTheaterSlugRouteChildren {
 }
 
 const AppTheaterSlugRouteChildren: AppTheaterSlugRouteChildren = {
+  AppTheaterSlugCalendarRoute: AppTheaterSlugCalendarRoute,
   AppTheaterSlugEventsRoute: AppTheaterSlugEventsRouteWithChildren,
   AppTheaterSlugMembersRoute: AppTheaterSlugMembersRoute,
   AppTheaterSlugPreviewRoute: AppTheaterSlugPreviewRoute,
@@ -540,11 +580,13 @@ const AppTheaterSlugRouteWithChildren = AppTheaterSlugRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppTheaterSlugRoute: typeof AppTheaterSlugRouteWithChildren
+  AppCalendarRoute: typeof AppCalendarRoute
   AppCallsheetRoute: typeof AppCallsheetRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppTheaterSlugRoute: AppTheaterSlugRouteWithChildren,
+  AppCalendarRoute: AppCalendarRoute,
   AppCallsheetRoute: AppCallsheetRoute,
 }
 

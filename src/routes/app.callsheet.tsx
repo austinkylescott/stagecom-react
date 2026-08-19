@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { TheaterHubPage } from '@/features/theaters/components'
+import { WorkspaceLoadingState } from '@/features/application-shell/components'
 import { getMyTheatersFn } from '@/features/theaters/server-functions'
 
 export const Route = createFileRoute('/app/callsheet')({
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/app/callsheet')({
 
     return result.data.theaters
   },
+  pendingComponent: WorkspaceLoadingState,
   component: MyCallsheetPage,
 })
 
