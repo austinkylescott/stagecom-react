@@ -917,12 +917,14 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
     ).toBeVisible()
 
     await memberPage.reload()
-    await expect(memberPage).toHaveURL('/app/callsheet')
     await expect(
-      memberPage.getByText(
-        'No Theater memberships yet. Create a Theater to begin.',
-      ),
+      memberPage.getByRole('heading', {
+        name: 'This destination is not available to you',
+      }),
     ).toBeVisible()
+    await expect(
+      memberPage.getByRole('link', { name: 'Return to Callsheet' }),
+    ).toHaveAttribute('href', '/app/callsheet')
 
     await ownerPage.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,

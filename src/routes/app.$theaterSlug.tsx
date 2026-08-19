@@ -1,9 +1,4 @@
-import {
-  Outlet,
-  createFileRoute,
-  redirect,
-  useRouterState,
-} from '@tanstack/react-router'
+import { Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
 
 import { TheaterNav } from '@/components/stage/app-nav'
 import { RoutePlaceholder } from '@/components/stage/route-placeholder'
@@ -16,9 +11,7 @@ export const Route = createFileRoute('/app/$theaterSlug')({
     })
 
     if (!membership.ok) {
-      throw redirect({
-        to: '/app/callsheet',
-      })
+      throw membership.error
     }
 
     return membership.data
@@ -28,7 +21,7 @@ export const Route = createFileRoute('/app/$theaterSlug')({
 
 function TheaterWorkspaceLayout() {
   const { theaterSlug } = Route.useParams()
-  const { theater } = Route.useRouteContext()
+  const { membership, theater } = Route.useRouteContext()
   const activeRouteId = useRouterState({
     select: (state) => state.matches.at(-1)?.routeId,
   })
@@ -36,11 +29,15 @@ function TheaterWorkspaceLayout() {
   if (activeRouteId === Route.id) {
     return (
       <>
-        <TheaterNav theaterName={theater.name} theaterSlug={theaterSlug} />
+        <TheaterNav
+          roles={membership.roles}
+          theaterName={theater.name}
+          theaterSlug={theaterSlug}
+        />
         <RoutePlaceholder
           eyebrow="Theater workspace"
-          title="Theater callsheet"
-          description="Operator dashboard for theater activity, event work, and priority actions."
+          title="Theater Operations"
+          description="Theater work and schedule context live here. Choose an available destination to continue."
           details={[['Theater', theaterSlug]]}
         />
       </>
@@ -49,7 +46,11 @@ function TheaterWorkspaceLayout() {
 
   return (
     <>
-      <TheaterNav theaterName={theater.name} theaterSlug={theaterSlug} />
+      <TheaterNav
+        roles={membership.roles}
+        theaterName={theater.name}
+        theaterSlug={theaterSlug}
+      />
       <Outlet />
     </>
   )

@@ -1,5 +1,6 @@
 import {
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   createRootRouteWithContext,
@@ -75,8 +76,15 @@ function RootNotFound() {
           Page not found
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--sea-ink-soft)]">
-          This route is not part of the current Stagecom rebuild map.
+          This page is not available. Return to Callsheet to choose an available
+          next step.
         </p>
+        <Link
+          className="mt-6 inline-flex rounded-md bg-[var(--sea-ink)] px-4 py-3 text-sm font-extrabold text-white no-underline focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/35"
+          to="/app/callsheet"
+        >
+          Return to Callsheet
+        </Link>
       </section>
     </main>
   )

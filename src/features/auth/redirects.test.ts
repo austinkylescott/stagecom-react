@@ -5,9 +5,7 @@ import { normalizeNextPath, resolvePostAuthPath } from './redirects'
 describe('normalizeNextPath', () => {
   it('allows app and onboarding routes', () => {
     expect(normalizeNextPath('/app/main-stage')).toBe('/app/main-stage')
-    expect(normalizeNextPath('/onboarding/theater')).toBe(
-      '/onboarding/theater',
-    )
+    expect(normalizeNextPath('/onboarding/theater')).toBe('/onboarding/theater')
   })
 
   it('rejects absolute, auth, and unknown routes', () => {
@@ -48,7 +46,7 @@ describe('resolvePostAuthPath', () => {
     ).toBe('/app/main-stage')
   })
 
-  it('falls back to draft setup, membership, then onboarding', () => {
+  it('uses Callsheet as the established-person fallback', () => {
     expect(
       resolvePostAuthPath({
         draftTheaterSlug: 'draft-stage',
@@ -56,13 +54,6 @@ describe('resolvePostAuthPath', () => {
       }),
     ).toBe('/onboarding/theater')
 
-    expect(
-      resolvePostAuthPath({
-        hasProfile: true,
-        membershipSlug: 'main-stage',
-      }),
-    ).toBe('/app/main-stage')
-
-    expect(resolvePostAuthPath({ hasProfile: true })).toBe('/onboarding')
+    expect(resolvePostAuthPath({ hasProfile: true })).toBe('/app/callsheet')
   })
 })

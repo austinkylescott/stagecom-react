@@ -1,4 +1,4 @@
-const FALLBACK_AUTH_REDIRECT = '/onboarding'
+const FALLBACK_AUTH_REDIRECT = '/app/callsheet'
 const SAFE_NEXT_PREFIXES = [
   '/app',
   '/onboarding',
@@ -10,11 +10,12 @@ type RedirectCandidate = {
   draftTheaterSlug?: string | null
   hasProfile: boolean
   inviteToken?: string
-  membershipSlug?: string | null
   next?: string
 }
 
-export function normalizeNextPath(next: string | undefined): string | undefined {
+export function normalizeNextPath(
+  next: string | undefined,
+): string | undefined {
   if (!next) {
     return undefined
   }
@@ -50,7 +51,6 @@ export function resolvePostAuthPath({
   draftTheaterSlug,
   hasProfile,
   inviteToken,
-  membershipSlug,
   next,
 }: RedirectCandidate): string {
   if (inviteToken) {
@@ -69,10 +69,6 @@ export function resolvePostAuthPath({
 
   if (draftTheaterSlug) {
     return '/onboarding/theater'
-  }
-
-  if (membershipSlug) {
-    return `/app/${membershipSlug}`
   }
 
   return FALLBACK_AUTH_REDIRECT

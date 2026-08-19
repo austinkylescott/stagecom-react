@@ -53,12 +53,6 @@ export async function resolveAuthRedirect(
   const draftTheaterSlug = theaters?.find(
     (theater) => theater.status === 'draft',
   )?.slug
-  const membershipSlug = memberships
-    ?.map((membership) =>
-      theaters?.find((theater) => theater.id === membership.theater_id),
-    )
-    .find(Boolean)?.slug
-
   return {
     ok: true,
     data: {
@@ -66,7 +60,6 @@ export async function resolveAuthRedirect(
         draftTheaterSlug,
         hasProfile: Boolean(profile?.display_name.trim()),
         inviteToken: input.inviteToken,
-        membershipSlug,
         next: input.next,
       }),
     },
