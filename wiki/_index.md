@@ -30,6 +30,7 @@ Every wiki page declares one of these implementation states:
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
 - Operational actor/state matrix: `docs/design/operational-actor-state-matrix.md`
+- Operational-workspaces validation: `wiki/design/operational-workspaces-validation.md`
 - Decisions: `wiki/decisions/`
 
 ## Current Direction
