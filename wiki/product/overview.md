@@ -10,7 +10,7 @@ The foundation slice helps a theater operator create, preview, and publish a cre
 
 ## Operational Workspaces Contract
 
-Implementation status: specified, not implemented
+Implementation status: partially implemented
 
 The next product frontier is a personal-first, role-aware operating experience.
 Every authenticated person starts at Callsheet, where their personal
@@ -27,6 +27,14 @@ invitation is a phone-first personal commitment from Callsheet: it gives the
 recipient the invitation state, inviter, role, and enough Event summary to
 accept or decline, without granting Calls, Candidate Slots, or accepted-Cast
 details first.
+
+The initial Callsheet projection aggregates pending Cast invitations, open
+required Availability Responses, requested Proposal edits, pending Counteroffer
+responses, and upcoming Occurrence Calls across active Theater memberships.
+Each record keeps its Event relationship separate, states its Theater, Event,
+relationship, and relevant timing, and provides an anchored path to the
+relevant Event action. Theater selection remains below personal commitments;
+shared Theater work is not yet part of this surface.
 
 This contract retains the existing public playbill and calm authenticated
 direction. A focused visual-design pass and uncoached Operator validation are

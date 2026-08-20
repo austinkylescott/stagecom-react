@@ -1274,7 +1274,10 @@ export function ManagedEventWorkspace({
           </p>
         </section>
       ) : null}
-      <section className="island-shell mt-5 rounded-lg px-6 py-6">
+      <section
+        className="island-shell mt-5 rounded-lg px-6 py-6"
+        id="cast-participation"
+      >
         <h2 className="text-2xl font-extrabold">Cast participation</h2>
         {view === 'pending_invitee' ? (
           <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
@@ -1458,12 +1461,16 @@ export function ManagedEventWorkspace({
         <>
           <ProposalPreparation.RevisionSection />
           {proposalRevisions.length > 0 ? (
-            <section className="island-shell mt-5 rounded-lg px-6 py-6">
+            <section
+              className="island-shell mt-5 rounded-lg px-6 py-6"
+              id="proposal-revisions"
+            >
               <h2 className="text-2xl font-extrabold">Submitted revisions</h2>
               <ul className="mt-3 grid gap-2">
                 {proposalRevisions.map((revision) => (
                   <li
                     className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                    id={`proposal-revision-${revision.id}`}
                     key={revision.id}
                   >
                     Revision {revision.revision_number} ·{' '}
@@ -1574,7 +1581,10 @@ export function ManagedEventWorkspace({
           ) : null}
         </>
       ) : null}
-      <section className="island-shell mt-5 rounded-lg px-6 py-6">
+      <section
+        className="island-shell mt-5 rounded-lg px-6 py-6"
+        id="availability"
+      >
         <h2 className="text-2xl font-extrabold">
           {view === 'pending_invitee'
             ? 'Your Availability Responses'
@@ -1596,6 +1606,7 @@ export function ManagedEventWorkspace({
             return (
               <article
                 className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                id={coordinationKey}
                 key={slot.id}
               >
                 <h3 className="font-extrabold">
@@ -1692,11 +1703,14 @@ export function ManagedEventWorkspace({
         </div>
         {view !== 'pending_invitee' ? (
           <div className="mt-7">
-            <h3 className="text-xl font-extrabold">Occurrence Calls</h3>
+            <h3 className="text-xl font-extrabold" id="occurrence-calls">
+              Occurrence Calls
+            </h3>
             <div className="mt-3 grid gap-4">
               {event.show_occurrences.map((occurrence, occurrenceIndex) => (
                 <article
                   className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                  id={`occurrence-call-${occurrence.id}`}
                   key={occurrence.id}
                 >
                   <h4 className="font-extrabold">
@@ -2012,7 +2026,10 @@ function ProposalCounterofferCard({
   const [isSaving, setIsSaving] = useState(false)
 
   return (
-    <div className="mt-3 rounded-md bg-amber-50 px-3 py-3 text-sm text-amber-950">
+    <div
+      className="mt-3 rounded-md bg-amber-50 px-3 py-3 text-sm text-amber-950"
+      id={`counteroffer-${counteroffer.id}`}
+    >
       <p className="font-extrabold capitalize">
         Counteroffer · {counteroffer.state}
       </p>
