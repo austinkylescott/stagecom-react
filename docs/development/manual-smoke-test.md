@@ -19,7 +19,10 @@ Theater foundation. Replace `{theaterSlug}` with the slug created during setup.
 - [ ] 8. On `/app/{theaterSlug}/preview`, confirm persisted data and publish the
       Theater.
 - [ ] 9. On `/app/{theaterSlug}/settings`, edit and persist Theater identity.
-- [ ] 10. On `/app/callsheet`, confirm the Theater list and default Theater.
+- [ ] 10. On `/app/callsheet`, confirm personal Event commitments appear above
+      Theater selection, retain their Theater/Event/relationship labels, and
+      lead to the relevant Event action. Confirm the no-commitments state still
+      provides Theater selection.
 - [ ] 11. Open `/theater/{theaterSlug}` anonymously and confirm the published
       Theater is visible. Confirm an unpublished or unknown slug is not found.
 

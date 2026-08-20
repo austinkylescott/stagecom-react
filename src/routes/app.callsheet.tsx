@@ -1,23 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { TheaterHubPage } from '@/features/theaters/components'
+import { CallsheetPage } from '@/features/callsheet/components'
+import { getMyCallsheetFn } from '@/features/callsheet/server-functions'
 import { WorkspaceLoadingState } from '@/features/application-shell/components'
-import { getMyTheatersFn } from '@/features/theaters/server-functions'
 
 export const Route = createFileRoute('/app/callsheet')({
   loader: async () => {
-    const result = await getMyTheatersFn()
+    const result = await getMyCallsheetFn()
 
     if (!result.ok) {
       throw result.error
     }
 
-    return result.data.theaters
+    return result.data
   },
   pendingComponent: WorkspaceLoadingState,
   component: MyCallsheetPage,
 })
 
 function MyCallsheetPage() {
-  return <TheaterHubPage theaters={Route.useLoaderData()} />
+  return <CallsheetPage {...Route.useLoaderData()} />
 }

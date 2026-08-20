@@ -381,7 +381,10 @@ export async function getManagedEventWorkspace(
         managedEvent.lifecycle_status === 'approved' &&
         managedEvent.operational_health === 'at_risk',
       respondToAvailability: canRespondToAvailability,
-      respondToInvitation: !isTerminalEvent && view === 'pending_invitee',
+      respondToInvitation:
+        !isTerminalEvent &&
+        actorCast?.source === 'invited' &&
+        actorCast.status === 'pending',
       respondToCounteroffer: !isTerminalEvent && isProducer,
       requestCancellation: isProducer && !isTerminalEvent,
       reviewProposalRevisions: !isTerminalEvent && isReviewer,
