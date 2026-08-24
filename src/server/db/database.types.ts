@@ -133,6 +133,7 @@ export type Database = {
         Row: {
           created_at: string
           dedupe_key: string
+          dismissed_at: string | null
           entity_id: string
           entity_type: Database['public']['Enums']['notification_entity']
           id: string
@@ -144,6 +145,7 @@ export type Database = {
         Insert: {
           created_at?: string
           dedupe_key: string
+          dismissed_at?: string | null
           entity_id: string
           entity_type: Database['public']['Enums']['notification_entity']
           id?: string
@@ -155,6 +157,7 @@ export type Database = {
         Update: {
           created_at?: string
           dedupe_key?: string
+          dismissed_at?: string | null
           entity_id?: string
           entity_type?: Database['public']['Enums']['notification_entity']
           id?: string
@@ -2998,6 +3001,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      set_notification_attention: {
+        Args: { p_action: string; p_notification_id: string }
+        Returns: {
+          dismissed_at: string
+          id: string
+          read_at: string
+        }[]
       }
       set_occurrence_call: {
         Args: {

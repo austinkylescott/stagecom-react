@@ -228,6 +228,14 @@ rows.
 
 Activity history uses explicit domain events with appropriate visibility. Availability and Occurrence Call changes emit `event.availability.responded` and `event.occurrence_call.assigned` facts in the same transaction as their state changes. Notifications must originate from domain events; UI code must not create notification rows directly. The first Event-publication milestone delivers workflow notifications in-app only.
 
+`notifications.read_at` and `notifications.dismissed_at` are recipient-owned
+attention state. The authenticated inbox may mark an alert read or dismiss it
+through the recipient-scoped `set_notification_attention` transition; both are
+idempotent and never mutate the originating Event, Theater, activity fact, or
+another recipient's Notification. Dismissed alerts remain available as
+historical Notifications but are excluded from the recipient's active
+attention list.
+
 ## Generated Types
 
 Regenerate committed database types after applying local migrations:
