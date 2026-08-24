@@ -11,10 +11,11 @@ const memberNavigation: TheaterNavigationId[] = [
   'operations',
   'calendar',
   'events',
+  'people',
 ]
 
 export function getTheaterNavigation(roles: TheaterRole[]) {
   return canManageTheater(roles)
-    ? [...memberNavigation, 'people', 'settings']
+    ? [...memberNavigation, 'settings']
     : memberNavigation
 }

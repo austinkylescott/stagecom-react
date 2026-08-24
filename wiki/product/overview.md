@@ -36,6 +36,13 @@ relationship, and relevant timing, and provides an anchored path to the
 relevant Event action. Theater selection remains below personal commitments;
 shared Theater work is not yet part of this surface.
 
+People is available to every active Theater Member. Its Directory discloses
+only active display names and Owner/Admin badges. Theater Operators receive
+separate Invitations, Access & Roles, and Former Members sections for targeted
+admission, reusable join links, narrow capabilities, deactivation, and
+historical membership; those private records are never included in the Member
+Directory projection.
+
 This contract retains the existing public playbill and calm authenticated
 direction. A focused visual-design pass and uncoached Operator validation are
 follow-ups. Internal validation plus the published reconciliation opens the

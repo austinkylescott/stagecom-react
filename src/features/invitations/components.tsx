@@ -3,7 +3,7 @@ import { CheckCircle2, Copy, Loader2, MailPlus, Theater } from 'lucide-react'
 import { useState } from 'react'
 
 import { ReusableJoinLinksManager } from '@/features/join-links/components'
-import { TheaterMembersManager } from '@/features/memberships/components'
+import { AccessAndRolesManager } from '@/features/memberships/components'
 import {
   acceptTargetedInvitationFn,
   createTargetedInvitationFn,
@@ -13,21 +13,21 @@ import {
 import type { TargetedInvitationListItem } from './persistence'
 import type { TargetedInvitationView } from './queries'
 import type { ReusableJoinLinkListItem } from '@/features/join-links/persistence'
-import type { TheaterMemberListItem } from '@/features/memberships/queries'
+import type { PeopleWorkspace } from '@/features/memberships/queries'
 
-export function TargetedInvitationsPage({
+export function PeopleWorkspacePage({
   canManage,
   actorUserId,
   initialInvitations,
   initialJoinLinks,
-  initialMembers,
+  people,
   theaterId,
 }: {
   canManage: boolean
   actorUserId: string
   initialInvitations: TargetedInvitationListItem[]
   initialJoinLinks: ReusableJoinLinkListItem[]
-  initialMembers: TheaterMemberListItem[]
+  people: PeopleWorkspace
   theaterId: string
 }) {
   const [email, setEmail] = useState('')
@@ -39,27 +39,59 @@ export function TargetedInvitationsPage({
   return (
     <main className="page-wrap py-10 sm:py-14">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
-        Members
+        People
       </p>
       <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
-        Theater Members
+        People
       </h1>
       <p className="mt-3 max-w-2xl text-[var(--sea-ink-soft)]">
-        Manage active membership and invite people to join this Theater.
+        See who belongs to this Theater and who can operate it.
       </p>
 
-      {canManage ? (
-        <TheaterMembersManager
-          actorUserId={actorUserId}
-          initialMembers={initialMembers}
-          theaterId={theaterId}
-        />
-      ) : null}
+      <section
+        aria-labelledby="people-directory"
+        className="island-shell mt-7 rounded-lg px-5 py-5"
+      >
+        <h2
+          className="text-xl font-extrabold text-[var(--sea-ink)]"
+          id="people-directory"
+        >
+          Directory
+        </h2>
+        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+          Active Theater Members. Contact details and private access data are
+          not shared here.
+        </p>
+        <div className="mt-4 grid gap-3">
+          {people.directory.map((member) => (
+            <article
+              className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+              key={member.userId}
+            >
+              <h3 className="font-extrabold text-[var(--sea-ink)]">
+                {member.displayName}
+              </h3>
+              {member.roles.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {member.roles.map((role) => (
+                    <span
+                      className="rounded-full bg-[var(--theater-soft)] px-2 py-1 text-xs font-extrabold capitalize text-[var(--theater-ink)]"
+                      key={role}
+                    >
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      </section>
 
       {canManage ? (
         <section className="island-shell mt-7 rounded-lg px-5 py-5">
           <h2 className="text-xl font-extrabold text-[var(--sea-ink)]">
-            Invite a Member
+            Invitations
           </h2>
           <form
             className="mt-4 flex flex-col gap-3 sm:flex-row"
@@ -157,10 +189,13 @@ export function TargetedInvitationsPage({
       )}
 
       {canManage ? (
-        <section className="mt-7">
-          <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
-            Invitation history
-          </h2>
+        <section aria-labelledby="targeted-invitations" className="mt-7">
+          <h3
+            className="text-xl font-extrabold text-[var(--sea-ink)]"
+            id="targeted-invitations"
+          >
+            Targeted Invitations
+          </h3>
           <div className="mt-4 grid gap-3">
             {invitations.length === 0 ? (
               <p className="island-shell rounded-lg px-5 py-5 text-[var(--sea-ink-soft)]">
@@ -219,6 +254,48 @@ export function TargetedInvitationsPage({
           initialLinks={initialJoinLinks}
           theaterId={theaterId}
         />
+      ) : null}
+      {canManage && people.operator ? (
+        <>
+          <AccessAndRolesManager
+            actorUserId={actorUserId}
+            initialMembers={people.operator.members}
+            theaterId={theaterId}
+          />
+          <section aria-labelledby="former-members" className="mt-10">
+            <h2
+              className="text-2xl font-extrabold text-[var(--sea-ink)]"
+              id="former-members"
+            >
+              Former Members
+            </h2>
+            <p className="mt-2 max-w-2xl text-[var(--sea-ink-soft)]">
+              Historical memberships are kept separate from the active
+              Directory.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {people.operator.formerMembers.length === 0 ? (
+                <p className="island-shell rounded-lg px-5 py-5 text-[var(--sea-ink-soft)]">
+                  No Former Theater Members.
+                </p>
+              ) : (
+                people.operator.formerMembers.map((member) => (
+                  <article
+                    className="island-shell rounded-lg px-5 py-4"
+                    key={member.userId}
+                  >
+                    <h3 className="font-extrabold text-[var(--sea-ink)]">
+                      {member.displayName}
+                    </h3>
+                    <p className="mt-1 text-sm capitalize text-[var(--sea-ink-soft)]">
+                      Membership ended · former role: {member.roles.join(', ')}
+                    </p>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+        </>
       ) : null}
     </main>
   )

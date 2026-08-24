@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { getTheaterNavigation } from './navigation'
 
 describe('getTheaterNavigation', () => {
-  it('keeps read-only Theater destinations while omitting protected configuration for Members', () => {
+  it('keeps People available to Members while omitting protected configuration', () => {
     expect(getTheaterNavigation(['member'])).toEqual([
       'operations',
       'calendar',
       'events',
+      'people',
     ])
   })
 

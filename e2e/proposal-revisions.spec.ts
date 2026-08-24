@@ -897,11 +897,17 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
     })
     const ownerPage = await ownerContext.newPage()
     await ownerPage.goto(`/app/${fixture.theaterSlug}/members`)
-    const memberCard = ownerPage.locator('article').filter({
-      has: ownerPage.getByRole('heading', { name: 'Accepted Cast' }),
-    })
+    const memberCard = ownerPage
+      .locator('section')
+      .filter({
+        has: ownerPage.getByRole('heading', { name: 'Access & Roles' }),
+      })
+      .locator('article')
+      .filter({
+        has: ownerPage.getByRole('heading', { name: 'Accepted Cast' }),
+      })
     const deactivateButton = memberCard.getByRole('button', {
-      name: 'Deactivate Member',
+      name: 'Deactivate',
     })
     await waitForReactHandler(deactivateButton, 'onClick')
     await deactivateButton.click()

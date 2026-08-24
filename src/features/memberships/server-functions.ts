@@ -1,7 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import { deactivateTheaterMembership } from './commands'
-import { getTheaterMembership, listTheaterMembers } from './queries'
+import {
+  getPeopleWorkspace,
+  getTheaterMembership,
+  listTheaterMembers,
+} from './queries'
 import {
   deactivateTheaterMembershipInputSchema,
   getTheaterMembershipInputSchema,
@@ -15,6 +19,10 @@ export const getTheaterMembershipFn = createServerFn({ method: 'GET' })
 export const listTheaterMembersFn = createServerFn({ method: 'GET' })
   .validator(listTheaterMembersInputSchema)
   .handler(async ({ data }) => listTheaterMembers(data))
+
+export const getPeopleWorkspaceFn = createServerFn({ method: 'GET' })
+  .validator(listTheaterMembersInputSchema)
+  .handler(async ({ data }) => getPeopleWorkspace(data))
 
 export const deactivateTheaterMembershipFn = createServerFn({ method: 'POST' })
   .validator(deactivateTheaterMembershipInputSchema)

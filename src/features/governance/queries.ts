@@ -70,31 +70,16 @@ export async function getTheaterGovernance(
   }
 
   const supabase = createSupabaseServiceRoleClient()
-  const [
-    { data: operationalTheater, error: operationalTheaterError },
-    { data: memberships, error: membershipError },
-    { data: capabilities, error: capabilityError },
-  ] = await Promise.all([
-    supabase
+  const { data: operationalTheater, error: operationalTheaterError } =
+    await supabase
       .from('theaters')
       .select(
         'id, producer_eligibility, owner_self_approval_enabled, counteroffer_response_hours, primary_venue_id, primary_venue_name, setup_buffer_minutes, turnover_buffer_minutes',
       )
       .eq('id', theater.id)
-      .single(),
-    supabase
-      .from('theater_memberships')
-      .select('user_id, roles, profiles!inner(display_name)')
-      .eq('theater_id', theater.id)
-      .eq('status', 'active')
-      .order('created_at'),
-    supabase
-      .from('theater_member_capabilities')
-      .select('user_id, capability')
-      .eq('theater_id', theater.id),
-  ])
+      .single()
 
-  if (operationalTheaterError || membershipError || capabilityError) {
+  if (operationalTheaterError) {
     return err(
       appError(
         'external_service_error',
@@ -114,13 +99,5 @@ export async function getTheaterGovernance(
       theaterId: operationalTheater.id,
       turnoverBufferMinutes: operationalTheater.turnover_buffer_minutes,
     },
-    members: memberships.map((membership) => ({
-      capabilities: capabilities
-        .filter((capability) => capability.user_id === membership.user_id)
-        .map((capability) => capability.capability),
-      displayName: membership.profiles.display_name,
-      roles: membership.roles,
-      userId: membership.user_id,
-    })),
   })
 }
