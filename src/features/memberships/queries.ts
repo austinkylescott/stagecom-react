@@ -7,6 +7,7 @@ import {
   createSupabaseAnonClient,
   createSupabaseServiceRoleClient,
 } from '@/server/supabase/client'
+import { canManageTheater } from '@/features/theaters/permissions'
 
 import type { z } from 'zod'
 import type { getTheaterMembershipInputSchema } from './schemas'
@@ -17,6 +18,27 @@ export type TheaterMemberListItem = {
   membershipVersion: number
   roles: string[]
   userId: string
+}
+
+export type TheaterDirectoryMember = {
+  displayName: string
+  roles: Array<'admin' | 'owner'>
+  userId: string
+}
+
+export type FormerTheaterMember = {
+  displayName: string
+  endedMembership: true
+  roles: string[]
+  userId: string
+}
+
+export type PeopleWorkspace = {
+  directory: TheaterDirectoryMember[]
+  operator: null | {
+    formerMembers: FormerTheaterMember[]
+    members: TheaterMemberListItem[]
+  }
 }
 
 export async function getTheaterMembership(
@@ -156,4 +178,112 @@ export async function listTheaterMembers(input: { theaterId: string }) {
       userId: membership.user_id,
     })),
   })
+}
+
+export async function getPeopleWorkspace(input: { theaterId: string }) {
+  const currentUser = await getCurrentUserFromRequest()
+
+  if (!currentUser.ok) {
+    return currentUser
+  }
+
+  const token = getBearerTokenFromRequest()
+
+  if (!token) {
+    return err(appError('unauthenticated', 'Sign in is required.'))
+  }
+
+  const userSupabase = createSupabaseAnonClient(token)
+  const { data: actorMembership, error: actorError } = await userSupabase
+    .from('theater_memberships')
+    .select('roles')
+    .eq('theater_id', input.theaterId)
+    .eq('user_id', currentUser.data.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (actorError) {
+    return err(
+      appError('external_service_error', 'People could not be loaded.'),
+    )
+  }
+
+  if (!actorMembership) {
+    return err(appError('forbidden', 'Active Theater membership is required.'))
+  }
+
+  const canManage = canManageTheater(actorMembership.roles)
+  const supabase = createSupabaseServiceRoleClient()
+  const { data: activeMemberships, error: activeError } = await supabase
+    .from('theater_memberships')
+    .select('user_id, roles, membership_version, profiles!inner(display_name)')
+    .eq('theater_id', input.theaterId)
+    .eq('status', 'active')
+    .order('created_at')
+
+  if (activeError) {
+    return err(
+      appError('external_service_error', 'People could not be loaded.'),
+    )
+  }
+
+  const directory = activeMemberships.map(
+    (membership): TheaterDirectoryMember => ({
+      displayName: membership.profiles.display_name,
+      roles: membership.roles.filter(
+        (role): role is 'admin' | 'owner' =>
+          role === 'admin' || role === 'owner',
+      ),
+      userId: membership.user_id,
+    }),
+  )
+
+  if (!canManage) {
+    return ok({ directory, operator: null } satisfies PeopleWorkspace)
+  }
+
+  const [
+    { data: capabilities, error: capabilityError },
+    { data: inactiveMemberships, error: inactiveError },
+  ] = await Promise.all([
+    supabase
+      .from('theater_member_capabilities')
+      .select('user_id, capability')
+      .eq('theater_id', input.theaterId),
+    supabase
+      .from('theater_memberships')
+      .select('user_id, roles, profiles!inner(display_name)')
+      .eq('theater_id', input.theaterId)
+      .eq('status', 'inactive')
+      .order('created_at'),
+  ])
+
+  if (capabilityError || inactiveError) {
+    return err(
+      appError('external_service_error', 'People could not be loaded.'),
+    )
+  }
+
+  return ok({
+    directory,
+    operator: {
+      formerMembers: inactiveMemberships.map(
+        (membership): FormerTheaterMember => ({
+          displayName: membership.profiles.display_name,
+          endedMembership: true,
+          roles: membership.roles,
+          userId: membership.user_id,
+        }),
+      ),
+      members: activeMemberships.map((membership): TheaterMemberListItem => ({
+        capabilities: capabilities
+          .filter((capability) => capability.user_id === membership.user_id)
+          .map((capability) => capability.capability),
+        displayName: membership.profiles.display_name,
+        membershipVersion: membership.membership_version,
+        roles: membership.roles,
+        userId: membership.user_id,
+      })),
+    },
+  } satisfies PeopleWorkspace)
 }

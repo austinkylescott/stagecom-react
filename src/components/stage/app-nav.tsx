@@ -127,7 +127,7 @@ const theaterNavItems: TheaterNavItem[] = [
     accent: 'performer',
     icon: UsersRound,
     id: 'people',
-    label: 'Members',
+    label: 'People',
     to: '/app/$theaterSlug/members',
   },
   {

@@ -1,48 +1,44 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { TargetedInvitationsPage } from '@/features/invitations/components'
+import { PeopleWorkspacePage } from '@/features/invitations/components'
 import { listTargetedInvitationsFn } from '@/features/invitations/server-functions'
 import { listReusableJoinLinksFn } from '@/features/join-links/server-functions'
-import { listTheaterMembersFn } from '@/features/memberships/server-functions'
-import { canManageTheater } from '@/features/theaters/permissions'
+import { getPeopleWorkspaceFn } from '@/features/memberships/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/members')({
   loader: async ({ context }) => {
-    const canManage = canManageTheater(context.membership.roles)
+    const peopleResult = await getPeopleWorkspaceFn({
+      data: { theaterId: context.theater.id },
+    })
+
+    if (!peopleResult.ok) {
+      throw peopleResult.error
+    }
+
+    const canManage = peopleResult.data.operator !== null
 
     if (!canManage) {
-      return { canManage, invitations: [], joinLinks: [], members: [] }
+      return {
+        canManage,
+        people: peopleResult.data,
+        invitations: [],
+        joinLinks: [],
+      }
     }
 
-    const [invitationResult, joinLinkResult, memberResult] = await Promise.all([
-      listTargetedInvitationsFn({
-        data: { theaterId: context.theater.id },
-      }),
-      listReusableJoinLinksFn({
-        data: { theaterId: context.theater.id },
-      }),
-      listTheaterMembersFn({
-        data: { theaterId: context.theater.id },
-      }),
+    const [invitationResult, joinLinkResult] = await Promise.all([
+      listTargetedInvitationsFn({ data: { theaterId: context.theater.id } }),
+      listReusableJoinLinksFn({ data: { theaterId: context.theater.id } }),
     ])
 
-    if (!invitationResult.ok) {
-      throw invitationResult.error
-    }
-
-    if (!joinLinkResult.ok) {
-      throw joinLinkResult.error
-    }
-
-    if (!memberResult.ok) {
-      throw memberResult.error
-    }
+    if (!invitationResult.ok) throw invitationResult.error
+    if (!joinLinkResult.ok) throw joinLinkResult.error
 
     return {
       canManage,
+      people: peopleResult.data,
       invitations: invitationResult.data.invitations,
       joinLinks: joinLinkResult.data.links,
-      members: memberResult.data.members,
     }
   },
   component: TheaterMembersPage,
@@ -50,15 +46,15 @@ export const Route = createFileRoute('/app/$theaterSlug/members')({
 
 function TheaterMembersPage() {
   const { membership, theater } = Route.useRouteContext()
-  const { canManage, invitations, joinLinks, members } = Route.useLoaderData()
+  const { canManage, invitations, joinLinks, people } = Route.useLoaderData()
 
   return (
-    <TargetedInvitationsPage
+    <PeopleWorkspacePage
       canManage={canManage}
       actorUserId={membership.user_id}
       initialInvitations={invitations}
       initialJoinLinks={joinLinks}
-      initialMembers={members}
+      people={people}
       theaterId={theater.id}
     />
   )

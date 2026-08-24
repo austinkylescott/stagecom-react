@@ -1,11 +1,8 @@
 import { useState } from 'react'
 
-import {
-  setTheaterMemberCapabilityFn,
-  updateTheaterGovernanceFn,
-} from './server-functions'
+import { updateTheaterGovernanceFn } from './server-functions'
 
-import type { ProducerEligibility, TheaterCapability } from './persistence'
+import type { ProducerEligibility } from './persistence'
 
 type GovernanceData = {
   governance: {
@@ -18,12 +15,6 @@ type GovernanceData = {
     theaterId: string
     turnoverBufferMinutes: number
   }
-  members: Array<{
-    capabilities: TheaterCapability[]
-    displayName: string
-    roles: string[]
-    userId: string
-  }>
 }
 
 export function TheaterGovernanceSettings({
@@ -32,7 +23,6 @@ export function TheaterGovernanceSettings({
   initialData: GovernanceData
 }) {
   const [governance, setGovernance] = useState(initialData.governance)
-  const [members, setMembers] = useState(initialData.members)
   const [message, setMessage] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -148,75 +138,6 @@ export function TheaterGovernanceSettings({
         {message ? (
           <p className="mt-3 text-sm font-semibold">{message}</p>
         ) : null}
-      </div>
-
-      <div className="mt-5 island-shell rounded-lg px-6 py-6">
-        <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
-          Member capabilities
-        </h2>
-        <div className="mt-4 grid gap-3">
-          {members.map((member) => (
-            <article
-              className="rounded-md border border-[var(--line)] px-4 py-4"
-              key={member.userId}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-extrabold">{member.displayName}</h3>
-                  <p className="text-sm text-[var(--sea-ink-soft)]">
-                    Theater role: {member.roles.join(', ')}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  {(['proposer', 'reviewer'] as const).map((capability) => {
-                    const enabled = member.capabilities.includes(capability)
-
-                    return (
-                      <button
-                        className="rounded-md border border-[var(--line)] px-3 py-2 text-sm font-bold"
-                        key={capability}
-                        onClick={async () => {
-                          setMessage(null)
-                          const result = await setTheaterMemberCapabilityFn({
-                            data: {
-                              capability,
-                              enabled: !enabled,
-                              theaterId: governance.theaterId,
-                              userId: member.userId,
-                            },
-                          })
-
-                          if (!result.ok) {
-                            setMessage(result.error.message)
-                            return
-                          }
-
-                          setMembers((current) =>
-                            current.map((candidate) =>
-                              candidate.userId === member.userId
-                                ? {
-                                    ...candidate,
-                                    capabilities: enabled
-                                      ? candidate.capabilities.filter(
-                                          (value) => value !== capability,
-                                        )
-                                      : [...candidate.capabilities, capability],
-                                  }
-                                : candidate,
-                            ),
-                          )
-                        }}
-                        type="button"
-                      >
-                        {enabled ? 'Remove' : 'Designate'} {capability}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
       </div>
     </section>
   )

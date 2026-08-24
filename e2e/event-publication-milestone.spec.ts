@@ -111,9 +111,18 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .getByRole('button', { name: 'Save Event governance' })
       .click()
     await expect(owner.page.getByText('Governance saved.')).toBeVisible()
+    await owner.page.goto(`/app/${fixture.theaterSlug}/members`)
     const reviewerCard = owner.page
+      .locator('section')
+      .filter({
+        has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
+      })
       .locator('article')
       .filter({ hasText: fixture.actors.reviewer.name })
+    await waitForReactHandler(
+      reviewerCard.getByRole('button', { name: 'Designate reviewer' }),
+      'onClick',
+    )
     await reviewerCard
       .getByRole('button', { name: 'Designate reviewer' })
       .click()
