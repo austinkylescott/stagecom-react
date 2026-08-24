@@ -24,6 +24,7 @@ import { Route as JoinLinkJoinTokenRouteImport } from './routes/join-link.$joinT
 import { Route as DevOperationalWorkspacesPrototypeRouteImport } from './routes/dev.operational-workspaces-prototype'
 import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppCallsheetRouteImport } from './routes/app.callsheet'
 import { Route as AppCalendarRouteImport } from './routes/app.calendar'
 import { Route as AppTheaterSlugRouteImport } from './routes/app.$theaterSlug'
@@ -112,6 +113,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCallsheetRoute = AppCallsheetRouteImport.update({
   id: '/callsheet',
   path: '/callsheet',
@@ -182,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/app/$theaterSlug': typeof AppTheaterSlugRouteWithChildren
   '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
+  '/app/notifications': typeof AppNotificationsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/app/$theaterSlug': typeof AppTheaterSlugRouteWithChildren
   '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
+  '/app/notifications': typeof AppNotificationsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/app/$theaterSlug': typeof AppTheaterSlugRouteWithChildren
   '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
+  '/app/notifications': typeof AppNotificationsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug'
     | '/app/calendar'
     | '/app/callsheet'
+    | '/app/notifications'
     | '/auth/callback'
     | '/dev/components'
     | '/dev/operational-workspaces-prototype'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug'
     | '/app/calendar'
     | '/app/callsheet'
+    | '/app/notifications'
     | '/auth/callback'
     | '/dev/components'
     | '/dev/operational-workspaces-prototype'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug'
     | '/app/calendar'
     | '/app/callsheet'
+    | '/app/notifications'
     | '/auth/callback'
     | '/dev/components'
     | '/dev/operational-workspaces-prototype'
@@ -465,6 +477,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/notifications': {
+      id: '/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/callsheet': {
       id: '/app/callsheet'
       path: '/callsheet'
@@ -582,12 +601,14 @@ interface AppRouteChildren {
   AppTheaterSlugRoute: typeof AppTheaterSlugRouteWithChildren
   AppCalendarRoute: typeof AppCalendarRoute
   AppCallsheetRoute: typeof AppCallsheetRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppTheaterSlugRoute: AppTheaterSlugRouteWithChildren,
   AppCalendarRoute: AppCalendarRoute,
   AppCallsheetRoute: AppCallsheetRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

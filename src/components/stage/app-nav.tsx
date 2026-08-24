@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   CalendarDays,
+  Bell,
   ChevronDown,
   ClipboardList,
   LogOut,
@@ -63,7 +64,7 @@ type IconComponent = ComponentType<{ className?: string }>
 type AppNavItem = {
   icon: IconComponent
   label: string
-  to: '/app/calendar' | '/app/callsheet'
+  to: '/app/calendar' | '/app/callsheet' | '/app/notifications'
 }
 
 type TheaterNavItem = {
@@ -91,6 +92,11 @@ const appNavItems: AppNavItem[] = [
     icon: CalendarDays,
     label: 'Calendar',
     to: '/app/calendar',
+  },
+  {
+    icon: Bell,
+    label: 'Notifications',
+    to: '/app/notifications',
   },
 ]
 
