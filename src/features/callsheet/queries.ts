@@ -41,9 +41,43 @@ export async function getMyCallsheet() {
 
   if (theaters.length === 0) return ok({ commitments: [], theaters })
 
+  const supabase = createSupabaseServiceRoleClient()
+  const { data: adminInvitations, error: adminInvitationError } = await supabase
+    .from('admin_invitations')
+    .select('id, theater_id')
+    .eq('member_user_id', currentUser.data.id)
+    .eq('status', 'pending')
+    .in(
+      'theater_id',
+      theaters.map((theater) => theater.id),
+    )
+
+  if (adminInvitationError) {
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+  }
+
+  const adminCommitments = adminInvitations.flatMap((invitation) => {
+    const theater = theaterById.get(invitation.theater_id)
+    if (!theater) return []
+    return [
+      {
+        action: 'Respond to Admin invitation',
+        actionableAt: null,
+        event: { slug: '', title: 'Admin authority invitation' },
+        id: `admin-invitation:${invitation.id}`,
+        invitationId: invitation.id,
+        kind: 'admin_invitation' as const,
+        relationship: 'Theater Member',
+        targetAnchor: '',
+        theater: { slug: theater.slug, title: theater.name },
+      },
+    ]
+  })
+
   // The actor-scoped read establishes every active Theater membership before
   // the service-role client assembles the cross-Theater projection.
-  const supabase = createSupabaseServiceRoleClient()
   const { data: events, error: eventError } = await supabase
     .from('shows')
     .select('id, theater_id, slug, title')
@@ -61,7 +95,12 @@ export async function getMyCallsheet() {
   }
 
   const eventById = new Map(events.map((event) => [event.id, event]))
-  if (events.length === 0) return ok({ commitments: [], theaters })
+  if (events.length === 0) {
+    return ok({
+      ...createCallsheetReadModel({ commitments: adminCommitments }),
+      theaters,
+    })
+  }
 
   const eventIds = events.map((event) => event.id)
   const [castResult, leadershipResult, availabilityRequestResult, callResult] =
@@ -256,6 +295,7 @@ export async function getMyCallsheet() {
     availabilityRevisions.map((revision) => [revision.id, revision]),
   )
   const commitments = [
+    ...adminCommitments,
     ...castResult.data.flatMap((cast) => {
       if (cast.status !== 'pending' || cast.source !== 'invited') return []
       return toCommitment({

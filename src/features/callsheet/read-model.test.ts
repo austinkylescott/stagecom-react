@@ -3,6 +3,32 @@ import { describe, expect, it } from 'vitest'
 import { createCallsheetReadModel } from './read-model'
 
 describe('Callsheet read model', () => {
+  it('keeps an Admin Invitation as a relationship-labeled personal commitment', () => {
+    const model = createCallsheetReadModel({
+      commitments: [
+        {
+          action: 'Respond to Admin invitation',
+          actionableAt: null,
+          event: { slug: '', title: 'Admin authority invitation' },
+          id: 'admin-invitation:1',
+          invitationId: '1',
+          kind: 'admin_invitation',
+          relationship: 'Theater Member',
+          targetAnchor: '',
+          theater: { slug: 'northstar', title: 'Northstar Theater' },
+        },
+      ],
+    })
+
+    expect(model.commitments).toMatchObject([
+      {
+        kind: 'admin_invitation',
+        relationship: 'Theater Member',
+        theater: { title: 'Northstar Theater' },
+      },
+    ])
+  })
+
   it('keeps same-Event actions separate and orders overdue work before expiring and upcoming work', () => {
     const model = createCallsheetReadModel({
       commitments: [

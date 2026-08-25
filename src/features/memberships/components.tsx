@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { setTheaterMemberCapabilityFn } from '@/features/governance/server-functions'
+import { inviteTheaterAdminFn } from '@/features/admin-invitations/server-functions'
 import { deactivateTheaterMembershipFn } from './server-functions'
 
 import type { TheaterMemberListItem } from './queries'
@@ -19,6 +20,7 @@ export function AccessAndRolesManager({
   const [deactivatingUserId, setDeactivatingUserId] = useState<string | null>(
     null,
   )
+  const [invitingUserId, setInvitingUserId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const activeOwnerCount = members.filter((member) =>
@@ -73,6 +75,39 @@ export function AccessAndRolesManager({
                 </button>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
+                {!member.roles.includes('owner') &&
+                !member.roles.includes('admin') ? (
+                  <button
+                    className="rounded-md border border-[var(--theater-ink)] bg-white px-3 py-2 text-sm font-bold text-[var(--theater-ink)] disabled:opacity-50"
+                    disabled={invitingUserId !== null}
+                    onClick={async () => {
+                      setError(null)
+                      setMessage(null)
+                      setInvitingUserId(member.userId)
+                      try {
+                        const result = await inviteTheaterAdminFn({
+                          data: {
+                            commandId: crypto.randomUUID(),
+                            memberUserId: member.userId,
+                            theaterId,
+                          },
+                        })
+                        setMessage(
+                          result.ok
+                            ? `Admin authority was offered to ${member.displayName}. It begins only if they accept.`
+                            : result.error.message,
+                        )
+                      } finally {
+                        setInvitingUserId(null)
+                      }
+                    }}
+                    type="button"
+                  >
+                    {invitingUserId === member.userId
+                      ? 'Offering Admin authority…'
+                      : 'Offer Admin authority'}
+                  </button>
+                ) : null}
                 {(['proposer', 'reviewer'] as const).map((capability) => {
                   const enabled = member.capabilities.includes(capability)
 

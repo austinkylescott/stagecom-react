@@ -85,6 +85,61 @@ export type Database = {
           },
         ]
       }
+      admin_invitations: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by_user_id: string
+          member_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['admin_invitation_status']
+          theater_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by_user_id: string
+          member_user_id: string
+          responded_at?: string | null
+          response_command_id?: string | null
+          status?: Database['public']['Enums']['admin_invitation_status']
+          theater_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by_user_id?: string
+          member_user_id?: string
+          responded_at?: string | null
+          response_command_id?: string | null
+          status?: Database['public']['Enums']['admin_invitation_status']
+          theater_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'admin_invitations_invited_by_user_id_fkey'
+            columns: ['invited_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'admin_invitations_member_user_id_fkey'
+            columns: ['member_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'admin_invitations_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       email_outbox: {
         Row: {
           created_at: string
@@ -2098,6 +2153,10 @@ export type Database = {
         Args: { p_counteroffer_id: string }
         Returns: boolean
       }
+      can_respond_to_theater_admin_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: boolean
+      }
       can_update_show_cast: {
         Args: {
           p_act_id: string
@@ -2455,6 +2514,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      invite_theater_admin: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_member_user_id: string
+          p_theater_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          invited_by_user_id: string
+          member_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['admin_invitation_status']
+          theater_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'admin_invitations'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_active_member_of_theater: {
         Args: { p_theater_id: string }
         Returns: boolean
@@ -2575,6 +2658,10 @@ export type Database = {
       notify_approaching_counteroffer_expirations: {
         Args: { p_now?: string; p_show_id?: string; p_window?: string }
         Returns: number
+      }
+      project_admin_invitation_notification: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
       }
       project_counteroffer_expiration_notification: {
         Args: { p_activity_event_id: string }
@@ -2792,6 +2879,30 @@ export type Database = {
         }
         Returns: Json
       }
+      respond_to_theater_admin_invitation: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_invitation_id: string
+          p_response: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          invited_by_user_id: string
+          member_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['admin_invitation_status']
+          theater_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'admin_invitations'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_proposal_revision: {
         Args: {
           p_action: Database['public']['Enums']['proposal_review_action']
@@ -2827,6 +2938,29 @@ export type Database = {
       revoke_targeted_theater_invitation: {
         Args: { p_actor_user_id: string; p_invitation_id: string }
         Returns: boolean
+      }
+      revoke_theater_admin_invitation: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_invitation_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          invited_by_user_id: string
+          member_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['admin_invitation_status']
+          theater_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'admin_invitations'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       rotate_reusable_theater_join_link: {
         Args: {
@@ -3199,6 +3333,7 @@ export type Database = {
     }
     Enums: {
       activity_visibility: 'admin_only' | 'member_visible' | 'self_only'
+      admin_invitation_status: 'pending' | 'accepted' | 'declined' | 'revoked'
       availability_response: 'available' | 'unavailable' | 'uncertain'
       casting_mode: 'direct_invite' | 'theater_casting' | 'public_casting'
       email_outbox_status: 'queued' | 'sent' | 'failed'
@@ -3376,6 +3511,7 @@ export const Constants = {
   public: {
     Enums: {
       activity_visibility: ['admin_only', 'member_visible', 'self_only'],
+      admin_invitation_status: ['pending', 'accepted', 'declined', 'revoked'],
       availability_response: ['available', 'unavailable', 'uncertain'],
       casting_mode: ['direct_invite', 'theater_casting', 'public_casting'],
       email_outbox_status: ['queued', 'sent', 'failed'],
