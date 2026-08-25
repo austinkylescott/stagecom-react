@@ -78,6 +78,10 @@ function notificationTitle(type: string) {
       'event.proposal_revision.owner_override_approved': 'Proposal approved',
       'event.published': 'Event published',
       'theater.membership.deactivated': 'Theater membership ended',
+      'theater.admin.invited': 'Admin authority offered',
+      'theater.admin.accepted': 'Admin authority accepted',
+      'theater.admin.declined': 'Admin authority declined',
+      'theater.admin.revoked': 'Admin authority revoked',
     }[type] ?? 'Event update'
   )
 }

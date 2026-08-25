@@ -28,9 +28,13 @@ recipient the invitation state, inviter, role, and enough Event summary to
 accept or decline, without granting Calls, Candidate Slots, or accepted-Cast
 details first.
 
-The initial Callsheet projection aggregates pending Cast invitations, open
-required Availability Responses, requested Proposal edits, pending Counteroffer
-responses, and upcoming Occurrence Calls across active Theater memberships.
+The initial Callsheet projection aggregates pending Cast invitations, pending
+Admin Invitations, open required Availability Responses, requested Proposal
+edits, pending Counteroffer responses, and upcoming Occurrence Calls across
+active Theater memberships. An Owner or Admin can offer Admin authority only
+to an active ordinary Member through People; the offer is a Member-labeled
+personal commitment, grants no authority before explicit acceptance, and keeps
+acceptance or decline factual and notification-derived.
 Each record keeps its Event relationship separate, states its Theater, Event,
 relationship, and relevant timing, and provides an anchored path to the
 relevant Event action. Theater selection remains below personal commitments;
