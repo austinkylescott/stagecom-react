@@ -2817,6 +2817,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      remove_theater_admin: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_member_user_id: string
+          p_theater_id: string
+        }
+        Returns: {
+          created_at: string
+          home_rank: number | null
+          is_home: boolean
+          membership_version: number
+          roles: Database['public']['Enums']['theater_role'][]
+          status: Database['public']['Enums']['membership_status']
+          theater_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'theater_memberships'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_event_cancellation: {
         Args: {
           p_actor_user_id: string

@@ -12,6 +12,13 @@ export type AdminInvitation = {
   theaterId: string
 }
 
+export type AdminAuthorityRemoval = {
+  memberUserId: string
+  removedAt: string
+  roles: string[]
+  theaterId: string
+}
+
 export type AdminInvitationPersistence = {
   canManage: (input: { theaterId: string; userId: string }) => Promise<boolean>
   canRespond: (input: { invitationId: string }) => Promise<boolean>
@@ -21,6 +28,12 @@ export type AdminInvitationPersistence = {
     memberUserId: string
     theaterId: string
   }) => Promise<AdminInvitation>
+  remove: (input: {
+    actorUserId: string
+    commandId: string
+    memberUserId: string
+    theaterId: string
+  }) => Promise<AdminAuthorityRemoval>
   respond: (input: {
     actorUserId: string
     commandId: string
@@ -78,7 +91,7 @@ export function createSupabaseAdminInvitationPersistence(): AdminInvitationPersi
           p_theater_id: input.theaterId,
         },
       )
-      if (error) throw mapAdminInvitationError(error)
+      if (error) throw mapAdminAuthorityError(error)
       const invitation = data
       if (!invitation)
         throw appError(
@@ -86,6 +99,43 @@ export function createSupabaseAdminInvitationPersistence(): AdminInvitationPersi
           'Admin Invitation could not be created.',
         )
       return toInvitation(invitation)
+    },
+    async remove(input) {
+      const { data, error } = await createSupabaseServiceRoleClient().rpc(
+        'remove_theater_admin',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_command_id: input.commandId,
+          p_member_user_id: input.memberUserId,
+          p_theater_id: input.theaterId,
+        },
+      )
+      if (error) throw mapAdminAuthorityError(error)
+      if (!data) {
+        throw appError(
+          'external_service_error',
+          'Admin authority could not be removed.',
+        )
+      }
+      const { data: history, error: historyError } =
+        await createSupabaseServiceRoleClient()
+          .from('activity_events')
+          .select('created_at')
+          .eq('id', input.commandId)
+          .eq('action', 'theater.admin.removed')
+          .maybeSingle()
+      if (historyError || !history) {
+        throw appError(
+          'external_service_error',
+          'Admin authority history could not be loaded.',
+        )
+      }
+      return {
+        memberUserId: data.user_id,
+        removedAt: history.created_at,
+        roles: data.roles,
+        theaterId: data.theater_id,
+      }
     },
     async respond(input) {
       const { data, error } = await createSupabaseServiceRoleClient().rpc(
@@ -97,7 +147,7 @@ export function createSupabaseAdminInvitationPersistence(): AdminInvitationPersi
           p_response: input.response,
         },
       )
-      if (error) throw mapAdminInvitationError(error)
+      if (error) throw mapAdminAuthorityError(error)
       const invitation = data
       if (!invitation)
         throw appError(
@@ -123,7 +173,7 @@ function toInvitation(invitation: {
   }
 }
 
-function mapAdminInvitationError(error: { code?: string; message: string }) {
+function mapAdminAuthorityError(error: { code?: string; message: string }) {
   if (error.code === '42501') return appError('forbidden', error.message)
   if (error.code === 'P0002') return appError('not_found', error.message)
   if (['23505', '55000', '23514'].includes(error.code ?? '')) {
@@ -131,6 +181,6 @@ function mapAdminInvitationError(error: { code?: string; message: string }) {
   }
   return appError(
     'external_service_error',
-    'Admin Invitation could not be completed.',
+    'Admin authority could not be completed.',
   )
 }

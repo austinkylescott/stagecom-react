@@ -1,26 +1,40 @@
 import { useState } from 'react'
 
 import { setTheaterMemberCapabilityFn } from '@/features/governance/server-functions'
-import { inviteTheaterAdminFn } from '@/features/admin-invitations/server-functions'
+import {
+  inviteTheaterAdminFn,
+  removeTheaterAdminFn,
+} from '@/features/admin-invitations/server-functions'
 import { deactivateTheaterMembershipFn } from './server-functions'
 
-import type { TheaterMemberListItem } from './queries'
+import type {
+  AdminAuthorityHistoryEntry,
+  TheaterMemberListItem,
+} from './queries'
 
 export function AccessAndRolesManager({
   actorUserId,
+  initialAdminAuthorityHistory,
   initialMembers,
   theaterId,
 }: {
   actorUserId: string
+  initialAdminAuthorityHistory: AdminAuthorityHistoryEntry[]
   initialMembers: TheaterMemberListItem[]
   theaterId: string
 }) {
   const [members, setMembers] = useState(initialMembers)
+  const [adminAuthorityHistory, setAdminAuthorityHistory] = useState(
+    initialAdminAuthorityHistory,
+  )
   const [confirmingUserId, setConfirmingUserId] = useState<string | null>(null)
   const [deactivatingUserId, setDeactivatingUserId] = useState<string | null>(
     null,
   )
   const [invitingUserId, setInvitingUserId] = useState<string | null>(null)
+  const [removingAdminUserId, setRemovingAdminUserId] = useState<string | null>(
+    null,
+  )
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const activeOwnerCount = members.filter((member) =>
@@ -106,6 +120,63 @@ export function AccessAndRolesManager({
                     {invitingUserId === member.userId
                       ? 'Offering Admin authority…'
                       : 'Offer Admin authority'}
+                  </button>
+                ) : null}
+                {member.roles.includes('admin') ? (
+                  <button
+                    className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-800 disabled:opacity-50"
+                    disabled={removingAdminUserId !== null}
+                    onClick={async () => {
+                      setError(null)
+                      setMessage(null)
+                      setRemovingAdminUserId(member.userId)
+                      try {
+                        const result = await removeTheaterAdminFn({
+                          data: {
+                            commandId: crypto.randomUUID(),
+                            memberUserId: member.userId,
+                            theaterId,
+                          },
+                        })
+                        if (!result.ok) {
+                          setError(result.error.message)
+                          return
+                        }
+                        setMembers((current) =>
+                          current.map((candidate) =>
+                            candidate.userId === member.userId
+                              ? { ...candidate, roles: result.data.roles }
+                              : candidate,
+                          ),
+                        )
+                        const actor = members.find(
+                          (candidate) => candidate.userId === actorUserId,
+                        )
+                        setAdminAuthorityHistory((current) => [
+                          {
+                            actorDisplayName:
+                              actor?.displayName ?? 'A Theater Operator',
+                            createdAt: result.data.removedAt,
+                            memberDisplayName: member.displayName,
+                          },
+                          ...current,
+                        ])
+                        setMessage(
+                          member.userId === actorUserId
+                            ? 'You relinquished Admin authority and remain an active Theater Member.'
+                            : `Admin authority was removed from ${member.displayName}. They remain an active Theater Member.`,
+                        )
+                      } finally {
+                        setRemovingAdminUserId(null)
+                      }
+                    }}
+                    type="button"
+                  >
+                    {removingAdminUserId === member.userId
+                      ? 'Removing Admin authority…'
+                      : member.userId === actorUserId
+                        ? 'Relinquish Admin authority'
+                        : 'Remove Admin authority'}
                   </button>
                 ) : null}
                 {(['proposer', 'reviewer'] as const).map((capability) => {
@@ -218,6 +289,28 @@ export function AccessAndRolesManager({
           )
         })}
       </div>
+      {adminAuthorityHistory.length > 0 ? (
+        <section aria-labelledby="admin-authority-history" className="mt-8">
+          <h3
+            className="text-lg font-extrabold text-[var(--sea-ink)]"
+            id="admin-authority-history"
+          >
+            Admin authority history
+          </h3>
+          <div className="mt-3 grid gap-2">
+            {adminAuthorityHistory.map((entry) => (
+              <p
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--sea-ink-soft)]"
+                key={`${entry.actorDisplayName}-${entry.memberDisplayName}-${entry.createdAt}`}
+              >
+                {entry.actorDisplayName} removed Admin authority from{' '}
+                {entry.memberDisplayName} ·{' '}
+                {new Date(entry.createdAt).toLocaleString()}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {message ? (
         <p className="mt-4 font-semibold text-emerald-900">{message}</p>
       ) : null}

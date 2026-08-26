@@ -79,3 +79,31 @@ export async function respondToTheaterAdminInvitation(
     return err(toAppError(error))
   }
 }
+
+export async function removeTheaterAdmin(
+  input: { commandId: string; memberUserId: string; theaterId: string },
+  dependencies: Dependencies = defaultDependencies(),
+) {
+  const actor = await dependencies.getCurrentUser()
+  if (!actor.ok) return actor
+  try {
+    if (
+      !(await dependencies.persistence.canManage({
+        theaterId: input.theaterId,
+        userId: actor.data.id,
+      }))
+    ) {
+      return err(
+        appError('forbidden', 'Active Owner or Admin access is required.'),
+      )
+    }
+    return ok(
+      await dependencies.persistence.remove({
+        ...input,
+        actorUserId: actor.data.id,
+      }),
+    )
+  } catch (error) {
+    return err(toAppError(error))
+  }
+}
