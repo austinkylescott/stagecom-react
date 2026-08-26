@@ -11,6 +11,8 @@ describe('Theater governance commands', () => {
       getCurrentUser: async () => ({ ok: true, data: { id: 'member-1' } }),
       persistence: {
         authorizeManagement: async () => false,
+        authorizeOwner: async () => false,
+        getOwnerSelfApprovalEnabled: async () => false,
         setMemberCapability: async () => ({ changed: false }),
         updateGovernance: async () => {
           updated = true
@@ -49,6 +51,8 @@ describe('Theater governance commands', () => {
       getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
       persistence: {
         authorizeManagement: async () => true,
+        authorizeOwner: async () => true,
+        getOwnerSelfApprovalEnabled: async () => false,
         setMemberCapability: async () => ({ changed: false }),
         updateGovernance: async (input) => {
           updates.push(input)
@@ -112,6 +116,8 @@ describe('Theater governance commands', () => {
       getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
       persistence: {
         authorizeManagement: async () => true,
+        authorizeOwner: async () => true,
+        getOwnerSelfApprovalEnabled: async () => false,
         setMemberCapability: async (input) => {
           changes.push(input)
           return { changed: true }

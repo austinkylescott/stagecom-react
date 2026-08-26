@@ -46,21 +46,30 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     expect(deniedError?.code).toBe('42501')
 
     await signInBrowser(context, fixture)
-    await page.goto(`/app/${fixture.theaterSlug}/settings`)
+    await page.goto(`/app/${fixture.theaterSlug}/settings/event-policy`)
     await page.waitForTimeout(500)
     await page
       .getByLabel('Producer eligibility')
       .selectOption('designated_proposers')
     await page.getByLabel('Counteroffer response window (hours)').fill('96')
-    await page.getByLabel('Primary Venue name').fill('Main Stage')
-    await page.getByLabel('Setup buffer (minutes)').fill('30')
-    await page.getByLabel('Turnover buffer (minutes)').fill('45')
     await page.getByLabel('Allow audited Owner self-approval').check()
     await Promise.all([
       page.waitForResponse((response) =>
         response.url().includes('/_serverFn/'),
       ),
-      page.getByRole('button', { name: 'Save Event governance' }).click(),
+      page.getByRole('button', { name: 'Save settings' }).click(),
+    ])
+    await expect(page.getByText('Governance saved.')).toBeVisible()
+
+    await page.goto(`/app/${fixture.theaterSlug}/settings/venue-calendar`)
+    await page.getByLabel('Primary Venue name').fill('Main Stage')
+    await page.getByLabel('Setup buffer (minutes)').fill('30')
+    await page.getByLabel('Turnover buffer (minutes)').fill('45')
+    await Promise.all([
+      page.waitForResponse((response) =>
+        response.url().includes('/_serverFn/'),
+      ),
+      page.getByRole('button', { name: 'Save settings' }).click(),
     ])
     await expect(page.getByText('Governance saved.')).toBeVisible()
 

@@ -12,7 +12,7 @@ export const theaterCapabilitySchema = z.enum(['proposer', 'reviewer'])
 
 export const updateTheaterGovernanceInputSchema = z.object({
   counterofferResponseHours: z.number().int().min(1).max(720),
-  ownerSelfApprovalEnabled: z.boolean(),
+  ownerSelfApprovalEnabled: z.boolean().optional(),
   primaryVenueName: z.string().trim().min(1).max(160),
   producerEligibility: producerEligibilitySchema,
   setupBufferMinutes: z.number().int().min(0).max(1440),

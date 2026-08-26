@@ -43,10 +43,31 @@ export async function updateTheaterGovernance(
       return err(appError('forbidden', 'Owner or Admin access is required.'))
     }
 
+    if (
+      input.ownerSelfApprovalEnabled !== undefined &&
+      !(await dependencies.persistence.authorizeOwner({
+        theaterId: input.theaterId,
+        userId: currentUser.data.id,
+      }))
+    ) {
+      return err(
+        appError(
+          'forbidden',
+          'Only the current Owner may change self-approval.',
+        ),
+      )
+    }
+
+    const ownerSelfApprovalEnabled =
+      input.ownerSelfApprovalEnabled ??
+      (await dependencies.persistence.getOwnerSelfApprovalEnabled({
+        theaterId: input.theaterId,
+      }))
+
     const governance = await dependencies.persistence.updateGovernance({
       actorUserId: currentUser.data.id,
       counterofferResponseHours: input.counterofferResponseHours,
-      ownerSelfApprovalEnabled: input.ownerSelfApprovalEnabled,
+      ownerSelfApprovalEnabled,
       primaryVenueName: input.primaryVenueName.trim(),
       producerEligibility: input.producerEligibility,
       setupBufferMinutes: input.setupBufferMinutes,

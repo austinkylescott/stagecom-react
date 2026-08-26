@@ -96,20 +96,21 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       ).toBeVisible()
     }
 
-    await owner.page.goto(`/app/${fixture.theaterSlug}/settings`)
+    await owner.page.goto(`/app/${fixture.theaterSlug}/settings/event-policy`)
     await waitForReactHandler(
-      owner.page.getByLabel('Primary Venue name'),
+      owner.page.getByLabel('Producer eligibility'),
       'onChange',
     )
     await owner.page
       .getByLabel('Producer eligibility')
       .selectOption('all_members')
+    await owner.page.getByRole('button', { name: 'Save settings' }).click()
+    await expect(owner.page.getByText('Governance saved.')).toBeVisible()
+    await owner.page.goto(`/app/${fixture.theaterSlug}/settings/venue-calendar`)
     await owner.page.getByLabel('Primary Venue name').fill('Milestone Stage')
     await owner.page.getByLabel('Setup buffer (minutes)').fill('30')
     await owner.page.getByLabel('Turnover buffer (minutes)').fill('30')
-    await owner.page
-      .getByRole('button', { name: 'Save Event governance' })
-      .click()
+    await owner.page.getByRole('button', { name: 'Save settings' }).click()
     await expect(owner.page.getByText('Governance saved.')).toBeVisible()
     await owner.page.goto(`/app/${fixture.theaterSlug}/members`)
     const reviewerCard = owner.page

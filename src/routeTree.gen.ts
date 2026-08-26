@@ -34,6 +34,11 @@ import { Route as AppTheaterSlugPreviewRouteImport } from './routes/app.$theater
 import { Route as AppTheaterSlugMembersRouteImport } from './routes/app.$theaterSlug.members'
 import { Route as AppTheaterSlugEventsRouteImport } from './routes/app.$theaterSlug.events'
 import { Route as AppTheaterSlugCalendarRouteImport } from './routes/app.$theaterSlug.calendar'
+import { Route as AppTheaterSlugSettingsIndexRouteImport } from './routes/app.$theaterSlug.settings.index'
+import { Route as AppTheaterSlugSettingsVenueCalendarRouteImport } from './routes/app.$theaterSlug.settings.venue-calendar'
+import { Route as AppTheaterSlugSettingsPublicPresenceRouteImport } from './routes/app.$theaterSlug.settings.public-presence'
+import { Route as AppTheaterSlugSettingsOwnershipSecurityRouteImport } from './routes/app.$theaterSlug.settings.ownership-security'
+import { Route as AppTheaterSlugSettingsEventPolicyRouteImport } from './routes/app.$theaterSlug.settings.event-policy'
 import { Route as AppTheaterSlugEventsNewRouteImport } from './routes/app.$theaterSlug.events.new'
 import { Route as AppTheaterSlugEventsEventSlugRouteImport } from './routes/app.$theaterSlug.events.$eventSlug'
 
@@ -164,6 +169,36 @@ const AppTheaterSlugCalendarRoute = AppTheaterSlugCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AppTheaterSlugRoute,
 } as any)
+const AppTheaterSlugSettingsIndexRoute =
+  AppTheaterSlugSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppTheaterSlugSettingsRoute,
+  } as any)
+const AppTheaterSlugSettingsVenueCalendarRoute =
+  AppTheaterSlugSettingsVenueCalendarRouteImport.update({
+    id: '/venue-calendar',
+    path: '/venue-calendar',
+    getParentRoute: () => AppTheaterSlugSettingsRoute,
+  } as any)
+const AppTheaterSlugSettingsPublicPresenceRoute =
+  AppTheaterSlugSettingsPublicPresenceRouteImport.update({
+    id: '/public-presence',
+    path: '/public-presence',
+    getParentRoute: () => AppTheaterSlugSettingsRoute,
+  } as any)
+const AppTheaterSlugSettingsOwnershipSecurityRoute =
+  AppTheaterSlugSettingsOwnershipSecurityRouteImport.update({
+    id: '/ownership-security',
+    path: '/ownership-security',
+    getParentRoute: () => AppTheaterSlugSettingsRoute,
+  } as any)
+const AppTheaterSlugSettingsEventPolicyRoute =
+  AppTheaterSlugSettingsEventPolicyRouteImport.update({
+    id: '/event-policy',
+    path: '/event-policy',
+    getParentRoute: () => AppTheaterSlugSettingsRoute,
+  } as any)
 const AppTheaterSlugEventsNewRoute = AppTheaterSlugEventsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -200,10 +235,15 @@ export interface FileRoutesByFullPath {
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
-  '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRoute
+  '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRouteWithChildren
   '/theater/$theaterSlug/$eventSlug': typeof TheaterTheaterSlugEventSlugRoute
   '/app/$theaterSlug/events/$eventSlug': typeof AppTheaterSlugEventsEventSlugRoute
   '/app/$theaterSlug/events/new': typeof AppTheaterSlugEventsNewRoute
+  '/app/$theaterSlug/settings/event-policy': typeof AppTheaterSlugSettingsEventPolicyRoute
+  '/app/$theaterSlug/settings/ownership-security': typeof AppTheaterSlugSettingsOwnershipSecurityRoute
+  '/app/$theaterSlug/settings/public-presence': typeof AppTheaterSlugSettingsPublicPresenceRoute
+  '/app/$theaterSlug/settings/venue-calendar': typeof AppTheaterSlugSettingsVenueCalendarRoute
+  '/app/$theaterSlug/settings/': typeof AppTheaterSlugSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -229,10 +269,14 @@ export interface FileRoutesByTo {
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
-  '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRoute
   '/theater/$theaterSlug/$eventSlug': typeof TheaterTheaterSlugEventSlugRoute
   '/app/$theaterSlug/events/$eventSlug': typeof AppTheaterSlugEventsEventSlugRoute
   '/app/$theaterSlug/events/new': typeof AppTheaterSlugEventsNewRoute
+  '/app/$theaterSlug/settings/event-policy': typeof AppTheaterSlugSettingsEventPolicyRoute
+  '/app/$theaterSlug/settings/ownership-security': typeof AppTheaterSlugSettingsOwnershipSecurityRoute
+  '/app/$theaterSlug/settings/public-presence': typeof AppTheaterSlugSettingsPublicPresenceRoute
+  '/app/$theaterSlug/settings/venue-calendar': typeof AppTheaterSlugSettingsVenueCalendarRoute
+  '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -259,10 +303,15 @@ export interface FileRoutesById {
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
-  '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRoute
+  '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRouteWithChildren
   '/theater/$theaterSlug/$eventSlug': typeof TheaterTheaterSlugEventSlugRoute
   '/app/$theaterSlug/events/$eventSlug': typeof AppTheaterSlugEventsEventSlugRoute
   '/app/$theaterSlug/events/new': typeof AppTheaterSlugEventsNewRoute
+  '/app/$theaterSlug/settings/event-policy': typeof AppTheaterSlugSettingsEventPolicyRoute
+  '/app/$theaterSlug/settings/ownership-security': typeof AppTheaterSlugSettingsOwnershipSecurityRoute
+  '/app/$theaterSlug/settings/public-presence': typeof AppTheaterSlugSettingsPublicPresenceRoute
+  '/app/$theaterSlug/settings/venue-calendar': typeof AppTheaterSlugSettingsVenueCalendarRoute
+  '/app/$theaterSlug/settings/': typeof AppTheaterSlugSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -294,6 +343,11 @@ export interface FileRouteTypes {
     | '/theater/$theaterSlug/$eventSlug'
     | '/app/$theaterSlug/events/$eventSlug'
     | '/app/$theaterSlug/events/new'
+    | '/app/$theaterSlug/settings/event-policy'
+    | '/app/$theaterSlug/settings/ownership-security'
+    | '/app/$theaterSlug/settings/public-presence'
+    | '/app/$theaterSlug/settings/venue-calendar'
+    | '/app/$theaterSlug/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -319,10 +373,14 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
     | '/app/$theaterSlug/preview'
-    | '/app/$theaterSlug/settings'
     | '/theater/$theaterSlug/$eventSlug'
     | '/app/$theaterSlug/events/$eventSlug'
     | '/app/$theaterSlug/events/new'
+    | '/app/$theaterSlug/settings/event-policy'
+    | '/app/$theaterSlug/settings/ownership-security'
+    | '/app/$theaterSlug/settings/public-presence'
+    | '/app/$theaterSlug/settings/venue-calendar'
+    | '/app/$theaterSlug/settings'
   id:
     | '__root__'
     | '/'
@@ -352,6 +410,11 @@ export interface FileRouteTypes {
     | '/theater/$theaterSlug/$eventSlug'
     | '/app/$theaterSlug/events/$eventSlug'
     | '/app/$theaterSlug/events/new'
+    | '/app/$theaterSlug/settings/event-policy'
+    | '/app/$theaterSlug/settings/ownership-security'
+    | '/app/$theaterSlug/settings/public-presence'
+    | '/app/$theaterSlug/settings/venue-calendar'
+    | '/app/$theaterSlug/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -547,6 +610,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTheaterSlugCalendarRouteImport
       parentRoute: typeof AppTheaterSlugRoute
     }
+    '/app/$theaterSlug/settings/': {
+      id: '/app/$theaterSlug/settings/'
+      path: '/'
+      fullPath: '/app/$theaterSlug/settings/'
+      preLoaderRoute: typeof AppTheaterSlugSettingsIndexRouteImport
+      parentRoute: typeof AppTheaterSlugSettingsRoute
+    }
+    '/app/$theaterSlug/settings/venue-calendar': {
+      id: '/app/$theaterSlug/settings/venue-calendar'
+      path: '/venue-calendar'
+      fullPath: '/app/$theaterSlug/settings/venue-calendar'
+      preLoaderRoute: typeof AppTheaterSlugSettingsVenueCalendarRouteImport
+      parentRoute: typeof AppTheaterSlugSettingsRoute
+    }
+    '/app/$theaterSlug/settings/public-presence': {
+      id: '/app/$theaterSlug/settings/public-presence'
+      path: '/public-presence'
+      fullPath: '/app/$theaterSlug/settings/public-presence'
+      preLoaderRoute: typeof AppTheaterSlugSettingsPublicPresenceRouteImport
+      parentRoute: typeof AppTheaterSlugSettingsRoute
+    }
+    '/app/$theaterSlug/settings/ownership-security': {
+      id: '/app/$theaterSlug/settings/ownership-security'
+      path: '/ownership-security'
+      fullPath: '/app/$theaterSlug/settings/ownership-security'
+      preLoaderRoute: typeof AppTheaterSlugSettingsOwnershipSecurityRouteImport
+      parentRoute: typeof AppTheaterSlugSettingsRoute
+    }
+    '/app/$theaterSlug/settings/event-policy': {
+      id: '/app/$theaterSlug/settings/event-policy'
+      path: '/event-policy'
+      fullPath: '/app/$theaterSlug/settings/event-policy'
+      preLoaderRoute: typeof AppTheaterSlugSettingsEventPolicyRouteImport
+      parentRoute: typeof AppTheaterSlugSettingsRoute
+    }
     '/app/$theaterSlug/events/new': {
       id: '/app/$theaterSlug/events/new'
       path: '/new'
@@ -577,12 +675,38 @@ const AppTheaterSlugEventsRouteChildren: AppTheaterSlugEventsRouteChildren = {
 const AppTheaterSlugEventsRouteWithChildren =
   AppTheaterSlugEventsRoute._addFileChildren(AppTheaterSlugEventsRouteChildren)
 
+interface AppTheaterSlugSettingsRouteChildren {
+  AppTheaterSlugSettingsEventPolicyRoute: typeof AppTheaterSlugSettingsEventPolicyRoute
+  AppTheaterSlugSettingsOwnershipSecurityRoute: typeof AppTheaterSlugSettingsOwnershipSecurityRoute
+  AppTheaterSlugSettingsPublicPresenceRoute: typeof AppTheaterSlugSettingsPublicPresenceRoute
+  AppTheaterSlugSettingsVenueCalendarRoute: typeof AppTheaterSlugSettingsVenueCalendarRoute
+  AppTheaterSlugSettingsIndexRoute: typeof AppTheaterSlugSettingsIndexRoute
+}
+
+const AppTheaterSlugSettingsRouteChildren: AppTheaterSlugSettingsRouteChildren =
+  {
+    AppTheaterSlugSettingsEventPolicyRoute:
+      AppTheaterSlugSettingsEventPolicyRoute,
+    AppTheaterSlugSettingsOwnershipSecurityRoute:
+      AppTheaterSlugSettingsOwnershipSecurityRoute,
+    AppTheaterSlugSettingsPublicPresenceRoute:
+      AppTheaterSlugSettingsPublicPresenceRoute,
+    AppTheaterSlugSettingsVenueCalendarRoute:
+      AppTheaterSlugSettingsVenueCalendarRoute,
+    AppTheaterSlugSettingsIndexRoute: AppTheaterSlugSettingsIndexRoute,
+  }
+
+const AppTheaterSlugSettingsRouteWithChildren =
+  AppTheaterSlugSettingsRoute._addFileChildren(
+    AppTheaterSlugSettingsRouteChildren,
+  )
+
 interface AppTheaterSlugRouteChildren {
   AppTheaterSlugCalendarRoute: typeof AppTheaterSlugCalendarRoute
   AppTheaterSlugEventsRoute: typeof AppTheaterSlugEventsRouteWithChildren
   AppTheaterSlugMembersRoute: typeof AppTheaterSlugMembersRoute
   AppTheaterSlugPreviewRoute: typeof AppTheaterSlugPreviewRoute
-  AppTheaterSlugSettingsRoute: typeof AppTheaterSlugSettingsRoute
+  AppTheaterSlugSettingsRoute: typeof AppTheaterSlugSettingsRouteWithChildren
 }
 
 const AppTheaterSlugRouteChildren: AppTheaterSlugRouteChildren = {
@@ -590,7 +714,7 @@ const AppTheaterSlugRouteChildren: AppTheaterSlugRouteChildren = {
   AppTheaterSlugEventsRoute: AppTheaterSlugEventsRouteWithChildren,
   AppTheaterSlugMembersRoute: AppTheaterSlugMembersRoute,
   AppTheaterSlugPreviewRoute: AppTheaterSlugPreviewRoute,
-  AppTheaterSlugSettingsRoute: AppTheaterSlugSettingsRoute,
+  AppTheaterSlugSettingsRoute: AppTheaterSlugSettingsRouteWithChildren,
 }
 
 const AppTheaterSlugRouteWithChildren = AppTheaterSlugRoute._addFileChildren(
