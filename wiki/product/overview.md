@@ -35,6 +35,11 @@ active Theater memberships. An Owner or Admin can offer Admin authority only
 to an active ordinary Member through People; the offer is a Member-labeled
 personal commitment, grants no authority before explicit acceptance, and keeps
 acceptance or decline factual and notification-derived.
+An Owner may remove any current Admin, while an Admin may remove themself or a
+peer Admin. That removes only Admin authority: the person remains an active
+Theater Member, the Owner relationship is excluded from ordinary Admin
+management, and the change is recorded in Theater history with its actor and
+time.
 Each record keeps its Event relationship separate, states its Theater, Event,
 relationship, and relevant timing, and provides an anchored path to the
 relevant Event action. Theater selection remains below personal commitments;

@@ -10,6 +10,7 @@ import {
 import { canManageTheater } from '@/features/theaters/permissions'
 
 import type { z } from 'zod'
+import type { Json } from '@/server/db/database.types'
 import type { getTheaterMembershipInputSchema } from './schemas'
 
 export type TheaterMemberListItem = {
@@ -34,11 +35,18 @@ export type FormerTheaterMember = {
 }
 
 export type PeopleWorkspace = {
+  adminAuthorityHistory: AdminAuthorityHistoryEntry[]
   directory: TheaterDirectoryMember[]
   operator: null | {
     formerMembers: FormerTheaterMember[]
     members: TheaterMemberListItem[]
   }
+}
+
+export type AdminAuthorityHistoryEntry = {
+  actorDisplayName: string
+  createdAt: string
+  memberDisplayName: string
 }
 
 export async function getTheaterMembership(
@@ -239,12 +247,17 @@ export async function getPeopleWorkspace(input: { theaterId: string }) {
   )
 
   if (!canManage) {
-    return ok({ directory, operator: null } satisfies PeopleWorkspace)
+    return ok({
+      adminAuthorityHistory: [],
+      directory,
+      operator: null,
+    } satisfies PeopleWorkspace)
   }
 
   const [
     { data: capabilities, error: capabilityError },
     { data: inactiveMemberships, error: inactiveError },
+    { data: adminAuthorityEvents, error: historyError },
   ] = await Promise.all([
     supabase
       .from('theater_member_capabilities')
@@ -256,15 +269,41 @@ export async function getPeopleWorkspace(input: { theaterId: string }) {
       .eq('theater_id', input.theaterId)
       .eq('status', 'inactive')
       .order('created_at'),
+    supabase
+      .from('activity_events')
+      .select('actor_user_id, created_at, payload')
+      .eq('theater_id', input.theaterId)
+      .eq('action', 'theater.admin.removed')
+      .order('created_at', { ascending: false }),
   ])
 
-  if (capabilityError || inactiveError) {
+  if (capabilityError || inactiveError || historyError) {
     return err(
       appError('external_service_error', 'People could not be loaded.'),
     )
   }
 
+  const membershipsByUserId = new Map(
+    [...activeMemberships, ...inactiveMemberships].map((membership) => [
+      membership.user_id,
+      membership,
+    ]),
+  )
+
   return ok({
+    adminAuthorityHistory: (adminAuthorityEvents ?? []).flatMap((event) => {
+      const memberUserId = getPayloadUserId(event.payload)
+      const actor = membershipsByUserId.get(event.actor_user_id ?? '')
+      const member = membershipsByUserId.get(memberUserId ?? '')
+      if (!actor || !member) return []
+      return [
+        {
+          actorDisplayName: actor.profiles.display_name,
+          createdAt: event.created_at,
+          memberDisplayName: member.profiles.display_name,
+        },
+      ]
+    }),
     directory,
     operator: {
       formerMembers: inactiveMemberships.map(
@@ -286,4 +325,16 @@ export async function getPeopleWorkspace(input: { theaterId: string }) {
       })),
     },
   } satisfies PeopleWorkspace)
+}
+
+function getPayloadUserId(payload: Json) {
+  if (
+    typeof payload === 'object' &&
+    payload !== null &&
+    !Array.isArray(payload) &&
+    typeof payload.memberUserId === 'string'
+  ) {
+    return payload.memberUserId
+  }
+  return null
 }

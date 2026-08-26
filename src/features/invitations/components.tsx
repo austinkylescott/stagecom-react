@@ -259,6 +259,7 @@ export function PeopleWorkspacePage({
         <>
           <AccessAndRolesManager
             actorUserId={actorUserId}
+            initialAdminAuthorityHistory={people.adminAuthorityHistory}
             initialMembers={people.operator.members}
             theaterId={theaterId}
           />

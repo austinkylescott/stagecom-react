@@ -10,6 +10,13 @@ import type { PeopleWorkspace } from '@/features/memberships/queries'
 afterEach(cleanup)
 
 const people = {
+  adminAuthorityHistory: [
+    {
+      actorDisplayName: 'Owner Olive',
+      createdAt: '2026-08-26T12:30:00.000Z',
+      memberDisplayName: 'Member Mira',
+    },
+  ],
   directory: [
     { displayName: 'Owner Olive', roles: ['owner'], userId: 'owner' },
     { displayName: 'Member Mira', roles: [], userId: 'member' },
@@ -31,6 +38,13 @@ const people = {
         roles: ['owner'],
         userId: 'owner',
       },
+      {
+        capabilities: [],
+        displayName: 'Admin Ash',
+        membershipVersion: 1,
+        roles: ['admin', 'member'],
+        userId: 'admin',
+      },
     ],
   },
 } satisfies PeopleWorkspace
@@ -43,7 +57,11 @@ describe('PeopleWorkspacePage', () => {
         canManage={false}
         initialInvitations={[]}
         initialJoinLinks={[]}
-        people={{ directory: people.directory, operator: null }}
+        people={{
+          adminAuthorityHistory: [],
+          directory: people.directory,
+          operator: null,
+        }}
         theaterId="10000000-0000-0000-0000-000000000001"
       />,
     )
@@ -76,5 +94,14 @@ describe('PeopleWorkspacePage', () => {
     expect(screen.getByRole('heading', { name: 'Former Members' })).toBeTruthy()
     expect(screen.getByText('Former Fern')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Remove reviewer' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Remove Admin authority' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: 'Admin authority history' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/Owner Olive removed Admin authority from Member Mira/),
+    ).toBeTruthy()
   })
 })

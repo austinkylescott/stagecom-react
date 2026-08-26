@@ -13,3 +13,9 @@ export const respondToTheaterAdminInvitationInputSchema = z.object({
   invitationId: uuidSchema,
   response: z.enum(['accepted', 'declined']),
 })
+
+export const removeTheaterAdminInputSchema = z.object({
+  commandId: uuidSchema,
+  memberUserId: uuidSchema,
+  theaterId: uuidSchema,
+})
