@@ -22,6 +22,13 @@ export type TheaterGovernance = {
 }
 
 export type GovernancePersistence = {
+  authorizeOwner: (input: {
+    theaterId: string
+    userId: string
+  }) => Promise<boolean>
+  getOwnerSelfApprovalEnabled: (input: {
+    theaterId: string
+  }) => Promise<boolean>
   authorizeManagement: (input: {
     theaterId: string
     userId: string
@@ -40,6 +47,37 @@ export type GovernancePersistence = {
 
 export function createSupabaseGovernancePersistence(): GovernancePersistence {
   return {
+    async authorizeOwner(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase
+        .from('theater_memberships')
+        .select('roles')
+        .eq('theater_id', input.theaterId)
+        .eq('user_id', input.userId)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Theater access could not be checked.',
+        )
+      }
+      return data?.roles.includes('owner') ?? false
+    },
+    async getOwnerSelfApprovalEnabled({ theaterId }) {
+      const { data, error } = await createSupabaseServiceRoleClient()
+        .from('theaters')
+        .select('owner_self_approval_enabled')
+        .eq('id', theaterId)
+        .single()
+      if (error) {
+        throw appError(
+          'external_service_error',
+          'Theater governance could not be loaded.',
+        )
+      }
+      return data.owner_self_approval_enabled
+    },
     async authorizeManagement(input) {
       const supabase = createAuthenticatedClient()
       const { data, error } = await supabase
