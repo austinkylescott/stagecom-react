@@ -1,3 +1,8 @@
+import { useState } from 'react'
+
+import { respondToTheaterAdminInvitationFn } from '@/features/admin-invitations/server-functions'
+import { respondToTheaterOwnershipTransferFn } from '@/features/ownership-transfers/server-functions'
+
 import type { CallsheetCommitment } from './read-model'
 
 export type CallsheetTheater = {
@@ -118,19 +123,32 @@ function CommitmentCard({ commitment }: { commitment: CallsheetCommitment }) {
   const [pending, setPending] = useState(false)
 
   async function respond(response: 'accepted' | 'declined') {
-    if (!commitment.invitationId) return
+    if (!commitment.responseId) return
     setPending(true)
     setMessage(null)
     try {
-      const result = await respondToTheaterAdminInvitationFn({
-        data: {
-          commandId: crypto.randomUUID(),
-          invitationId: commitment.invitationId,
-          response,
-        },
-      })
+      const result =
+        commitment.kind === 'ownership_transfer'
+          ? await respondToTheaterOwnershipTransferFn({
+              data: {
+                commandId: crypto.randomUUID(),
+                response,
+                transferId: commitment.responseId,
+              },
+            })
+          : await respondToTheaterAdminInvitationFn({
+              data: {
+                commandId: crypto.randomUUID(),
+                invitationId: commitment.responseId,
+                response,
+              },
+            })
       setMessage(
-        result.ok ? `Admin authority ${response}.` : result.error.message,
+        result.ok
+          ? commitment.kind === 'ownership_transfer'
+            ? `Theater ownership transfer ${response}.`
+            : `Admin authority ${response}.`
+          : result.error.message,
       )
     } finally {
       setPending(false)
@@ -158,7 +176,7 @@ function CommitmentCard({ commitment }: { commitment: CallsheetCommitment }) {
           {commitment.urgencyReason}
         </p>
       ) : null}
-      {commitment.invitationId ? (
+      {commitment.responseId ? (
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             className="rounded-md bg-[var(--sea-ink)] px-4 py-3 text-sm font-extrabold text-white disabled:opacity-50"
@@ -166,7 +184,9 @@ function CommitmentCard({ commitment }: { commitment: CallsheetCommitment }) {
             onClick={() => respond('accepted')}
             type="button"
           >
-            Accept Admin authority
+            {commitment.kind === 'ownership_transfer'
+              ? 'Accept Theater ownership'
+              : 'Accept Admin authority'}
           </button>
           <button
             className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm font-extrabold disabled:opacity-50"
@@ -197,6 +217,3 @@ function formatCommitmentTime(actionableAt: string | null) {
     timeStyle: 'short',
   }).format(new Date(actionableAt))
 }
-import { useState } from 'react'
-
-import { respondToTheaterAdminInvitationFn } from '@/features/admin-invitations/server-functions'

@@ -1,5 +1,6 @@
 export type CallsheetCommitmentKind =
   | 'admin_invitation'
+  | 'ownership_transfer'
   | 'availability_response'
   | 'cast_invitation'
   | 'counteroffer'
@@ -12,7 +13,7 @@ export type CallsheetCommitmentInput = {
   deadline?: string
   event: { slug: string; title: string }
   id: string
-  invitationId?: string
+  responseId?: string
   kind: CallsheetCommitmentKind
   relationship: string
   targetAnchor: string
@@ -72,6 +73,7 @@ function commitmentPriority(commitment: CallsheetCommitmentInput, now: Date) {
 
   return {
     admin_invitation: 2,
+    ownership_transfer: 2,
     cast_invitation: 2,
     counteroffer: 2,
     proposal_edits: 3,

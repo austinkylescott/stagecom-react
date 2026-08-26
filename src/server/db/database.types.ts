@@ -1953,6 +1953,64 @@ export type Database = {
           },
         ]
       }
+      theater_ownership_transfers: {
+        Row: {
+          created_at: string
+          former_owner_role: Database['public']['Enums']['theater_role']
+          id: string
+          member_user_id: string
+          proposed_by_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['theater_ownership_transfer_status']
+          theater_id: string
+        }
+        Insert: {
+          created_at?: string
+          former_owner_role?: Database['public']['Enums']['theater_role']
+          id?: string
+          member_user_id: string
+          proposed_by_user_id: string
+          responded_at?: string | null
+          response_command_id?: string | null
+          status?: Database['public']['Enums']['theater_ownership_transfer_status']
+          theater_id: string
+        }
+        Update: {
+          created_at?: string
+          former_owner_role?: Database['public']['Enums']['theater_role']
+          id?: string
+          member_user_id?: string
+          proposed_by_user_id?: string
+          responded_at?: string | null
+          response_command_id?: string | null
+          status?: Database['public']['Enums']['theater_ownership_transfer_status']
+          theater_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'theater_ownership_transfers_member_user_id_fkey'
+            columns: ['member_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_ownership_transfers_proposed_by_user_id_fkey'
+            columns: ['proposed_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_ownership_transfers_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       theater_staff_slot_defaults: {
         Row: {
           created_at: string
@@ -2155,6 +2213,10 @@ export type Database = {
       }
       can_respond_to_theater_admin_invitation: {
         Args: { p_invitation_id: string }
+        Returns: boolean
+      }
+      can_respond_to_theater_ownership_transfer: {
+        Args: { p_transfer_id: string }
         Returns: boolean
       }
       can_update_show_cast: {
@@ -2691,6 +2753,10 @@ export type Database = {
         Args: { p_activity_event_id: string }
         Returns: undefined
       }
+      project_theater_ownership_transfer_notification: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
       proposal_approval_scope_from_plan: {
         Args: {
           p_minimum_viable_cast: number
@@ -2702,6 +2768,32 @@ export type Database = {
       proposal_approval_scope_from_snapshot: {
         Args: { p_snapshot: Json }
         Returns: Json
+      }
+      propose_theater_ownership_transfer: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id?: string
+          p_former_owner_role?: Database['public']['Enums']['theater_role']
+          p_member_user_id: string
+          p_theater_id: string
+        }
+        Returns: {
+          created_at: string
+          former_owner_role: Database['public']['Enums']['theater_role']
+          id: string
+          member_user_id: string
+          proposed_by_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['theater_ownership_transfer_status']
+          theater_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'theater_ownership_transfers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       publish_event: {
         Args: {
@@ -2923,6 +3015,31 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'admin_invitations'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      respond_to_theater_ownership_transfer: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_response: string
+          p_transfer_id: string
+        }
+        Returns: {
+          created_at: string
+          former_owner_role: Database['public']['Enums']['theater_role']
+          id: string
+          member_user_id: string
+          proposed_by_user_id: string
+          responded_at: string | null
+          response_command_id: string | null
+          status: Database['public']['Enums']['theater_ownership_transfer_status']
+          theater_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'theater_ownership_transfers'
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3403,6 +3520,7 @@ export type Database = {
       staff_slot_type:
         'lead' | 'front_of_house' | 'box_office' | 'bar' | 'tech' | 'other'
       theater_capability: 'proposer' | 'reviewer'
+      theater_ownership_transfer_status: 'pending' | 'accepted' | 'declined'
       theater_role:
         'owner' | 'admin' | 'manager' | 'staff' | 'instructor' | 'member'
       theater_status: 'draft' | 'published' | 'archived'
@@ -3611,6 +3729,7 @@ export const Constants = {
         'other',
       ],
       theater_capability: ['proposer', 'reviewer'],
+      theater_ownership_transfer_status: ['pending', 'accepted', 'declined'],
       theater_role: [
         'owner',
         'admin',
