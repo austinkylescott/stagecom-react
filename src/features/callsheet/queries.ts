@@ -67,7 +67,7 @@ export async function getMyCallsheet() {
         actionableAt: null,
         event: { slug: '', title: 'Admin authority invitation' },
         id: `admin-invitation:${invitation.id}`,
-        invitationId: invitation.id,
+        responseId: invitation.id,
         kind: 'admin_invitation' as const,
         relationship: 'Theater Member',
         targetAnchor: '',
@@ -75,6 +75,43 @@ export async function getMyCallsheet() {
       },
     ]
   })
+
+  const { data: ownershipTransfers, error: ownershipTransferError } =
+    await supabase
+      .from('theater_ownership_transfers')
+      .select('id, theater_id')
+      .eq('member_user_id', currentUser.data.id)
+      .eq('status', 'pending')
+      .in(
+        'theater_id',
+        theaters.map((theater) => theater.id),
+      )
+
+  if (ownershipTransferError) {
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+  }
+
+  const ownershipTransferCommitments = ownershipTransfers.flatMap(
+    (transfer) => {
+      const theater = theaterById.get(transfer.theater_id)
+      if (!theater) return []
+      return [
+        {
+          action: 'Respond to ownership transfer',
+          actionableAt: null,
+          event: { slug: '', title: 'Theater ownership transfer' },
+          id: `ownership-transfer:${transfer.id}`,
+          responseId: transfer.id,
+          kind: 'ownership_transfer' as const,
+          relationship: 'Proposed successor',
+          targetAnchor: '',
+          theater: { slug: theater.slug, title: theater.name },
+        },
+      ]
+    },
+  )
 
   // The actor-scoped read establishes every active Theater membership before
   // the service-role client assembles the cross-Theater projection.
@@ -97,7 +134,9 @@ export async function getMyCallsheet() {
   const eventById = new Map(events.map((event) => [event.id, event]))
   if (events.length === 0) {
     return ok({
-      ...createCallsheetReadModel({ commitments: adminCommitments }),
+      ...createCallsheetReadModel({
+        commitments: [...adminCommitments, ...ownershipTransferCommitments],
+      }),
       theaters,
     })
   }
@@ -296,6 +335,7 @@ export async function getMyCallsheet() {
   )
   const commitments = [
     ...adminCommitments,
+    ...ownershipTransferCommitments,
     ...castResult.data.flatMap((cast) => {
       if (cast.status !== 'pending' || cast.source !== 'invited') return []
       return toCommitment({

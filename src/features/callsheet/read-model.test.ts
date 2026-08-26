@@ -11,7 +11,7 @@ describe('Callsheet read model', () => {
           actionableAt: null,
           event: { slug: '', title: 'Admin authority invitation' },
           id: 'admin-invitation:1',
-          invitationId: '1',
+          responseId: '1',
           kind: 'admin_invitation',
           relationship: 'Theater Member',
           targetAnchor: '',
@@ -24,6 +24,32 @@ describe('Callsheet read model', () => {
       {
         kind: 'admin_invitation',
         relationship: 'Theater Member',
+        theater: { title: 'Northstar Theater' },
+      },
+    ])
+  })
+
+  it('keeps a proposed ownership transfer as a personal commitment without treating it as authority', () => {
+    const model = createCallsheetReadModel({
+      commitments: [
+        {
+          action: 'Respond to ownership transfer',
+          actionableAt: null,
+          event: { slug: '', title: 'Theater ownership transfer' },
+          id: 'ownership-transfer:1',
+          responseId: '1',
+          kind: 'ownership_transfer',
+          relationship: 'Proposed successor',
+          targetAnchor: '',
+          theater: { slug: 'northstar', title: 'Northstar Theater' },
+        },
+      ],
+    })
+
+    expect(model.commitments).toMatchObject([
+      {
+        kind: 'ownership_transfer',
+        relationship: 'Proposed successor',
         theater: { title: 'Northstar Theater' },
       },
     ])
