@@ -98,7 +98,10 @@ The date, time, and place committed to an Occurrence.
 A resource-aware schedule of committed Occurrences, temporary holds, and Schedule Blocks. Active Members may see that a resource is unavailable even when they are not authorized to see the underlying details.
 
 **Schedule Block**:
-A committed interval during which a Theater resource is unavailable without belonging to an Event Occurrence.
+A non-recurring, Operator-managed Primary Venue reservation for maintenance,
+rentals, or other activity that is not an Event. It records a private label,
+optional notes, creator, lifecycle, and factual history; it shares the
+buffered non-overlap guarantee with Confirmed Slots and active exclusive holds.
 
 **Primary Venue**:
 The Theater's default physical location and initial exclusive scheduling resource.

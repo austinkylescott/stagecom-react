@@ -311,6 +311,120 @@ export type Database = {
           },
         ]
       }
+      schedule_block_history: {
+        Row: {
+          action: string
+          actor_user_id: string
+          command_id: string
+          created_at: string
+          id: string
+          schedule_block_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          command_id: string
+          created_at?: string
+          id?: string
+          schedule_block_id: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          command_id?: string
+          created_at?: string
+          id?: string
+          schedule_block_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'schedule_block_history_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'schedule_block_history_schedule_block_id_fkey'
+            columns: ['schedule_block_id']
+            isOneToOne: false
+            referencedRelation: 'schedule_blocks'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      schedule_blocks: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string
+          ends_at: string
+          id: string
+          private_label: string
+          private_notes: string | null
+          released_at: string | null
+          resource_id: string
+          starts_at: string
+          state: Database['public']['Enums']['schedule_block_state']
+          theater_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by_user_id: string
+          ends_at: string
+          id?: string
+          private_label: string
+          private_notes?: string | null
+          released_at?: string | null
+          resource_id: string
+          starts_at: string
+          state?: Database['public']['Enums']['schedule_block_state']
+          theater_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          ends_at?: string
+          id?: string
+          private_label?: string
+          private_notes?: string | null
+          released_at?: string | null
+          resource_id?: string
+          starts_at?: string
+          state?: Database['public']['Enums']['schedule_block_state']
+          theater_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'schedule_blocks_created_by_user_id_fkey'
+            columns: ['created_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'schedule_blocks_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_acts: {
         Row: {
           created_at: string
@@ -1447,47 +1561,50 @@ export type Database = {
       }
       show_schedule_reservations: {
         Row: {
-          candidate_slot_id: string
+          candidate_slot_id: string | null
           counteroffer_id: string | null
           created_at: string
           id: string
           kind: Database['public']['Enums']['schedule_reservation_kind']
-          occurrence_id: string
+          occurrence_id: string | null
           proposal_revision_id: string | null
           released_at: string | null
           reserved_during: unknown
           resource_id: string
-          show_id: string
+          schedule_block_id: string | null
+          show_id: string | null
           status: Database['public']['Enums']['schedule_reservation_status']
           theater_id: string
         }
         Insert: {
-          candidate_slot_id: string
+          candidate_slot_id?: string | null
           counteroffer_id?: string | null
           created_at?: string
           id?: string
           kind: Database['public']['Enums']['schedule_reservation_kind']
-          occurrence_id: string
+          occurrence_id?: string | null
           proposal_revision_id?: string | null
           released_at?: string | null
           reserved_during: unknown
           resource_id: string
-          show_id: string
+          schedule_block_id?: string | null
+          show_id?: string | null
           status?: Database['public']['Enums']['schedule_reservation_status']
           theater_id: string
         }
         Update: {
-          candidate_slot_id?: string
+          candidate_slot_id?: string | null
           counteroffer_id?: string | null
           created_at?: string
           id?: string
           kind?: Database['public']['Enums']['schedule_reservation_kind']
-          occurrence_id?: string
+          occurrence_id?: string | null
           proposal_revision_id?: string | null
           released_at?: string | null
           reserved_during?: unknown
           resource_id?: string
-          show_id?: string
+          schedule_block_id?: string | null
+          show_id?: string | null
           status?: Database['public']['Enums']['schedule_reservation_status']
           theater_id?: string
         }
@@ -1518,6 +1635,13 @@ export type Database = {
             columns: ['proposal_revision_id']
             isOneToOne: false
             referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_schedule_block_id_fkey'
+            columns: ['schedule_block_id']
+            isOneToOne: true
+            referencedRelation: 'schedule_blocks'
             referencedColumns: ['id']
           },
           {
@@ -2182,6 +2306,10 @@ export type Database = {
           theater_slug: string
         }[]
       }
+      assert_schedule_block_operator: {
+        Args: { p_actor_user_id: string; p_theater_id: string }
+        Returns: undefined
+      }
       can_assign_occurrence_call: {
         Args: { p_occurrence_id: string }
         Returns: boolean
@@ -2303,6 +2431,41 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'shows'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      change_schedule_block: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_command_id: string
+          p_ends_at?: string
+          p_expected_version: number
+          p_private_label?: string
+          p_private_notes?: string
+          p_schedule_block_id: string
+          p_starts_at?: string
+        }
+        Returns: {
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string
+          ends_at: string
+          id: string
+          private_label: string
+          private_notes: string | null
+          released_at: string | null
+          resource_id: string
+          starts_at: string
+          state: Database['public']['Enums']['schedule_block_state']
+          theater_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'schedule_blocks'
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2429,6 +2592,39 @@ export type Database = {
           theater_id: string
         }[]
       }
+      create_schedule_block: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_ends_at: string
+          p_private_label: string
+          p_private_notes?: string
+          p_starts_at: string
+          p_theater_id: string
+        }
+        Returns: {
+          cancelled_at: string | null
+          created_at: string
+          created_by_user_id: string
+          ends_at: string
+          id: string
+          private_label: string
+          private_notes: string | null
+          released_at: string | null
+          resource_id: string
+          starts_at: string
+          state: Database['public']['Enums']['schedule_block_state']
+          theater_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'schedule_blocks'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_targeted_theater_invitation: {
         Args: {
           p_actor_user_id: string
@@ -2542,6 +2738,7 @@ export type Database = {
           theater_name: string
         }[]
       }
+      get_schedule_blocks: { Args: { p_theater_slug: string }; Returns: Json }
       get_targeted_theater_invitation: {
         Args: { p_token_hash: string }
         Returns: {
@@ -3503,7 +3700,9 @@ export type Database = {
         | 'denied'
       proposal_review_action: 'approve' | 'request_edits' | 'deny'
       review_action: 'submitted' | 'approved' | 'rejected' | 'changes_requested'
-      schedule_reservation_kind: 'counteroffer_hold' | 'approved_commitment'
+      schedule_block_state: 'active' | 'released' | 'cancelled'
+      schedule_reservation_kind:
+        'counteroffer_hold' | 'approved_commitment' | 'schedule_block'
       schedule_reservation_status: 'active' | 'released'
       show_cast_source: 'invited' | 'requested'
       show_cast_status:
@@ -3691,7 +3890,12 @@ export const Constants = {
       ],
       proposal_review_action: ['approve', 'request_edits', 'deny'],
       review_action: ['submitted', 'approved', 'rejected', 'changes_requested'],
-      schedule_reservation_kind: ['counteroffer_hold', 'approved_commitment'],
+      schedule_block_state: ['active', 'released', 'cancelled'],
+      schedule_reservation_kind: [
+        'counteroffer_hold',
+        'approved_commitment',
+        'schedule_block',
+      ],
       schedule_reservation_status: ['active', 'released'],
       show_cast_source: ['invited', 'requested'],
       show_cast_status: [
