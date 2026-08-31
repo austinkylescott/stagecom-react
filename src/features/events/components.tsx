@@ -21,6 +21,7 @@ import {
 import { ProposalPreparation } from './proposal-preparation/production'
 
 import type { Database } from '@/server/db/database.types'
+import type { EventOverviewReadModel } from './event-overview/read-model'
 import type { ProposalPreparationReadModel } from './proposal-preparation/types'
 
 type EventLeadershipRole = Database['public']['Enums']['event_leadership_role']
@@ -346,6 +347,7 @@ export function ManagedEventWorkspace({
   actorUserId,
   allowedActions,
   event,
+  overview,
   proposalPreparation,
   publicContent,
   theater,
@@ -496,6 +498,7 @@ export function ManagedEventWorkspace({
     target_cast_size: number | null
     title: string
   }
+  overview: EventOverviewReadModel
   proposalPreparation: ProposalPreparationReadModel | null
   publicContent: {
     allowedActions: {
@@ -632,15 +635,11 @@ export function ManagedEventWorkspace({
       <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
         {event.title}
       </h1>
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
-        <StateCard label="Lifecycle" value={lifecycleStatus} />
-        <StateCard
-          label="Proposal decision"
-          value={proposalRevisions[0]?.decision_state ?? 'not submitted'}
-        />
-        <StateCard label="Publication" value={event.publication_status} />
-        <StateCard label="Operational health" value={operationalHealth} />
-      </div>
+      <EventOverview
+        lifecycleStatus={lifecycleStatus}
+        operationalHealth={operationalHealth}
+        overview={overview}
+      />
       {lifecycleStatus === 'cancelled' ? (
         <section className="mt-5 rounded-lg border border-red-300 bg-red-50 px-6 py-5 text-red-950">
           <h2 className="text-xl font-extrabold">Event cancelled</h2>
@@ -780,7 +779,10 @@ export function ManagedEventWorkspace({
         </section>
       ) : null}
       {operationalHealth === 'at_risk' ? (
-        <section className="mt-5 rounded-lg border border-amber-300 bg-amber-50 px-6 py-5 text-amber-950">
+        <section
+          className="mt-5 rounded-lg border border-amber-300 bg-amber-50 px-6 py-5 text-amber-950"
+          id="operational-health"
+        >
           <h2 className="text-xl font-extrabold">Event is At Risk</h2>
           <p className="mt-2 text-sm">
             Operational Approval and Publication remain unchanged. Management
@@ -912,7 +914,10 @@ export function ManagedEventWorkspace({
         </div>
       ) : null}
       {publicContent && publicDraft ? (
-        <section className="island-shell mt-5 rounded-lg px-6 py-6">
+        <section
+          className="island-shell mt-5 rounded-lg px-6 py-6"
+          id="public-page"
+        >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-extrabold">Public presentation</h2>
@@ -1274,6 +1279,7 @@ export function ManagedEventWorkspace({
           </p>
         </section>
       ) : null}
+      <span className="block scroll-mt-6" id="cast-team" />
       <section
         className="island-shell mt-5 rounded-lg px-6 py-6"
         id="cast-participation"
@@ -1463,9 +1469,10 @@ export function ManagedEventWorkspace({
           {proposalRevisions.length > 0 ? (
             <section
               className="island-shell mt-5 rounded-lg px-6 py-6"
-              id="proposal-revisions"
+              id="review"
             >
               <h2 className="text-2xl font-extrabold">Submitted revisions</h2>
+              <span className="block scroll-mt-6" id="proposal-revisions" />
               <ul className="mt-3 grid gap-2">
                 {proposalRevisions.map((revision) => (
                   <li
@@ -1581,6 +1588,7 @@ export function ManagedEventWorkspace({
           ) : null}
         </>
       ) : null}
+      <span className="block scroll-mt-6" id="schedule-plan" />
       <section
         className="island-shell mt-5 rounded-lg px-6 py-6"
         id="availability"
@@ -1804,6 +1812,30 @@ export function ManagedEventWorkspace({
         ) : null}
       </section>
       {proposalPreparation ? <ProposalPreparation.PlanSection /> : null}
+      {overview.sections.some(({ label }) => label === 'History') ? (
+        <section
+          className="island-shell mt-5 rounded-lg px-6 py-6"
+          id="history"
+        >
+          <h2 className="text-2xl font-extrabold">History</h2>
+          <div className="mt-3 grid gap-2 text-sm">
+            {proposalRevisions.map((revision) => (
+              <p key={revision.id}>
+                Proposal Revision {revision.revision_number} is{' '}
+                {revision.decision_state.replace('_', ' ')}.
+              </p>
+            ))}
+            {event.show_risk_management_decisions.map((decision) => (
+              <p key={decision.id}>
+                At Risk decision recorded: {decision.action}.
+              </p>
+            ))}
+            {cancellationRequests.map((request) => (
+              <p key={request.id}>Cancellation request recorded.</p>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   )
 
@@ -2280,6 +2312,152 @@ function DeniedProposalReplacementForm({
         {isSaving ? 'Creating…' : 'Create linked replacement'}
       </button>
     </div>
+  )
+}
+
+function EventOverview({
+  lifecycleStatus,
+  operationalHealth,
+  overview,
+}: {
+  lifecycleStatus: string
+  operationalHealth: string
+  overview: EventOverviewReadModel
+}) {
+  const currentStates = overview.states.map((state) => ({
+    ...state,
+    value:
+      state.label === 'Lifecycle'
+        ? lifecycleStatus
+        : state.label === 'Operational health'
+          ? operationalHealth
+          : state.value,
+  }))
+
+  return (
+    <section className="mt-6 scroll-mt-6" id="overview">
+      <nav
+        aria-label="Event workspace sections"
+        className="flex flex-wrap gap-2"
+      >
+        {overview.sections.map((section) => (
+          <a
+            className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold hover:bg-[var(--sand)]"
+            href={section.target}
+            key={section.target}
+          >
+            {section.label}
+          </a>
+        ))}
+      </nav>
+      <div className="mt-5 grid gap-4 md:grid-cols-4">
+        {currentStates.map((state) => (
+          <StateCard
+            key={state.label}
+            label={state.label}
+            value={state.value}
+          />
+        ))}
+      </div>
+      <div className="island-shell mt-5 grid gap-5 rounded-lg px-6 py-6 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <h2 className="text-2xl font-extrabold">Overview</h2>
+          {overview.primaryAction ? (
+            <a
+              className="mt-4 inline-flex rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white"
+              href={overview.primaryAction.target}
+            >
+              {overview.primaryAction.label} ·{' '}
+              {overview.primaryAction.relationship}
+            </a>
+          ) : (
+            <p className="mt-3 text-sm font-semibold text-[var(--sea-ink-soft)]">
+              No action is currently assigned to your Event relationships.
+            </p>
+          )}
+          {overview.secondaryActions.length > 0 ? (
+            <ul className="mt-4 grid gap-2 text-sm">
+              {overview.secondaryActions.map((action) => (
+                <li key={`${action.label}-${action.relationship}`}>
+                  <a className="font-bold underline" href={action.target}>
+                    {action.label}
+                  </a>{' '}
+                  <span className="text-[var(--sea-ink-soft)]">
+                    · {action.relationship}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {overview.blockedActions.map((action) => (
+            <p
+              className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+              key={action.label}
+            >
+              <span className="font-bold">{action.label}</span> ·{' '}
+              {action.relationship}. {action.explanation}
+            </p>
+          ))}
+          <div className="mt-4">
+            <h3 className="font-bold">Your Event relationships</h3>
+            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+              {overview.relationships.length > 0
+                ? overview.relationships.join(' · ')
+                : 'Authorized Event collaborator'}
+            </p>
+          </div>
+        </div>
+        <dl className="grid content-start gap-3 text-sm">
+          <div>
+            <dt className="font-bold">Next Occurrence</dt>
+            <dd>
+              {overview.summary.nextOccurrence
+                ? `${overview.summary.nextOccurrence.localStartsAt.replace('T', ' ')} · ${overview.summary.nextOccurrence.locationName}`
+                : 'No Confirmed Occurrence'}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold">Who leads this Event</dt>
+            <dd>
+              {overview.summary.leadership.length > 0
+                ? overview.summary.leadership.join(', ')
+                : 'No leadership assigned'}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold">Participation</dt>
+            <dd>
+              {overview.summary.participation.accepted} accepted ·{' '}
+              {overview.summary.participation.pending} pending
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold">Staffing coverage</dt>
+            <dd>
+              {overview.summary.staffing.unfilled > 0
+                ? `${overview.summary.staffing.unfilled} requested position${overview.summary.staffing.unfilled === 1 ? '' : 's'} remain unfilled.`
+                : 'No staffing needs are unfilled'}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold">Viability risk</dt>
+            <dd>
+              {overview.summary.viability
+                ? overview.summary.viability.shortfall > 0
+                  ? `${overview.summary.viability.shortfall} Cast Member${overview.summary.viability.shortfall === 1 ? '' : 's'} below minimum`
+                  : 'Minimum Viable Cast is covered'
+                : 'No Minimum Viable Cast set'}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold">Public status</dt>
+            <dd className="capitalize">
+              {overview.summary.publicStatus} Public Page
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
   )
 }
 

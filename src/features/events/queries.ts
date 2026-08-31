@@ -13,6 +13,7 @@ import {
   orderByPosition,
   orderOccurrences,
 } from './proposal-preparation/read-model'
+import { createEventOverviewReadModel } from './event-overview/read-model'
 
 import type { z } from 'zod'
 import type {
@@ -359,6 +360,70 @@ export async function getManagedEventWorkspace(
       timezoneSource: access.data.theater.timezone_source,
     },
   })
+  const overview = createEventOverviewReadModel({
+    actions: {
+      manageAtRisk:
+        isTheaterAdmin &&
+        managedEvent.lifecycle_status === 'approved' &&
+        managedEvent.operational_health === 'at_risk',
+      respondToCounteroffer: !isTerminalEvent && isProducer,
+      respondToInvitation:
+        !isTerminalEvent &&
+        actorCast?.source === 'invited' &&
+        actorCast.status === 'pending',
+      reviewProposalRevisions: !isTerminalEvent && isReviewer,
+      useOwnerSelfApproval:
+        access.data.membership.roles.includes('owner') &&
+        access.data.theater.owner_self_approval_enabled,
+    },
+    actor: {
+      castStatus: actorCast?.status,
+      isReviewer,
+      leadershipRoles: actorLeadership.map(({ role }) => role),
+      roles: access.data.membership.roles,
+      userId: access.data.actorUserId,
+    },
+    event: {
+      cast: visibleCast.map(({ status }) => ({ status })),
+      lifecycleStatus: managedEvent.lifecycle_status,
+      leadership: managedEvent.show_leadership.map(({ profiles, role }) => ({
+        displayName: profiles.display_name,
+        role,
+      })),
+      minimumViableCast: managedEvent.minimum_viable_cast,
+      occurrences: orderedOccurrences.map((occurrence) => {
+        const confirmedSlot = occurrence.candidate_slots.find(
+          (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
+        )
+        return {
+          confirmedSlot: confirmedSlot
+            ? {
+                localStartsAt: confirmedSlot.local_starts_at,
+                locationName: confirmedSlot.location_name,
+                startsAt: confirmedSlot.starts_at,
+              }
+            : null,
+        }
+      }),
+      operationalHealth: managedEvent.operational_health,
+      proposalRevisions: [...managedEvent.show_proposal_revisions]
+        .sort((left, right) => right.revision_number - left.revision_number)
+        .map((revision) => ({
+          decisionState: revision.decision_state,
+          submittedBy: revision.submitted_by,
+        })),
+      publicationStatus: managedEvent.publication_status,
+      publicContentAvailable: view === 'operational',
+      resourceRequests:
+        view === 'operational'
+          ? managedEvent.show_resource_requests.map((request) => ({
+              quantity: request.quantity,
+              resourceType: request.resource_type,
+            }))
+          : [],
+      view,
+    },
+  })
 
   return ok({
     activeMembers:
@@ -432,6 +497,7 @@ export async function getManagedEventWorkspace(
       show_proposed_cast:
         view === 'pending_invitee' ? [] : managedEvent.show_proposed_cast,
     },
+    overview,
     proposalPreparation,
     theater: access.data.theater,
     view,

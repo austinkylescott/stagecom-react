@@ -49,6 +49,17 @@ relationship, and relevant timing, and provides an anchored path to the
 relevant Event action. Theater selection remains below personal commitments;
 shared Theater work is not yet part of this surface.
 
+Authorized Event collaborators now enter a stable Event Overview before the
+existing single-scroll controls. The Overview keeps lifecycle, Proposal
+decision, Publication, and operational health independent; identifies the
+viewer’s current relationships; and gives a deterministic primary action before
+relationship-labeled secondary or blocked actions. Its authorized projection
+summarizes the next confirmed Occurrence, leadership, participation, requested
+staffing, viability, and public status. The section links expose only meaningful
+authorized content while Schedule & Plan, Cast & Team, Review, Public Page, and
+History continue to reuse the established command surfaces during the staged
+migration.
+
 People is available to every active Theater Member. Its Directory discloses
 only active display names and Owner/Admin badges. Theater Operators receive
 separate Invitations, Access & Roles, and Former Members sections for targeted
