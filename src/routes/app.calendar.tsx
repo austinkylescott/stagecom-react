@@ -1,17 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { RoutePlaceholder } from '@/components/stage/route-placeholder'
+import {
+  PersonalCalendar,
+  PersonalCalendarErrorState,
+  PersonalCalendarLoadingState,
+} from '@/features/personal-calendar/components'
+import { getMyPersonalCalendarFn } from '@/features/personal-calendar/server-functions'
 
 export const Route = createFileRoute('/app/calendar')({
+  loader: async () => {
+    const result = await getMyPersonalCalendarFn()
+    if (!result.ok) throw result.error
+    return result.data
+  },
   component: PersonalCalendarPage,
+  errorComponent: PersonalCalendarErrorState,
+  pendingComponent: PersonalCalendarLoadingState,
 })
 
 function PersonalCalendarPage() {
-  return (
-    <RoutePlaceholder
-      description="Your upcoming Calls and accepted commitments will appear here as they become available. Enter a Theater to view its shared schedule."
-      eyebrow="Personal schedule"
-      title="Calendar"
-    />
-  )
+  return <PersonalCalendar entries={Route.useLoaderData().entries} />
 }
