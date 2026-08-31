@@ -22,11 +22,15 @@ relationship that make them relevant.
 
 The Theater Calendar defaults to a desktop week/resource view and offers list
 and month alternatives with identical authorization and opaque-occupancy
-redaction. Personal Calendar stays agenda/upcoming-first. A pending Cast
-invitation is a phone-first personal commitment from Callsheet: it gives the
-recipient the invitation state, inviter, role, and enough Event summary to
-accept or decline, without granting Calls, Candidate Slots, or accepted-Cast
-details first.
+redaction. Personal Calendar is now an agenda/upcoming-first cross-Theater
+surface. It lists only a person's upcoming accepted Cast and Event-staff
+participation, Producer or Director commitments, and required or optional
+Calls. Each entry names its Theater, Event, and relationship, links to its
+authorized Event workspace, and never imports unrelated occupancy or opaque
+Schedule Blocks. A pending Cast invitation is a phone-first personal
+commitment from Callsheet: it gives the recipient the invitation state,
+inviter, role, and enough Event summary to accept or decline, without granting
+Calls, Candidate Slots, or accepted-Cast details first.
 
 The initial Callsheet projection aggregates pending Cast invitations, pending
 Admin Invitations, open required Availability Responses, requested Proposal
