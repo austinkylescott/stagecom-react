@@ -130,6 +130,21 @@ export const respondToEventCastInvitationInputSchema = z.object({
   response: z.enum(['accepted', 'declined']),
 })
 
+export const inviteEventStaffMemberInputSchema = z.object({
+  eventId: uuidSchema,
+  memberUserId: uuidSchema,
+  resourceRequestId: uuidSchema,
+})
+
+export const respondToEventStaffInvitationInputSchema = z.object({
+  assignmentId: uuidSchema,
+  response: z.enum(['accepted', 'declined']),
+})
+
+export const revokeEventStaffAssignmentInputSchema = z.object({
+  assignmentId: uuidSchema,
+})
+
 export const recordCandidateSlotAvailabilityInputSchema = z.object({
   candidateSlotId: uuidSchema,
   commandId: uuidSchema,

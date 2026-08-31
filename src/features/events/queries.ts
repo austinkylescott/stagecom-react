@@ -142,7 +142,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, cancelled_at, cancelled_by_user_id, cancellation_reason, show_cancellation_requests(id, actor_user_id, reason, requested_at, resolved_at, resolved_by_user_id), show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, cancelled_at, cancelled_by_user_id, cancellation_reason, show_cancellation_requests(id, actor_user_id, reason, requested_at, resolved_at, resolved_by_user_id), show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_staff_assignments(id, user_id, status, responsibility, resource_request_id), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -180,6 +180,9 @@ export async function getManagedEventWorkspace(
   const actorCast = managedEvent.show_cast.find(
     (castMember) => castMember.user_id === access.data.actorUserId,
   )
+  const actorStaffAssignment = managedEvent.show_staff_assignments.find(
+    (assignment) => assignment.user_id === access.data.actorUserId,
+  )
   const isTheaterAdmin = access.data.membership.roles.some(
     (role) => role === 'owner' || role === 'admin',
   )
@@ -194,7 +197,11 @@ export async function getManagedEventWorkspace(
       ? ('accepted_cast' as const)
       : actorCast?.status === 'pending' && actorCast.source === 'invited'
         ? ('pending_invitee' as const)
-        : null
+        : actorStaffAssignment?.status === 'accepted'
+          ? ('accepted_cast' as const)
+          : actorStaffAssignment?.status === 'pending'
+            ? ('pending_invitee' as const)
+            : null
 
   if (!view) {
     return err(appError('forbidden', 'Event collaborator access is required.'))
@@ -371,6 +378,8 @@ export async function getManagedEventWorkspace(
         !isTerminalEvent &&
         actorCast?.source === 'invited' &&
         actorCast.status === 'pending',
+      respondToStaffInvitation:
+        !isTerminalEvent && actorStaffAssignment?.status === 'pending',
       reviewProposalRevisions: !isTerminalEvent && isReviewer,
       useOwnerSelfApproval:
         access.data.membership.roles.includes('owner') &&
@@ -417,6 +426,11 @@ export async function getManagedEventWorkspace(
       resourceRequests:
         view === 'operational'
           ? managedEvent.show_resource_requests.map((request) => ({
+              acceptedStaffCount: managedEvent.show_staff_assignments.filter(
+                (assignment) =>
+                  assignment.resource_request_id === request.id &&
+                  assignment.status === 'accepted',
+              ).length,
               quantity: request.quantity,
               resourceType: request.resource_type,
             }))
@@ -440,6 +454,7 @@ export async function getManagedEventWorkspace(
       completeEvent: canCompleteEvent,
       editOperationalPlan: canEditOperationalPlan,
       inviteCast: !isTerminalEvent && actorLeadership.length > 0,
+      inviteStaff: !isTerminalEvent && isTheaterAdmin,
       issueCounteroffer: !isTerminalEvent && isReviewer,
       manageAtRisk:
         isTheaterAdmin &&
@@ -450,6 +465,8 @@ export async function getManagedEventWorkspace(
         !isTerminalEvent &&
         actorCast?.source === 'invited' &&
         actorCast.status === 'pending',
+      respondToStaffInvitation:
+        !isTerminalEvent && actorStaffAssignment?.status === 'pending',
       respondToCounteroffer: !isTerminalEvent && isProducer,
       requestCancellation: isProducer && !isTerminalEvent,
       reviewProposalRevisions: !isTerminalEvent && isReviewer,
@@ -465,6 +482,12 @@ export async function getManagedEventWorkspace(
       ...managedEvent,
       show_availability_responses: visibleAvailability,
       show_cast: visibleCast,
+      show_staff_assignments:
+        view === 'operational'
+          ? managedEvent.show_staff_assignments
+          : actorStaffAssignment
+            ? [actorStaffAssignment]
+            : [],
       show_leadership:
         view === 'pending_invitee' ? [] : managedEvent.show_leadership,
       show_occurrences: orderedOccurrences.map((occurrence) => ({

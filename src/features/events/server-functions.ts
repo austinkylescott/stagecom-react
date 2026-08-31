@@ -5,12 +5,15 @@ import {
   completeEvent,
   createManagedEvent,
   inviteEventCastMember,
+  inviteEventStaffMember,
   issueProposalCounteroffer,
   manageAtRiskEvent,
   publishEvent,
   recordCandidateSlotAvailability,
   requestEventCancellation,
   respondToEventCastInvitation,
+  respondToEventStaffInvitation,
+  revokeEventStaffAssignment,
   respondToProposalCounteroffer,
   reviewProposalRevision,
   saveEventPublicContent,
@@ -35,12 +38,15 @@ import {
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
+  inviteEventStaffMemberInputSchema,
   issueProposalCounterofferInputSchema,
   manageAtRiskEventInputSchema,
   publishEventInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   requestEventCancellationInputSchema,
   respondToEventCastInvitationInputSchema,
+  respondToEventStaffInvitationInputSchema,
+  revokeEventStaffAssignmentInputSchema,
   respondToProposalCounterofferInputSchema,
   reviewProposalRevisionInputSchema,
   saveEventPublicContentInputSchema,
@@ -119,9 +125,23 @@ export const inviteEventCastMemberFn = createServerFn({ method: 'POST' })
   .validator(inviteEventCastMemberInputSchema)
   .handler(async ({ data }) => inviteEventCastMember(data))
 
+export const inviteEventStaffMemberFn = createServerFn({ method: 'POST' })
+  .validator(inviteEventStaffMemberInputSchema)
+  .handler(async ({ data }) => inviteEventStaffMember(data))
+
 export const respondToEventCastInvitationFn = createServerFn({ method: 'POST' })
   .validator(respondToEventCastInvitationInputSchema)
   .handler(async ({ data }) => respondToEventCastInvitation(data))
+
+export const respondToEventStaffInvitationFn = createServerFn({
+  method: 'POST',
+})
+  .validator(respondToEventStaffInvitationInputSchema)
+  .handler(async ({ data }) => respondToEventStaffInvitation(data))
+
+export const revokeEventStaffAssignmentFn = createServerFn({ method: 'POST' })
+  .validator(revokeEventStaffAssignmentInputSchema)
+  .handler(async ({ data }) => revokeEventStaffAssignment(data))
 
 export const recordCandidateSlotAvailabilityFn = createServerFn({
   method: 'POST',

@@ -5,6 +5,7 @@ import {
   completeEventFn,
   createManagedEventFn,
   inviteEventCastMemberFn,
+  inviteEventStaffMemberFn,
   issueProposalCounterofferFn,
   manageAtRiskEventFn,
   publishEventFn,
@@ -12,6 +13,7 @@ import {
   requestEventCancellationFn,
   reviewProposalRevisionFn,
   respondToEventCastInvitationFn,
+  respondToEventStaffInvitationFn,
   respondToProposalCounterofferFn,
   saveEventPublicContentFn,
   setOccurrenceCallFn,
@@ -361,10 +363,12 @@ export function ManagedEventWorkspace({
     completeEvent: boolean
     editOperationalPlan: boolean
     inviteCast: boolean
+    inviteStaff: boolean
     issueCounteroffer: boolean
     manageAtRisk: boolean
     respondToAvailability: boolean
     respondToInvitation: boolean
+    respondToStaffInvitation: boolean
     respondToCounteroffer: boolean
     requestCancellation: boolean
     reviewProposalRevisions: boolean
@@ -408,6 +412,13 @@ export function ManagedEventWorkspace({
       responded_at: string | null
       source: 'invited' | 'requested'
       status: 'pending' | 'accepted' | 'declined' | 'withdrawn' | 'removed'
+      user_id: string
+    }>
+    show_staff_assignments: Array<{
+      id: string
+      resource_request_id: string | null
+      responsibility: string | null
+      status: string
       user_id: string
     }>
     show_leadership: Array<{
@@ -560,6 +571,8 @@ export function ManagedEventWorkspace({
 }) {
   const [cast, setCast] = useState(event.show_cast)
   const [inviteeUserId, setInviteeUserId] = useState('')
+  const [staffInviteeUserId, setStaffInviteeUserId] = useState('')
+  const [staffRequestId, setStaffRequestId] = useState('')
   const [castingError, setCastingError] = useState<string | null>(null)
   const [isCasting, setIsCasting] = useState(false)
   const [availabilityResponses, setAvailabilityResponses] = useState(
@@ -1463,6 +1476,119 @@ export function ManagedEventWorkspace({
           <p className="mt-3 font-bold text-red-700">{castingError}</p>
         ) : null}
       </section>
+      {event.show_staff_assignments.length > 0 ? (
+        <section
+          className="island-shell mt-5 rounded-lg px-6 py-6"
+          id="event-staff-assignment"
+        >
+          <h2 className="text-2xl font-extrabold">Event staff assignments</h2>
+          {event.show_staff_assignments.map((assignment) => (
+            <div
+              className="mt-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+              key={assignment.id}
+            >
+              <p className="font-bold">{assignment.responsibility}</p>
+              <p className="text-sm capitalize text-[var(--sea-ink-soft)]">
+                {assignment.status}
+              </p>
+              {allowedActions.respondToStaffInvitation &&
+              assignment.user_id === actorUserId ? (
+                <div className="mt-3 flex gap-3">
+                  {(['accepted', 'declined'] as const).map((response) => (
+                    <button
+                      className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-bold"
+                      key={response}
+                      onClick={async () => {
+                        const result = await respondToEventStaffInvitationFn({
+                          data: { assignmentId: assignment.id, response },
+                        })
+                        if (result.ok) window.location.reload()
+                        else setCastingError(result.error.message)
+                      }}
+                      type="button"
+                    >
+                      {response === 'accepted'
+                        ? 'Accept assignment'
+                        : 'Decline'}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </section>
+      ) : null}
+      {allowedActions.inviteStaff ? (
+        <section
+          className="island-shell mt-5 rounded-lg px-6 py-6"
+          id="event-staff-assignment"
+        >
+          <h2 className="text-2xl font-extrabold">Invite Event staff</h2>
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <label className="grid gap-2 text-sm font-bold">
+              Staffing need
+              <select
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                onChange={(change) => setStaffRequestId(change.target.value)}
+                value={staffRequestId}
+              >
+                <option value="">Choose a need</option>
+                {event.show_resource_requests
+                  .filter((request) => request.resource_type === 'staff')
+                  .map((request) => (
+                    <option key={request.id} value={request.id}>
+                      {request.label} · {request.quantity} required
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-bold">
+              Active Theater Member
+              <select
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                onChange={(change) =>
+                  setStaffInviteeUserId(change.target.value)
+                }
+                value={staffInviteeUserId}
+              >
+                <option value="">Choose a Member</option>
+                {activeMembers.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              disabled={!staffInviteeUserId || !staffRequestId || isCasting}
+              onClick={async () => {
+                setCastingError(null)
+                setIsCasting(true)
+                try {
+                  const result = await inviteEventStaffMemberFn({
+                    data: {
+                      eventId: event.id,
+                      memberUserId: staffInviteeUserId,
+                      resourceRequestId: staffRequestId,
+                    },
+                  })
+                  if (!result.ok) {
+                    setCastingError(result.error.message)
+                    return
+                  }
+                  window.location.reload()
+                } finally {
+                  setIsCasting(false)
+                }
+              }}
+              type="button"
+            >
+              Invite staff
+            </button>
+          </div>
+        </section>
+      ) : null}
       {view === 'operational' && proposalPreparation ? (
         <>
           <ProposalPreparation.RevisionSection />

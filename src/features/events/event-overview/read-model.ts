@@ -1,6 +1,7 @@
 type ActionCapabilities = {
   manageAtRisk?: boolean
   respondToInvitation?: boolean
+  respondToStaffInvitation?: boolean
   respondToCounteroffer?: boolean
   reviewProposalRevisions?: boolean
   useOwnerSelfApproval?: boolean
@@ -31,7 +32,11 @@ type OverviewInput = {
     proposalRevisions: Array<{ decisionState: string; submittedBy: string }>
     publicationStatus: string
     publicContentAvailable: boolean
-    resourceRequests: Array<{ quantity: number; resourceType: string }>
+    resourceRequests: Array<{
+      acceptedStaffCount?: number
+      quantity: number
+      resourceType: string
+    }>
     view: 'operational' | 'accepted_cast' | 'pending_invitee'
   }
 }
@@ -81,6 +86,13 @@ export function createEventOverviewReadModel(input: OverviewInput) {
       target: '#cast-team',
     })
   }
+  if (input.actions.respondToStaffInvitation) {
+    actions.push({
+      label: 'Respond to Event staff assignment',
+      relationship: 'Event staff invitee',
+      target: '#event-staff-assignment',
+    })
+  }
 
   if (
     input.actions.reviewProposalRevisions &&
@@ -127,7 +139,11 @@ export function createEventOverviewReadModel(input: OverviewInput) {
   ).length
   const requiredStaffCount = input.event.resourceRequests
     .filter(({ resourceType }) => resourceType === 'staff')
-    .reduce((total, { quantity }) => total + quantity, 0)
+    .reduce(
+      (total, { acceptedStaffCount = 0, quantity }) =>
+        total + Math.max(0, quantity - acceptedStaffCount),
+      0,
+    )
 
   const sections = [
     { label: 'Overview', target: '#overview' },
