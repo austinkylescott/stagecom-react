@@ -24,11 +24,14 @@ import type {
   cancelEventInputSchema,
   createManagedEventInputSchema,
   inviteEventCastMemberInputSchema,
+  inviteEventStaffMemberInputSchema,
   manageAtRiskEventInputSchema,
   issueProposalCounterofferInputSchema,
   recordCandidateSlotAvailabilityInputSchema,
   requestEventCancellationInputSchema,
   respondToEventCastInvitationInputSchema,
+  respondToEventStaffInvitationInputSchema,
+  revokeEventStaffAssignmentInputSchema,
   respondToProposalCounterofferInputSchema,
   publishEventInputSchema,
   saveEventPublicContentInputSchema,
@@ -678,6 +681,96 @@ export async function respondToEventCastInvitation(
           appError(
             'external_service_error',
             'Cast invitation response could not be saved.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function inviteEventStaffMember(
+  input: z.infer<typeof inviteEventStaffMemberInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+  try {
+    await dependencies.persistence.authorizeStaffInvitation!({
+      actorUserId: currentUser.data.id,
+      ...input,
+    })
+    return ok(
+      await dependencies.persistence.inviteStaffMember!({
+        actorUserId: currentUser.data.id,
+        ...input,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Event staff invitation could not be created.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function respondToEventStaffInvitation(
+  input: z.infer<typeof respondToEventStaffInvitationInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+  try {
+    await dependencies.persistence.authorizeStaffResponse!({
+      actorUserId: currentUser.data.id,
+      ...input,
+    })
+    return ok(
+      await dependencies.persistence.respondToStaffInvitation!({
+        actorUserId: currentUser.data.id,
+        ...input,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Event staff invitation response could not be saved.',
+          ),
+        )
+      : err(failure)
+  }
+}
+
+export async function revokeEventStaffAssignment(
+  input: z.infer<typeof revokeEventStaffAssignmentInputSchema>,
+  dependencies: EventCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+  try {
+    await dependencies.persistence.authorizeStaffRevocation!({
+      actorUserId: currentUser.data.id,
+      ...input,
+    })
+    return ok(
+      await dependencies.persistence.revokeStaffAssignment!({
+        actorUserId: currentUser.data.id,
+        ...input,
+      }),
+    )
+  } catch (error) {
+    const failure = toAppError(error)
+    return failure.code === 'internal_error'
+      ? err(
+          appError(
+            'external_service_error',
+            'Event staff assignment could not be revoked.',
           ),
         )
       : err(failure)

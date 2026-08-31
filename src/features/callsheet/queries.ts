@@ -142,35 +142,47 @@ export async function getMyCallsheet() {
   }
 
   const eventIds = events.map((event) => event.id)
-  const [castResult, leadershipResult, availabilityRequestResult, callResult] =
-    await Promise.all([
-      supabase
-        .from('show_cast')
-        .select('show_id, status, source')
-        .in('show_id', eventIds)
-        .eq('user_id', currentUser.data.id),
-      supabase
-        .from('show_leadership')
-        .select('show_id')
-        .in('show_id', eventIds)
-        .eq('user_id', currentUser.data.id)
-        .eq('role', 'producer'),
-      supabase
-        .from('show_availability_requests')
-        .select('candidate_slot_id, counteroffer_id')
-        .eq('user_id', currentUser.data.id)
-        .is('responded_at', null)
-        .is('closed_at', null),
-      supabase
-        .from('show_occurrence_calls')
-        .select('call, occurrence_id, show_id')
-        .in('show_id', eventIds)
-        .eq('user_id', currentUser.data.id)
-        .neq('call', 'not_called'),
-    ])
+  const [
+    staffResult,
+    castResult,
+    leadershipResult,
+    availabilityRequestResult,
+    callResult,
+  ] = await Promise.all([
+    supabase
+      .from('show_staff_assignments')
+      .select('id, show_id, responsibility, status')
+      .in('show_id', eventIds)
+      .eq('user_id', currentUser.data.id)
+      .eq('status', 'pending'),
+    supabase
+      .from('show_cast')
+      .select('show_id, status, source')
+      .in('show_id', eventIds)
+      .eq('user_id', currentUser.data.id),
+    supabase
+      .from('show_leadership')
+      .select('show_id')
+      .in('show_id', eventIds)
+      .eq('user_id', currentUser.data.id)
+      .eq('role', 'producer'),
+    supabase
+      .from('show_availability_requests')
+      .select('candidate_slot_id, counteroffer_id')
+      .eq('user_id', currentUser.data.id)
+      .is('responded_at', null)
+      .is('closed_at', null),
+    supabase
+      .from('show_occurrence_calls')
+      .select('call, occurrence_id, show_id')
+      .in('show_id', eventIds)
+      .eq('user_id', currentUser.data.id)
+      .neq('call', 'not_called'),
+  ])
 
   if (
     castResult.error ||
+    staffResult.error ||
     leadershipResult.error ||
     availabilityRequestResult.error ||
     callResult.error
@@ -349,6 +361,19 @@ export async function getMyCallsheet() {
         theaterById,
       })
     }),
+    ...staffResult.data.flatMap((assignment) =>
+      toCommitment({
+        action: 'Respond to staff assignment',
+        actionableAt: null,
+        event: eventById.get(assignment.show_id),
+        id: `staff-assignment:${assignment.id}`,
+        responseId: assignment.id,
+        kind: 'staff_invitation',
+        relationship: `Event staff invitee · ${assignment.responsibility}`,
+        targetAnchor: '#event-staff-assignment',
+        theaterById,
+      }),
+    ),
     ...revisions.flatMap((revision) => {
       if (
         revision.decision_state !== 'changes_requested' ||

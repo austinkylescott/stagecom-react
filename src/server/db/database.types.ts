@@ -1665,30 +1665,78 @@ export type Database = {
           assignment_type: string
           created_at: string
           id: string
+          invited_at: string | null
+          invited_by_user_id: string | null
+          last_command_id: string | null
           note: string | null
+          resource_request_id: string | null
+          responded_at: string | null
+          responsibility: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
           show_id: string
           status: string
           user_id: string
+          version: number
         }
         Insert: {
           assignment_type: string
           created_at?: string
           id?: string
+          invited_at?: string | null
+          invited_by_user_id?: string | null
+          last_command_id?: string | null
           note?: string | null
+          resource_request_id?: string | null
+          responded_at?: string | null
+          responsibility?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
           show_id: string
           status?: string
           user_id: string
+          version?: number
         }
         Update: {
           assignment_type?: string
           created_at?: string
           id?: string
+          invited_at?: string | null
+          invited_by_user_id?: string | null
+          last_command_id?: string | null
           note?: string | null
+          resource_request_id?: string | null
+          responded_at?: string | null
+          responsibility?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
           show_id?: string
           status?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: 'show_staff_assignments_invited_by_user_id_fkey'
+            columns: ['invited_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_staff_assignments_resource_request_id_fkey'
+            columns: ['resource_request_id']
+            isOneToOne: false
+            referencedRelation: 'show_resource_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_staff_assignments_revoked_by_user_id_fkey'
+            columns: ['revoked_by_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'show_staff_assignments_show_id_fkey'
             columns: ['show_id']
@@ -2723,6 +2771,10 @@ export type Database = {
         Args: { p_show_id: string; p_user_id?: string }
         Returns: Database['public']['Enums']['show_cast_status']
       }
+      event_staff_coverage: {
+        Args: { p_resource_request_id: string; p_show_id: string }
+        Returns: number
+      }
       expire_proposal_counteroffers: {
         Args: { p_now?: string; p_show_id?: string }
         Returns: number
@@ -2769,6 +2821,38 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'show_cast'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      invite_event_staff_member: {
+        Args: {
+          p_actor_user_id: string
+          p_member_user_id: string
+          p_resource_request_id: string
+          p_show_id: string
+        }
+        Returns: {
+          assignment_type: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by_user_id: string | null
+          last_command_id: string | null
+          note: string | null
+          resource_request_id: string | null
+          responded_at: string | null
+          responsibility: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          show_id: string
+          status: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_staff_assignments'
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2939,6 +3023,10 @@ export type Database = {
         Returns: undefined
       }
       project_event_risk_notifications: {
+        Args: { p_activity_event_id: string }
+        Returns: undefined
+      }
+      project_event_staff_notification: {
         Args: { p_activity_event_id: string }
         Returns: undefined
       }
@@ -3182,6 +3270,37 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      respond_to_event_staff_invitation: {
+        Args: {
+          p_actor_user_id: string
+          p_assignment_id: string
+          p_response: string
+        }
+        Returns: {
+          assignment_type: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by_user_id: string | null
+          last_command_id: string | null
+          note: string | null
+          resource_request_id: string | null
+          responded_at: string | null
+          responsibility: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          show_id: string
+          status: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_staff_assignments'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       respond_to_proposal_counteroffer: {
         Args: {
           p_actor_user_id: string
@@ -3265,6 +3384,33 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'show_proposal_decisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revoke_event_staff_assignment: {
+        Args: { p_actor_user_id: string; p_assignment_id: string }
+        Returns: {
+          assignment_type: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by_user_id: string | null
+          last_command_id: string | null
+          note: string | null
+          resource_request_id: string | null
+          responded_at: string | null
+          responsibility: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          show_id: string
+          status: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_staff_assignments'
           isOneToOne: true
           isSetofReturn: false
         }

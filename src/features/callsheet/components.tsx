@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { respondToTheaterAdminInvitationFn } from '@/features/admin-invitations/server-functions'
 import { respondToTheaterOwnershipTransferFn } from '@/features/ownership-transfers/server-functions'
+import { respondToEventStaffInvitationFn } from '@/features/events/server-functions'
 
 import type { CallsheetCommitment } from './read-model'
 
@@ -128,26 +129,32 @@ function CommitmentCard({ commitment }: { commitment: CallsheetCommitment }) {
     setMessage(null)
     try {
       const result =
-        commitment.kind === 'ownership_transfer'
-          ? await respondToTheaterOwnershipTransferFn({
-              data: {
-                commandId: crypto.randomUUID(),
-                response,
-                transferId: commitment.responseId,
-              },
+        commitment.kind === 'staff_invitation'
+          ? await respondToEventStaffInvitationFn({
+              data: { assignmentId: commitment.responseId, response },
             })
-          : await respondToTheaterAdminInvitationFn({
-              data: {
-                commandId: crypto.randomUUID(),
-                invitationId: commitment.responseId,
-                response,
-              },
-            })
+          : commitment.kind === 'ownership_transfer'
+            ? await respondToTheaterOwnershipTransferFn({
+                data: {
+                  commandId: crypto.randomUUID(),
+                  response,
+                  transferId: commitment.responseId,
+                },
+              })
+            : await respondToTheaterAdminInvitationFn({
+                data: {
+                  commandId: crypto.randomUUID(),
+                  invitationId: commitment.responseId,
+                  response,
+                },
+              })
       setMessage(
         result.ok
-          ? commitment.kind === 'ownership_transfer'
-            ? `Theater ownership transfer ${response}.`
-            : `Admin authority ${response}.`
+          ? commitment.kind === 'staff_invitation'
+            ? `Event staff assignment ${response}.`
+            : commitment.kind === 'ownership_transfer'
+              ? `Theater ownership transfer ${response}.`
+              : `Admin authority ${response}.`
           : result.error.message,
       )
     } finally {
@@ -184,9 +191,11 @@ function CommitmentCard({ commitment }: { commitment: CallsheetCommitment }) {
             onClick={() => respond('accepted')}
             type="button"
           >
-            {commitment.kind === 'ownership_transfer'
-              ? 'Accept Theater ownership'
-              : 'Accept Admin authority'}
+            {commitment.kind === 'staff_invitation'
+              ? 'Accept staff assignment'
+              : commitment.kind === 'ownership_transfer'
+                ? 'Accept Theater ownership'
+                : 'Accept Admin authority'}
           </button>
           <button
             className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm font-extrabold disabled:opacity-50"

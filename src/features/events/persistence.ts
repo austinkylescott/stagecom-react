@@ -7,6 +7,21 @@ import {
 
 import type { Json } from '@/server/db/database.types'
 
+function throwStaffAssignmentError(
+  error: { code: string; message: string },
+  fallback: string,
+): never {
+  if (error.code === 'P0002') throw appError('not_found', error.message)
+  if (error.code === '42501') throw appError('forbidden', error.message)
+  if (error.code === '55000' || error.code === '23505') {
+    throw appError('conflict', error.message)
+  }
+  if (error.code === '22023' || error.code === '23514') {
+    throw appError('validation_error', error.message)
+  }
+  throw appError('external_service_error', fallback)
+}
+
 export type ManagedEvent = {
   castMemberCount: number
   directorUserId: string | null
@@ -279,6 +294,21 @@ export type EventPersistence = {
     eventId: string
     response: 'accepted' | 'declined'
   }) => Promise<void>
+  authorizeStaffInvitation?: (input: {
+    actorUserId: string
+    eventId: string
+    memberUserId: string
+    resourceRequestId: string
+  }) => Promise<void>
+  authorizeStaffResponse?: (input: {
+    actorUserId: string
+    assignmentId: string
+    response: 'accepted' | 'declined'
+  }) => Promise<void>
+  authorizeStaffRevocation?: (input: {
+    actorUserId: string
+    assignmentId: string
+  }) => Promise<void>
   authorizeOccurrenceCall: (input: {
     actorUserId: string
     occurrenceId: string
@@ -301,6 +331,31 @@ export type EventPersistence = {
     memberUserId: string
     status: 'accepted' | 'declined'
   }>
+  inviteStaffMember?: (input: {
+    actorUserId: string
+    eventId: string
+    memberUserId: string
+    resourceRequestId: string
+  }) => Promise<{
+    assignmentId: string
+    eventId: string
+    memberUserId: string
+    responsibility: string
+    status: 'pending'
+  }>
+  respondToStaffInvitation?: (input: {
+    actorUserId: string
+    assignmentId: string
+    response: 'accepted' | 'declined'
+  }) => Promise<{
+    assignmentId: string
+    eventId: string
+    status: 'accepted' | 'declined'
+  }>
+  revokeStaffAssignment?: (input: {
+    actorUserId: string
+    assignmentId: string
+  }) => Promise<{ assignmentId: string; eventId: string; status: 'revoked' }>
   recordAvailabilityResponse: (input: {
     actorUserId: string
     candidateSlotId: string
@@ -567,6 +622,111 @@ export function createSupabaseEventRiskPersistence(): EventRiskPersistence {
 
 export function createSupabaseEventPersistence(): EventPersistence {
   return {
+    async authorizeStaffInvitation(input) {
+      const supabase = createAuthenticatedClient()
+      const { data: event, error } = await supabase
+        .from('shows')
+        .select('theater_id')
+        .eq('id', input.eventId)
+        .maybeSingle()
+      if (error)
+        throw appError(
+          'external_service_error',
+          'Event staff authorization could not be checked.',
+        )
+      if (!event) throw appError('not_found', 'Event was not found.')
+      const [
+        { data: membership, error: membershipError },
+        { data: request, error: requestError },
+      ] = await Promise.all([
+        supabase
+          .from('theater_memberships')
+          .select('roles')
+          .eq('theater_id', event.theater_id)
+          .eq('user_id', input.actorUserId)
+          .eq('status', 'active')
+          .maybeSingle(),
+        supabase
+          .from('show_resource_requests')
+          .select('id')
+          .eq('id', input.resourceRequestId)
+          .eq('show_id', input.eventId)
+          .eq('resource_type', 'staff')
+          .maybeSingle(),
+      ])
+      if (membershipError || requestError)
+        throw appError(
+          'external_service_error',
+          'Event staff authorization could not be checked.',
+        )
+      if (
+        !membership?.roles.some((role) => role === 'owner' || role === 'admin')
+      )
+        throw appError(
+          'forbidden',
+          'Active Theater Operator access is required to invite Event staff.',
+        )
+      if (!request)
+        throw appError(
+          'validation_error',
+          'A staff staffing request for this Event is required.',
+        )
+    },
+    async authorizeStaffResponse(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase
+        .from('show_staff_assignments')
+        .select('status')
+        .eq('id', input.assignmentId)
+        .eq('user_id', input.actorUserId)
+        .maybeSingle()
+      if (error)
+        throw appError(
+          'external_service_error',
+          'Event staff invitation response authorization could not be checked.',
+        )
+      if (!data)
+        throw appError('not_found', 'Event staff invitation was not found.')
+      if (data.status !== 'pending' && data.status !== input.response)
+        throw appError(
+          'conflict',
+          'This Event staff invitation has already received a response.',
+        )
+    },
+    async authorizeStaffRevocation(input) {
+      const supabase = createAuthenticatedClient()
+      const { data, error } = await supabase
+        .from('show_staff_assignments')
+        .select('show_id, shows!inner(theater_id)')
+        .eq('id', input.assignmentId)
+        .maybeSingle()
+      if (error)
+        throw appError(
+          'external_service_error',
+          'Event staff revocation authorization could not be checked.',
+        )
+      if (!data)
+        throw appError('not_found', 'Event Staff Assignment was not found.')
+      const { data: membership, error: membershipError } = await supabase
+        .from('theater_memberships')
+        .select('roles')
+        .eq('theater_id', data.shows.theater_id)
+        .eq('user_id', input.actorUserId)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (membershipError)
+        throw appError(
+          'external_service_error',
+          'Event staff revocation authorization could not be checked.',
+        )
+      if (
+        !membership?.roles.some((role) => role === 'owner' || role === 'admin')
+      )
+        throw appError(
+          'forbidden',
+          'Active Theater Operator access is required to revoke Event staff.',
+        )
+    },
     async authorizeAvailabilityResponse(input) {
       const supabase = createAuthenticatedClient()
       const { data, error } = await supabase.rpc(
@@ -982,6 +1142,64 @@ export function createSupabaseEventPersistence(): EventPersistence {
         memberUserId: data.user_id,
         status: input.response,
       }
+    },
+    async inviteStaffMember(input) {
+      const { data, error } = await createSupabaseServiceRoleClient().rpc(
+        'invite_event_staff_member',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_member_user_id: input.memberUserId,
+          p_resource_request_id: input.resourceRequestId,
+          p_show_id: input.eventId,
+        },
+      )
+      if (error)
+        throwStaffAssignmentError(
+          error,
+          'Event staff invitation could not be created.',
+        )
+      return {
+        assignmentId: data.id,
+        eventId: data.show_id,
+        memberUserId: data.user_id,
+        responsibility: data.responsibility ?? 'Event staff responsibility',
+        status: 'pending',
+      }
+    },
+    async respondToStaffInvitation(input) {
+      const { data, error } = await createSupabaseServiceRoleClient().rpc(
+        'respond_to_event_staff_invitation',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_response: input.response,
+          p_assignment_id: input.assignmentId,
+        },
+      )
+      if (error)
+        throwStaffAssignmentError(
+          error,
+          'Event staff invitation response could not be saved.',
+        )
+      return {
+        assignmentId: data.id,
+        eventId: data.show_id,
+        status: input.response,
+      }
+    },
+    async revokeStaffAssignment(input) {
+      const { data, error } = await createSupabaseServiceRoleClient().rpc(
+        'revoke_event_staff_assignment',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_assignment_id: input.assignmentId,
+        },
+      )
+      if (error)
+        throwStaffAssignmentError(
+          error,
+          'Event staff assignment could not be revoked.',
+        )
+      return { assignmentId: data.id, eventId: data.show_id, status: 'revoked' }
     },
     async recordAvailabilityResponse(input) {
       const supabase = createSupabaseServiceRoleClient()
