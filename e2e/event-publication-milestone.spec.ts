@@ -151,6 +151,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       producer.page.getByLabel('Target cast size'),
       'onChange',
     )
+    await expect(
+      producer.page.getByRole('heading', { name: 'Schedule & Plan' }),
+    ).toBeVisible()
 
     await producer.page.getByLabel('Target cast size').fill('1')
     await producer.page.getByLabel('Minimum Viable Cast').fill('1')
@@ -205,8 +208,14 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
     await expect(
-      cast.page.getByRole('heading', { name: 'Operational plan' }),
+      cast.page.getByRole('heading', { name: 'Schedule & Plan' }),
     ).toBeVisible()
+    await expect(
+      cast.page.getByText(
+        'You can inspect this Event plan, but only an eligible Producer can edit it.',
+      ),
+    ).toBeVisible()
+    await expect(cast.page.getByLabel('Minimum Viable Cast')).toBeDisabled()
     await waitForReactHandler(
       cast.page.getByRole('button', { name: 'Accept invitation' }),
       'onClick',

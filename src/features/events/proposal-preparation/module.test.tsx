@@ -17,6 +17,59 @@ import type { ProposalPreparationReadModel } from './types'
 afterEach(cleanup)
 
 describe('ProposalPreparation', () => {
+  it('presents operational planning as Schedule & Plan with a useful read-only disclosure', () => {
+    const initial = preparationModel({
+      capabilities: {
+        editOperationalPlan: false,
+        selectProposedCast: false,
+        submitProposalRevision: false,
+        viewResourceRequests: true,
+      },
+      operationalPlan: {
+        ...preparationModel().operationalPlan,
+        resourceRequests: [
+          {
+            id: 'staff-request-1',
+            label: 'Front of house',
+            position: 0,
+            quantity: 2,
+            type: 'staff',
+          },
+        ],
+      },
+    })
+    const Preparation = createProposalPreparationModule({
+      adapter: createInMemoryProposalPreparationAdapter(initial),
+      createId: () => 'command',
+      useInvalidateEventWorkspace: () => async () => undefined,
+    })
+
+    render(
+      <Preparation.Root initial={initial}>
+        <Preparation.PlanSection />
+      </Preparation.Root>,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Schedule & Plan' }),
+    ).toBeDefined()
+    expect(
+      screen.getByText('Requested staffing needs and resources'),
+    ).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Cast & Team' })).toHaveProperty(
+      'hash',
+      '#event-staff-assignment',
+    )
+    expect(
+      screen.getByText(
+        'You can inspect this Event plan, but only an eligible Producer can edit it.',
+      ),
+    ).toBeDefined()
+    expect(
+      screen.getByLabelText<HTMLInputElement>('Minimum Viable Cast').disabled,
+    ).toBe(true)
+  })
+
   it('preserves a dirty plan while saving and refreshing the Proposed Cast', async () => {
     const initial = preparationModel()
     const refreshedCast = preparationModel({ proposedCastUserIds: ['cast-1'] })

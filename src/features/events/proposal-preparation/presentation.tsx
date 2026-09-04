@@ -215,18 +215,24 @@ export function createProposalPreparationSections(
     const dirty = !plansEqual(plan, state.recordedOperationalPlan)
 
     return (
-      <section className="island-shell mt-5 rounded-lg px-6 py-6">
+      <section
+        className="island-shell mt-5 rounded-lg px-6 py-6"
+        id="schedule-plan"
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-extrabold">Operational plan</h2>
+            <h2 className="text-2xl font-extrabold">Schedule &amp; Plan</h2>
             <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-              Candidate Slots use {state.model.theater.timezoneName} and
-              preserve the exact instant plus its local-time provenance.
+              Plan Occurrences, Candidate Slots, confirmed choices, visibility,
+              resources, and viability. Candidate Slots use{' '}
+              {state.model.theater.timezoneName} and preserve the exact instant
+              plus its local-time provenance.
             </p>
           </div>
           {!editable ? (
             <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">
-              Only an eligible Producer can edit a draft or approved plan.
+              You can inspect this Event plan, but only an eligible Producer can
+              edit it.
             </p>
           ) : null}
         </div>
@@ -468,7 +474,26 @@ export function createProposalPreparationSections(
 
         {state.model.capabilities.viewResourceRequests ? (
           <>
-            <h3 className="mt-8 text-xl font-extrabold">Requested resources</h3>
+            <h3 className="mt-8 text-xl font-extrabold">
+              Requested staffing needs and resources
+            </h3>
+            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+              Staffing quantities describe coverage needed. Named Event staff
+              assignments and their accepted coverage appear in{' '}
+              {plan.resourceRequests.some(
+                (request) => request.type === 'staff',
+              ) ? (
+                <a
+                  className="font-bold text-[var(--coral-deep)] underline"
+                  href="#event-staff-assignment"
+                >
+                  Cast &amp; Team
+                </a>
+              ) : (
+                'Cast & Team'
+              )}
+              ; equipment and other resources remain separate requests.
+            </p>
             <div className="mt-4 grid gap-3">
               {plan.resourceRequests.map((request, requestIndex) => (
                 <div
