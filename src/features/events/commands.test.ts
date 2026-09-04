@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   cancelEvent,
-  completeEvent,
   createManagedEvent,
   inviteEventCastMember,
   manageAtRiskEvent,
@@ -16,7 +15,6 @@ import {
 
 import type {
   EventCommandDependencies,
-  EventCompletionCommandDependencies,
   EventCancellationCommandDependencies,
   EventRiskCommandDependencies,
 } from './commands'
@@ -221,50 +219,6 @@ describe('managed Event commands', () => {
       error: { code: 'forbidden' },
     })
     expect(managed).toBe(false)
-  })
-
-  it('completes an eligible Event through the authorized boundary using the deterministic clock', async () => {
-    const completions: unknown[] = []
-    const dependencies: EventCompletionCommandDependencies = {
-      getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
-      now: () => new Date('2026-10-11T01:00:00.000Z'),
-      persistence: {
-        authorizeCompletion: async () => undefined,
-        complete: async (input) => {
-          completions.push(input)
-          return {
-            completedAt: input.now,
-            eventId: input.eventId,
-            lifecycleStatus: 'completed',
-          }
-        },
-      },
-    }
-
-    const result = await completeEvent(
-      {
-        commandId: '10000000-0000-0000-0000-000000000002',
-        eventId: '10000000-0000-0000-0000-000000000001',
-      },
-      dependencies,
-    )
-
-    expect(result).toEqual({
-      ok: true,
-      data: {
-        completedAt: '2026-10-11T01:00:00.000Z',
-        eventId: '10000000-0000-0000-0000-000000000001',
-        lifecycleStatus: 'completed',
-      },
-    })
-    expect(completions).toEqual([
-      {
-        actorUserId: 'owner-1',
-        commandId: '10000000-0000-0000-0000-000000000002',
-        eventId: '10000000-0000-0000-0000-000000000001',
-        now: '2026-10-11T01:00:00.000Z',
-      },
-    ])
   })
 
   it('does not elevate to service role before app authorization succeeds', async () => {

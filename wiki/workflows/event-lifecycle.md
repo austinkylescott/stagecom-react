@@ -107,13 +107,16 @@ snapshot with a prominent cancellation notice; admission price and ticket
 actions are suppressed. An Event that was never published remains anonymous
 not-found.
 
-An approved Event becomes completed after its final Confirmed Slot ends.
-Completion is executable through an Owner/Admin action and a service-role
-maintenance entry point under a supplied deterministic clock. The repeatable
-transition records one `event.completed` domain fact and preserves Operational
-Approval, Publication, operational health, casting, Proposal decisions, and
-canonical/Theater-local slot facts. Published completed Events retain their
-anonymous published snapshot.
+An approved Event becomes completed automatically after its final Confirmed
+Slot ends. A scheduled service-role evaluator uses the database clock, and its
+locked transition rechecks the Event's lifecycle and final commitment before
+writing one `event.completed` domain fact. A concurrent lifecycle change is a
+safe no-op. An unexpected transition failure is retained as one admin-only
+`event.completion.failed` Event History fact with diagnostic context; retries
+update that fact without duplicating effects or alerts. Completion preserves
+Operational Approval, Publication, operational health, casting, Proposal
+decisions, and canonical/Theater-local slot facts. Published completed Events
+retain their anonymous published snapshot.
 
 ## What History Is Preserved?
 
