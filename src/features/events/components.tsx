@@ -1329,7 +1329,9 @@ export function ManagedEventWorkspace({
             </p>
           </section>
         ) : null}
-        {view !== 'accepted_staff' ? (
+        {view !== 'accepted_staff' ||
+        allowedActions.respondToInvitation ||
+        allowedActions.respondToAvailability ? (
           <>
             <section
               className="island-shell mt-5 rounded-lg px-6 py-6"
@@ -1797,7 +1799,7 @@ export function ManagedEventWorkspace({
             ) : null}
           </>
         ) : null}
-        {view === 'accepted_staff' ? (
+        {view === 'accepted_staff' && !allowedActions.respondToAvailability ? (
           <section
             className="island-shell mt-5 rounded-lg px-6 py-6"
             id="assigned-occurrences"

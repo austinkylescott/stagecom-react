@@ -193,12 +193,12 @@ export async function getManagedEventWorkspace(
     isTheaterAdmin || isReviewer || actorLeadership.length > 0
   const view = hasOperationalView
     ? ('operational' as const)
-    : actorCast?.status === 'accepted'
-      ? ('accepted_cast' as const)
-      : actorCast?.status === 'pending' && actorCast.source === 'invited'
-        ? ('pending_invitee' as const)
-        : actorStaffAssignment?.status === 'accepted'
-          ? ('accepted_staff' as const)
+    : actorStaffAssignment?.status === 'accepted'
+      ? ('accepted_staff' as const)
+      : actorCast?.status === 'accepted'
+        ? ('accepted_cast' as const)
+        : actorCast?.status === 'pending' && actorCast.source === 'invited'
+          ? ('pending_invitee' as const)
           : actorStaffAssignment?.status === 'pending'
             ? ('pending_invitee' as const)
             : null
