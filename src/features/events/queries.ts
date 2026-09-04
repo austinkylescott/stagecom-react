@@ -247,6 +247,7 @@ export async function getManagedEventWorkspace(
     Math.max(...confirmedSlotEndsAt) <= Date.now()
 
   const visibleCast = managedEvent.show_cast.filter((castMember) => {
+    if (!actorCast) return false
     if (view !== 'pending_invitee') return true
     return (
       castMember.user_id === access.data.actorUserId ||

@@ -1670,407 +1670,422 @@ export function ManagedEventWorkspace({
         {view === 'operational' && proposalPreparation ? (
           <ProposalPreparation.ProposedCastSection />
         ) : null}
-      </div>
-      {view === 'operational' && proposalPreparation ? (
-        <>
-          <ProposalPreparation.RevisionSection />
-          {proposalRevisions.length > 0 ? (
-            <section
-              className="island-shell mt-5 rounded-lg px-6 py-6"
-              id="review"
-            >
-              <h2 className="text-2xl font-extrabold">Submitted revisions</h2>
-              <span className="block scroll-mt-6" id="proposal-revisions" />
-              <ul className="mt-3 grid gap-2">
-                {proposalRevisions.map((revision) => (
-                  <li
-                    className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                    id={`proposal-revision-${revision.id}`}
-                    key={revision.id}
-                  >
-                    Revision {revision.revision_number} ·{' '}
-                    <span className="capitalize">
-                      {revision.decision_state.replace('_', ' ')}
-                    </span>
-                    {revision.show_proposal_decisions ? (
-                      <div
-                        className="mt-3 rounded-md bg-[var(--sand)]/50 px-3 py-3 text-sm"
-                        key={revision.show_proposal_decisions.id}
-                      >
-                        <p className="font-bold capitalize">
-                          {revision.show_proposal_decisions.action.replace(
-                            '_',
-                            ' ',
-                          )}
-                          {revision.show_proposal_decisions.owner_override
-                            ? ' · Owner override'
-                            : ''}
-                        </p>
-                        {revision.show_proposal_decisions.reason ? (
-                          <p className="mt-1">
-                            Reason: {revision.show_proposal_decisions.reason}
+        {view === 'operational' && proposalPreparation ? (
+          <>
+            <ProposalPreparation.RevisionSection />
+            {proposalRevisions.length > 0 ? (
+              <section
+                className="island-shell mt-5 rounded-lg px-6 py-6"
+                id="review"
+              >
+                <h2 className="text-2xl font-extrabold">Submitted revisions</h2>
+                <span className="block scroll-mt-6" id="proposal-revisions" />
+                <ul className="mt-3 grid gap-2">
+                  {proposalRevisions.map((revision) => (
+                    <li
+                      className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                      id={`proposal-revision-${revision.id}`}
+                      key={revision.id}
+                    >
+                      Revision {revision.revision_number} ·{' '}
+                      <span className="capitalize">
+                        {revision.decision_state.replace('_', ' ')}
+                      </span>
+                      {revision.show_proposal_decisions ? (
+                        <div
+                          className="mt-3 rounded-md bg-[var(--sand)]/50 px-3 py-3 text-sm"
+                          key={revision.show_proposal_decisions.id}
+                        >
+                          <p className="font-bold capitalize">
+                            {revision.show_proposal_decisions.action.replace(
+                              '_',
+                              ' ',
+                            )}
+                            {revision.show_proposal_decisions.owner_override
+                              ? ' · Owner override'
+                              : ''}
                           </p>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {revision.show_counteroffers.map((counteroffer) => (
-                      <ProposalCounterofferCard
-                        canRespond={allowedActions.respondToCounteroffer}
-                        counteroffer={counteroffer}
-                        key={counteroffer.id}
-                        slot={
-                          candidateSlots.find(
-                            ({ slot }) =>
-                              slot.id === counteroffer.candidate_slot_id,
-                          )?.slot
-                        }
-                      />
-                    ))}
-                    {revision.decision_state === 'pending' &&
-                    allowedActions.reviewProposalRevisions ? (
-                      <>
-                        <ProposalDecisionControls
-                          actorUserId={actorUserId}
-                          canUseOwnerOverride={
-                            allowedActions.useOwnerSelfApproval &&
-                            revision.submitted_by === actorUserId
+                          {revision.show_proposal_decisions.reason ? (
+                            <p className="mt-1">
+                              Reason: {revision.show_proposal_decisions.reason}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {revision.show_counteroffers.map((counteroffer) => (
+                        <ProposalCounterofferCard
+                          canRespond={allowedActions.respondToCounteroffer}
+                          counteroffer={counteroffer}
+                          key={counteroffer.id}
+                          slot={
+                            candidateSlots.find(
+                              ({ slot }) =>
+                                slot.id === counteroffer.candidate_slot_id,
+                            )?.slot
                           }
-                          onDecided={(decision) => {
-                            setProposalRevisions((current) =>
-                              current.map((candidate) =>
-                                candidate.id === revision.id
-                                  ? {
-                                      ...candidate,
-                                      decision_state:
-                                        decision.action === 'approve'
-                                          ? 'approved'
-                                          : decision.action === 'request_edits'
-                                            ? 'changes_requested'
-                                            : 'denied',
-                                      decision_version:
-                                        candidate.decision_version + 1,
-                                      show_proposal_decisions: {
-                                        action: decision.action,
-                                        actor_user_id: decision.actorUserId,
-                                        command_id: decision.commandId,
-                                        created_at: decision.createdAt,
-                                        id: decision.id,
-                                        owner_override: decision.ownerOverride,
-                                        reason: decision.reason,
-                                        revision_version:
-                                          decision.revisionVersion,
-                                      },
-                                    }
-                                  : candidate,
-                              ),
-                            )
-                            if (decision.action === 'approve') {
-                              setLifecycleStatus('approved')
-                            } else if (decision.action === 'request_edits') {
-                              setLifecycleStatus('draft')
-                            }
-                          }}
-                          revision={revision}
                         />
-                        {allowedActions.issueCounteroffer &&
-                        revision.submitted_by !== actorUserId ? (
-                          <ProposalCounterofferForm
-                            occurrences={event.show_occurrences}
+                      ))}
+                      {revision.decision_state === 'pending' &&
+                      allowedActions.reviewProposalRevisions ? (
+                        <>
+                          <ProposalDecisionControls
+                            actorUserId={actorUserId}
+                            canUseOwnerOverride={
+                              allowedActions.useOwnerSelfApproval &&
+                              revision.submitted_by === actorUserId
+                            }
+                            onDecided={(decision) => {
+                              setProposalRevisions((current) =>
+                                current.map((candidate) =>
+                                  candidate.id === revision.id
+                                    ? {
+                                        ...candidate,
+                                        decision_state:
+                                          decision.action === 'approve'
+                                            ? 'approved'
+                                            : decision.action ===
+                                                'request_edits'
+                                              ? 'changes_requested'
+                                              : 'denied',
+                                        decision_version:
+                                          candidate.decision_version + 1,
+                                        show_proposal_decisions: {
+                                          action: decision.action,
+                                          actor_user_id: decision.actorUserId,
+                                          command_id: decision.commandId,
+                                          created_at: decision.createdAt,
+                                          id: decision.id,
+                                          owner_override:
+                                            decision.ownerOverride,
+                                          reason: decision.reason,
+                                          revision_version:
+                                            decision.revisionVersion,
+                                        },
+                                      }
+                                    : candidate,
+                                ),
+                              )
+                              if (decision.action === 'approve') {
+                                setLifecycleStatus('approved')
+                              } else if (decision.action === 'request_edits') {
+                                setLifecycleStatus('draft')
+                              }
+                            }}
                             revision={revision}
-                            theater={theater}
                           />
-                        ) : null}
-                      </>
-                    ) : null}
-                    {revision.decision_state === 'denied' &&
-                    allowedActions.seedDeniedReplacement ? (
-                      <DeniedProposalReplacementForm
-                        revisionId={revision.id}
-                        theaterSlug={theater.slug}
-                      />
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-        </>
-      ) : null}
-      {view === 'accepted_staff' ? (
-        <section
-          className="island-shell mt-5 rounded-lg px-6 py-6"
-          id="assigned-occurrences"
-        >
-          <h2 className="text-2xl font-extrabold">
-            Your assigned Occurrences and Calls
-          </h2>
-          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-            Only Occurrences selected for your Event staff responsibility appear
-            here.
-          </p>
-          <div className="mt-4 grid gap-3">
-            {event.show_occurrences.map((occurrence, occurrenceIndex) => {
-              const call = occurrence.show_occurrence_calls.find(
-                (item) => item.user_id === actorUserId,
-              )
-              const slot = occurrence.show_candidate_slots.find(
-                (item) => item.id === occurrence.confirmed_candidate_slot_id,
-              )
-              return (
-                <article
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                  id={`occurrence-call-${occurrence.id}`}
-                  key={occurrence.id}
-                >
-                  <p className="font-bold">
-                    Occurrence {occurrenceIndex + 1} ·{' '}
-                    <span className="capitalize">
-                      {occurrence.occurrence_type}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm capitalize">
-                    {call?.call.replace('_', ' ')}
-                  </p>
-                  {slot ? (
-                    <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-                      {slot.local_starts_at.slice(0, 16).replace('T', ' ')} ·{' '}
-                      {slot.location_name}
-                    </p>
-                  ) : null}
-                </article>
-              )
-            })}
-          </div>
-        </section>
-      ) : (
-        <>
+                          {allowedActions.issueCounteroffer &&
+                          revision.submitted_by !== actorUserId ? (
+                            <ProposalCounterofferForm
+                              occurrences={event.show_occurrences}
+                              revision={revision}
+                              theater={theater}
+                            />
+                          ) : null}
+                        </>
+                      ) : null}
+                      {revision.decision_state === 'denied' &&
+                      allowedActions.seedDeniedReplacement ? (
+                        <DeniedProposalReplacementForm
+                          revisionId={revision.id}
+                          theaterSlug={theater.slug}
+                        />
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </>
+        ) : null}
+        {view === 'accepted_staff' ? (
           <section
             className="island-shell mt-5 rounded-lg px-6 py-6"
-            id="availability"
+            id="assigned-occurrences"
           >
             <h2 className="text-2xl font-extrabold">
-              {view === 'pending_invitee'
-                ? 'Your Availability Responses'
-                : 'Collaborative availability matrix'}
+              Your assigned Occurrences and Calls
             </h2>
             <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-              Availability is recorded per Candidate Slot and never changes
-              Event participation.
+              Only Occurrences selected for your Event staff responsibility
+              appear here.
             </p>
-            <div className="mt-5 grid gap-4">
-              {candidateSlots.map(({ slot }, slotIndex) => {
-                const ownResponse = availabilityResponses.find(
-                  (response) =>
-                    response.candidate_slot_id === slot.id &&
-                    response.user_id === actorUserId,
+            <div className="mt-4 grid gap-3">
+              {event.show_occurrences.map((occurrence, occurrenceIndex) => {
+                const call = occurrence.show_occurrence_calls.find(
+                  (item) => item.user_id === actorUserId,
                 )
-                const coordinationKey = `availability-${slot.id}`
-
+                const slot = occurrence.show_candidate_slots.find(
+                  (item) => item.id === occurrence.confirmed_candidate_slot_id,
+                )
                 return (
                   <article
-                    className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
-                    id={coordinationKey}
-                    key={slot.id}
+                    className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                    id={`occurrence-call-${occurrence.id}`}
+                    key={occurrence.id}
                   >
-                    <h3 className="font-extrabold">
-                      Candidate Slot {slotIndex + 1}
-                    </h3>
-                    <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-                      {slot.local_starts_at.slice(0, 16).replace('T', ' ')} ·{' '}
-                      {slot.location_name}
+                    <p className="font-bold">
+                      Occurrence {occurrenceIndex + 1} ·{' '}
+                      <span className="capitalize">
+                        {occurrence.occurrence_type}
+                      </span>
                     </p>
-                    {allowedActions.respondToAvailability ? (
-                      <label className="mt-3 grid max-w-sm gap-2 text-sm font-bold">
-                        Availability for Candidate Slot {slotIndex + 1}
-                        <select
-                          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
-                          disabled={savingCoordinationKey === coordinationKey}
-                          onChange={async (change) => {
-                            const response = change.target.value as
-                              'available' | 'unavailable' | 'uncertain'
-                            setCoordinationError(null)
-                            setSavingCoordinationKey(coordinationKey)
-                            try {
-                              const result =
-                                await recordCandidateSlotAvailabilityFn({
-                                  data: {
-                                    candidateSlotId: slot.id,
-                                    commandId: crypto.randomUUID(),
-                                    expectedVersion:
-                                      ownResponse?.version ?? null,
-                                    response,
-                                  },
-                                })
-                              if (!result.ok) {
-                                setCoordinationError(result.error.message)
-                                return
-                              }
-                              setAvailabilityResponses((current) => [
-                                ...current.filter(
-                                  (item) =>
-                                    !(
-                                      item.candidate_slot_id === slot.id &&
-                                      item.user_id === actorUserId
-                                    ),
-                                ),
-                                {
-                                  actor_user_id: result.data.actorUserId,
-                                  candidate_slot_id:
-                                    result.data.candidateSlotId,
-                                  responded_at: result.data.respondedAt,
-                                  response: result.data.response,
-                                  user_id: result.data.userId,
-                                  version: result.data.version,
-                                },
-                              ])
-                            } finally {
-                              setSavingCoordinationKey(null)
-                            }
-                          }}
-                          value={ownResponse?.response ?? ''}
-                        >
-                          <option disabled value="">
-                            Choose availability
-                          </option>
-                          <option value="available">Available</option>
-                          <option value="unavailable">Unavailable</option>
-                          <option value="uncertain">Uncertain</option>
-                        </select>
-                      </label>
-                    ) : null}
-                    {view !== 'pending_invitee' ? (
-                      <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {cast.map((castMember) => {
-                          const response = availabilityResponses.find(
-                            (item) =>
-                              item.candidate_slot_id === slot.id &&
-                              item.user_id === castMember.user_id,
-                          )
-                          return (
-                            <div
-                              className="rounded bg-[var(--sand)]/40 px-3 py-2"
-                              key={castMember.user_id}
-                            >
-                              <dt className="text-xs font-bold">
-                                {castMember.profiles.display_name}
-                              </dt>
-                              <dd className="text-sm capitalize">
-                                {response?.response ?? 'No response'}
-                              </dd>
-                            </div>
-                          )
-                        })}
-                      </dl>
+                    <p className="mt-1 text-sm capitalize">
+                      {call?.call.replace('_', ' ')}
+                    </p>
+                    {slot ? (
+                      <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                        {slot.local_starts_at.slice(0, 16).replace('T', ' ')} ·{' '}
+                        {slot.location_name}
+                      </p>
                     ) : null}
                   </article>
                 )
               })}
             </div>
-            {view !== 'pending_invitee' ? (
-              <div className="mt-7">
-                <h3 className="text-xl font-extrabold" id="occurrence-calls">
-                  Occurrence Calls
-                </h3>
-                <div className="mt-3 grid gap-4">
-                  {event.show_occurrences.map((occurrence, occurrenceIndex) => (
+          </section>
+        ) : (
+          <>
+            <section
+              className="island-shell mt-5 rounded-lg px-6 py-6"
+              id="availability"
+            >
+              <h2 className="text-2xl font-extrabold">
+                {view === 'pending_invitee'
+                  ? 'Your Availability Responses'
+                  : 'Collaborative availability matrix'}
+              </h2>
+              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                Availability is recorded per Candidate Slot and never changes
+                Event participation.
+              </p>
+              <div className="mt-5 grid gap-4">
+                {candidateSlots.map(({ slot }, slotIndex) => {
+                  const ownResponse = availabilityResponses.find(
+                    (response) =>
+                      response.candidate_slot_id === slot.id &&
+                      response.user_id === actorUserId,
+                  )
+                  const coordinationKey = `availability-${slot.id}`
+
+                  return (
                     <article
                       className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
-                      id={`occurrence-call-${occurrence.id}`}
-                      key={occurrence.id}
+                      id={coordinationKey}
+                      key={slot.id}
                     >
-                      <h4 className="font-extrabold">
-                        Occurrence {occurrenceIndex + 1} ·{' '}
-                        <span className="capitalize">
-                          {occurrence.occurrence_type}
-                        </span>
-                      </h4>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        {visibleCalledParticipants.map((participant) => {
-                          const currentCall = occurrenceCalls.find(
-                            (call) =>
-                              call.occurrence_id === occurrence.id &&
-                              call.user_id === participant.userId,
-                          )
-                          const coordinationKey = `call-${occurrence.id}-${participant.userId}`
-                          return (
-                            <label
-                              className="grid gap-2 text-sm font-bold"
-                              key={participant.userId}
-                            >
-                              Call for {participant.displayName}, Occurrence{' '}
-                              {occurrenceIndex + 1}
-                              <select
-                                className="rounded-md border border-[var(--line)] bg-white px-3 py-2 capitalize"
-                                disabled={
-                                  !allowedActions.assignOccurrenceCalls ||
-                                  savingCoordinationKey === coordinationKey
+                      <h3 className="font-extrabold">
+                        Candidate Slot {slotIndex + 1}
+                      </h3>
+                      <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                        {slot.local_starts_at.slice(0, 16).replace('T', ' ')} ·{' '}
+                        {slot.location_name}
+                      </p>
+                      {allowedActions.respondToAvailability ? (
+                        <label className="mt-3 grid max-w-sm gap-2 text-sm font-bold">
+                          Availability for Candidate Slot {slotIndex + 1}
+                          <select
+                            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                            disabled={savingCoordinationKey === coordinationKey}
+                            onChange={async (change) => {
+                              const response = change.target.value as
+                                'available' | 'unavailable' | 'uncertain'
+                              setCoordinationError(null)
+                              setSavingCoordinationKey(coordinationKey)
+                              try {
+                                const result =
+                                  await recordCandidateSlotAvailabilityFn({
+                                    data: {
+                                      candidateSlotId: slot.id,
+                                      commandId: crypto.randomUUID(),
+                                      expectedVersion:
+                                        ownResponse?.version ?? null,
+                                      response,
+                                    },
+                                  })
+                                if (!result.ok) {
+                                  setCoordinationError(result.error.message)
+                                  return
                                 }
-                                onChange={async (change) => {
-                                  const call = change.target.value as
-                                    'required' | 'optional' | 'not_called'
-                                  setCoordinationError(null)
-                                  setSavingCoordinationKey(coordinationKey)
-                                  try {
-                                    const result = await setOccurrenceCallFn({
-                                      data: {
-                                        call,
-                                        participantUserId: participant.userId,
-                                        commandId: crypto.randomUUID(),
-                                        expectedVersion:
-                                          currentCall?.version ?? null,
-                                        occurrenceId: occurrence.id,
-                                      },
-                                    })
-                                    if (!result.ok) {
-                                      setCoordinationError(result.error.message)
-                                      return
-                                    }
-                                    setOccurrenceCalls((current) => [
-                                      ...current.filter(
-                                        (item) =>
-                                          !(
-                                            item.occurrence_id ===
-                                              occurrence.id &&
-                                            item.user_id === participant.userId
-                                          ),
+                                setAvailabilityResponses((current) => [
+                                  ...current.filter(
+                                    (item) =>
+                                      !(
+                                        item.candidate_slot_id === slot.id &&
+                                        item.user_id === actorUserId
                                       ),
-                                      {
-                                        actor_user_id: result.data.actorUserId,
-                                        assigned_at: result.data.assignedAt,
-                                        call: result.data.call,
-                                        occurrence_id: result.data.occurrenceId,
-                                        user_id: result.data.userId,
-                                        version: result.data.version,
-                                      },
-                                    ])
-                                  } finally {
-                                    setSavingCoordinationKey(null)
-                                  }
-                                }}
-                                value={currentCall?.call ?? ''}
+                                  ),
+                                  {
+                                    actor_user_id: result.data.actorUserId,
+                                    candidate_slot_id:
+                                      result.data.candidateSlotId,
+                                    responded_at: result.data.respondedAt,
+                                    response: result.data.response,
+                                    user_id: result.data.userId,
+                                    version: result.data.version,
+                                  },
+                                ])
+                              } finally {
+                                setSavingCoordinationKey(null)
+                              }
+                            }}
+                            value={ownResponse?.response ?? ''}
+                          >
+                            <option disabled value="">
+                              Choose availability
+                            </option>
+                            <option value="available">Available</option>
+                            <option value="unavailable">Unavailable</option>
+                            <option value="uncertain">Uncertain</option>
+                          </select>
+                        </label>
+                      ) : null}
+                      {view !== 'pending_invitee' ? (
+                        <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {cast.map((castMember) => {
+                            const response = availabilityResponses.find(
+                              (item) =>
+                                item.candidate_slot_id === slot.id &&
+                                item.user_id === castMember.user_id,
+                            )
+                            return (
+                              <div
+                                className="rounded bg-[var(--sand)]/40 px-3 py-2"
+                                key={castMember.user_id}
                               >
-                                <option disabled value="">
-                                  Choose call
-                                </option>
-                                <option value="required">Required</option>
-                                <option value="optional">Optional</option>
-                                <option value="not_called">Not called</option>
-                              </select>
-                            </label>
-                          )
-                        })}
-                      </div>
+                                <dt className="text-xs font-bold">
+                                  {castMember.profiles.display_name}
+                                </dt>
+                                <dd className="text-sm capitalize">
+                                  {response?.response ?? 'No response'}
+                                </dd>
+                              </div>
+                            )
+                          })}
+                        </dl>
+                      ) : null}
                     </article>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
-            ) : null}
-            {coordinationError ? (
-              <p className="mt-3 font-bold text-red-700">{coordinationError}</p>
-            ) : null}
-          </section>
-        </>
-      )}
+              {view !== 'pending_invitee' ? (
+                <div className="mt-7">
+                  <h3 className="text-xl font-extrabold" id="occurrence-calls">
+                    Occurrence Calls
+                  </h3>
+                  <div className="mt-3 grid gap-4">
+                    {event.show_occurrences.map(
+                      (occurrence, occurrenceIndex) => (
+                        <article
+                          className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                          id={`occurrence-call-${occurrence.id}`}
+                          key={occurrence.id}
+                        >
+                          <h4 className="font-extrabold">
+                            Occurrence {occurrenceIndex + 1} ·{' '}
+                            <span className="capitalize">
+                              {occurrence.occurrence_type}
+                            </span>
+                          </h4>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {visibleCalledParticipants.map((participant) => {
+                              const currentCall = occurrenceCalls.find(
+                                (call) =>
+                                  call.occurrence_id === occurrence.id &&
+                                  call.user_id === participant.userId,
+                              )
+                              const coordinationKey = `call-${occurrence.id}-${participant.userId}`
+                              return (
+                                <label
+                                  className="grid gap-2 text-sm font-bold"
+                                  key={participant.userId}
+                                >
+                                  Call for {participant.displayName}, Occurrence{' '}
+                                  {occurrenceIndex + 1}
+                                  <select
+                                    className="rounded-md border border-[var(--line)] bg-white px-3 py-2 capitalize"
+                                    disabled={
+                                      !allowedActions.assignOccurrenceCalls ||
+                                      savingCoordinationKey === coordinationKey
+                                    }
+                                    onChange={async (change) => {
+                                      const call = change.target.value as
+                                        'required' | 'optional' | 'not_called'
+                                      setCoordinationError(null)
+                                      setSavingCoordinationKey(coordinationKey)
+                                      try {
+                                        const result =
+                                          await setOccurrenceCallFn({
+                                            data: {
+                                              call,
+                                              participantUserId:
+                                                participant.userId,
+                                              commandId: crypto.randomUUID(),
+                                              expectedVersion:
+                                                currentCall?.version ?? null,
+                                              occurrenceId: occurrence.id,
+                                            },
+                                          })
+                                        if (!result.ok) {
+                                          setCoordinationError(
+                                            result.error.message,
+                                          )
+                                          return
+                                        }
+                                        setOccurrenceCalls((current) => [
+                                          ...current.filter(
+                                            (item) =>
+                                              !(
+                                                item.occurrence_id ===
+                                                  occurrence.id &&
+                                                item.user_id ===
+                                                  participant.userId
+                                              ),
+                                          ),
+                                          {
+                                            actor_user_id:
+                                              result.data.actorUserId,
+                                            assigned_at: result.data.assignedAt,
+                                            call: result.data.call,
+                                            occurrence_id:
+                                              result.data.occurrenceId,
+                                            user_id: result.data.userId,
+                                            version: result.data.version,
+                                          },
+                                        ])
+                                      } finally {
+                                        setSavingCoordinationKey(null)
+                                      }
+                                    }}
+                                    value={currentCall?.call ?? ''}
+                                  >
+                                    <option disabled value="">
+                                      Choose call
+                                    </option>
+                                    <option value="required">Required</option>
+                                    <option value="optional">Optional</option>
+                                    <option value="not_called">
+                                      Not called
+                                    </option>
+                                  </select>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        </article>
+                      ),
+                    )}
+                  </div>
+                </div>
+              ) : null}
+              {coordinationError ? (
+                <p className="mt-3 font-bold text-red-700">
+                  {coordinationError}
+                </p>
+              ) : null}
+            </section>
+          </>
+        )}
+      </div>
       {overview.sections.some(({ label }) => label === 'History') ? (
         <section
           className="island-shell mt-5 rounded-lg px-6 py-6"
