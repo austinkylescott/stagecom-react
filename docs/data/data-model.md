@@ -105,13 +105,17 @@ accepts a supplied clock and window, emits one explicit
 `event.proposal_counteroffer.expiring_soon` activity fact per Counteroffer, and
 projects deduplicated notifications to current Event Producers.
 
-Event completion is likewise a repeatable transition under a supplied server
-clock. An Owner/Admin action or the service-role maintenance entry point moves
-only an approved Event whose final Confirmed Slot has ended to `completed` and
-records `completed_at` plus one `event.completed` fact. Operational Approval,
-Publication, operational health, cast, Proposal decisions, and the Confirmed
-Slot's canonical and Theater-local time provenance remain unchanged. A
-published completed Event continues to serve its published anonymous snapshot.
+Event completion is an automatic, repeatable transition under the database
+clock. A scheduled service-role evaluator moves only an approved Event whose
+final Confirmed Slot has ended to `completed` and records `completed_at` plus
+one `event.completed` fact. The locked transition rechecks lifecycle and the
+final commitment, so concurrent state changes are safe no-ops. An unexpected
+transition failure writes one admin-only `event.completion.failed` activity
+fact with its evaluation context; retries update that fact rather than creating
+duplicate effects or alerts. Operational Approval, Publication, operational
+health, cast, Proposal decisions, and the Confirmed Slot's canonical and
+Theater-local time provenance remain unchanged. A published completed Event
+continues to serve its published anonymous snapshot.
 
 Cancellation requests are durable rows in `show_cancellation_requests`; they
 record the active Producer, reason, request time, and eventual resolution
