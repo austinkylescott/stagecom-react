@@ -189,6 +189,11 @@ export async function getManagedEventWorkspace(
   const isReviewer =
     isTheaterAdmin ||
     capabilityResult.data.some(({ capability }) => capability === 'reviewer')
+  const canViewProposalReview =
+    isReviewer ||
+    managedEvent.show_proposal_revisions.some(
+      (revision) => revision.submitted_by === access.data.actorUserId,
+    )
   const hasOperationalView =
     isTheaterAdmin || isReviewer || actorLeadership.length > 0
   const view = hasOperationalView
@@ -547,7 +552,7 @@ export async function getManagedEventWorkspace(
             )
           : [],
       show_proposal_revisions:
-        view === 'operational'
+        view === 'operational' && canViewProposalReview
           ? managedEvent.show_proposal_revisions.sort(
               (left, right) => right.revision_number - left.revision_number,
             )

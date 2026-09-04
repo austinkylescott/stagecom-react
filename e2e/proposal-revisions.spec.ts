@@ -42,10 +42,10 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await expect(
       page.getByRole('heading', { name: 'Proposal Revision' }),
     ).toBeVisible()
-    await expect(page.getByText('Pending Invitee').first()).toBeVisible()
     const acceptedCastCheckbox = page.getByLabel('Accepted Cast', {
       exact: true,
     })
+    await expect(acceptedCastCheckbox).toBeVisible()
     await waitForReactHandler(acceptedCastCheckbox, 'onChange')
     await acceptedCastCheckbox.check()
     await page.getByRole('button', { name: 'Save Proposed Cast' }).click()
@@ -109,6 +109,22 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     expect(activity).toEqual([{ action: 'event.proposal_revision.submitted' }])
 
     await page.reload()
+    await expect(
+      page.getByText(
+        'Another eligible Reviewer must decide your Proposal Revision.',
+      ),
+    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible()
+    await page.getByRole('link', { name: 'Review', exact: true }).click()
+    await expect(page).toHaveURL(/#review$/)
+    const snapshot = page.getByText('Immutable submitted snapshot')
+    await snapshot.click()
+    await expect(page.getByText('Minimum viable Cast')).toBeVisible()
+    await expect(page.getByText('Community Hall')).toBeVisible()
+    await page.getByText('Exact immutable record').click()
+    await expect(
+      page.getByText('timezoneSource', { exact: false }),
+    ).toBeVisible()
     const ownerOverrideCheckbox = page.getByLabel(
       'Explicitly invoke the audited Owner self-approval override',
     )
@@ -481,7 +497,9 @@ test('Reviewer Counteroffer holds the Primary Venue until explicit viable accept
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
     await page.getByRole('button', { name: 'accept Counteroffer' }).click()
-    await expect(page.getByText('Revision 2 · pending')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Proposal Revision 2' }),
+    ).toBeVisible()
 
     const [{ data: revisions }, { data: offer }, { count: remainingHolds }] =
       await Promise.all([
@@ -886,7 +904,9 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
     await memberPage.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await expect(memberPage.getByText('Accepted Cast · producer')).toBeVisible()
+    await expect(
+      memberPage.getByText('Accepted Cast · producer', { exact: true }),
+    ).toBeVisible()
 
     await authenticateContext({
       anonKey: fixture.anonKey,

@@ -22,7 +22,7 @@ import {
 } from './server-functions'
 import { ProposalPreparation } from './proposal-preparation/production'
 
-import type { Database } from '@/server/db/database.types'
+import type { Database, Json } from '@/server/db/database.types'
 import type { EventOverviewReadModel } from './event-overview/read-model'
 import type { ProposalPreparationReadModel } from './proposal-preparation/types'
 
@@ -628,6 +628,9 @@ export function ManagedEventWorkspace({
   const [isCompleting, setIsCompleting] = useState(false)
   const [proposalRevisions, setProposalRevisions] = useState(
     event.show_proposal_revisions,
+  )
+  const canViewReview = overview.sections.some(
+    ({ label }) => label === 'Review',
   )
   const ownInvitation = cast.find(
     (castMember) => castMember.user_id === actorUserId,
@@ -1673,131 +1676,7 @@ export function ManagedEventWorkspace({
           <ProposalPreparation.ProposedCastSection />
         ) : null}
         {view === 'operational' && proposalPreparation ? (
-          <>
-            <ProposalPreparation.RevisionSection />
-            {proposalRevisions.length > 0 ? (
-              <section
-                className="island-shell mt-5 rounded-lg px-6 py-6"
-                id="review"
-              >
-                <h2 className="text-2xl font-extrabold">Submitted revisions</h2>
-                <span className="block scroll-mt-6" id="proposal-revisions" />
-                <ul className="mt-3 grid gap-2">
-                  {proposalRevisions.map((revision) => (
-                    <li
-                      className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                      id={`proposal-revision-${revision.id}`}
-                      key={revision.id}
-                    >
-                      Revision {revision.revision_number} ·{' '}
-                      <span className="capitalize">
-                        {revision.decision_state.replace('_', ' ')}
-                      </span>
-                      {revision.show_proposal_decisions ? (
-                        <div
-                          className="mt-3 rounded-md bg-[var(--sand)]/50 px-3 py-3 text-sm"
-                          key={revision.show_proposal_decisions.id}
-                        >
-                          <p className="font-bold capitalize">
-                            {revision.show_proposal_decisions.action.replace(
-                              '_',
-                              ' ',
-                            )}
-                            {revision.show_proposal_decisions.owner_override
-                              ? ' · Owner override'
-                              : ''}
-                          </p>
-                          {revision.show_proposal_decisions.reason ? (
-                            <p className="mt-1">
-                              Reason: {revision.show_proposal_decisions.reason}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      {revision.show_counteroffers.map((counteroffer) => (
-                        <ProposalCounterofferCard
-                          canRespond={allowedActions.respondToCounteroffer}
-                          counteroffer={counteroffer}
-                          key={counteroffer.id}
-                          slot={
-                            candidateSlots.find(
-                              ({ slot }) =>
-                                slot.id === counteroffer.candidate_slot_id,
-                            )?.slot
-                          }
-                        />
-                      ))}
-                      {revision.decision_state === 'pending' &&
-                      allowedActions.reviewProposalRevisions ? (
-                        <>
-                          <ProposalDecisionControls
-                            actorUserId={actorUserId}
-                            canUseOwnerOverride={
-                              allowedActions.useOwnerSelfApproval &&
-                              revision.submitted_by === actorUserId
-                            }
-                            onDecided={(decision) => {
-                              setProposalRevisions((current) =>
-                                current.map((candidate) =>
-                                  candidate.id === revision.id
-                                    ? {
-                                        ...candidate,
-                                        decision_state:
-                                          decision.action === 'approve'
-                                            ? 'approved'
-                                            : decision.action ===
-                                                'request_edits'
-                                              ? 'changes_requested'
-                                              : 'denied',
-                                        decision_version:
-                                          candidate.decision_version + 1,
-                                        show_proposal_decisions: {
-                                          action: decision.action,
-                                          actor_user_id: decision.actorUserId,
-                                          command_id: decision.commandId,
-                                          created_at: decision.createdAt,
-                                          id: decision.id,
-                                          owner_override:
-                                            decision.ownerOverride,
-                                          reason: decision.reason,
-                                          revision_version:
-                                            decision.revisionVersion,
-                                        },
-                                      }
-                                    : candidate,
-                                ),
-                              )
-                              if (decision.action === 'approve') {
-                                setLifecycleStatus('approved')
-                              } else if (decision.action === 'request_edits') {
-                                setLifecycleStatus('draft')
-                              }
-                            }}
-                            revision={revision}
-                          />
-                          {allowedActions.issueCounteroffer &&
-                          revision.submitted_by !== actorUserId ? (
-                            <ProposalCounterofferForm
-                              occurrences={event.show_occurrences}
-                              revision={revision}
-                              theater={theater}
-                            />
-                          ) : null}
-                        </>
-                      ) : null}
-                      {revision.decision_state === 'denied' &&
-                      allowedActions.seedDeniedReplacement ? (
-                        <DeniedProposalReplacementForm
-                          revisionId={revision.id}
-                          theaterSlug={theater.slug}
-                        />
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-          </>
+          <ProposalPreparation.RevisionSection />
         ) : null}
         {view === 'accepted_staff' && !allowedActions.respondToAvailability ? (
           <section
@@ -2088,6 +1967,160 @@ export function ManagedEventWorkspace({
           </>
         )}
       </div>
+      {canViewReview && proposalRevisions.length > 0 ? (
+        <section
+          className="island-shell mt-5 scroll-mt-6 rounded-lg px-6 py-6"
+          id="review"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-extrabold">Review</h2>
+              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                Each Proposal Revision below is the immutable snapshot that was
+                submitted for review. Decisions and Counteroffers stay attached
+                to that exact revision.
+              </p>
+            </div>
+            <a
+              className="text-sm font-bold underline"
+              href="#proposal-revisions"
+            >
+              Link to submitted revisions
+            </a>
+          </div>
+          <span className="block scroll-mt-6" id="proposal-revisions" />
+          <ul className="mt-5 grid gap-4">
+            {proposalRevisions.map((revision) => (
+              <li
+                className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                id={`proposal-revision-${revision.id}`}
+                key={revision.id}
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="font-extrabold">
+                    Proposal Revision {revision.revision_number}
+                  </h3>
+                  <span className="text-sm font-bold capitalize text-[var(--sea-ink-soft)]">
+                    Current decision:{' '}
+                    {revision.decision_state.replace('_', ' ')}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                  Submitted {new Date(revision.submitted_at).toLocaleString()}.
+                </p>
+                <ProposalRevisionSnapshot snapshot={revision.snapshot} />
+                <div className="mt-4 border-t border-[var(--line)] pt-4">
+                  <h4 className="font-bold">Decision history</h4>
+                  {revision.show_proposal_decisions ? (
+                    <div className="mt-2 rounded-md bg-[var(--sand)]/50 px-3 py-3 text-sm">
+                      <p className="font-bold capitalize">
+                        {revision.show_proposal_decisions.action.replace(
+                          '_',
+                          ' ',
+                        )}
+                        {revision.show_proposal_decisions.owner_override
+                          ? ' · Owner override'
+                          : ''}
+                      </p>
+                      <p className="mt-1 text-[var(--sea-ink-soft)]">
+                        Recorded{' '}
+                        {new Date(
+                          revision.show_proposal_decisions.created_at,
+                        ).toLocaleString()}
+                        .
+                      </p>
+                      {revision.show_proposal_decisions.reason ? (
+                        <p className="mt-1">
+                          Reason: {revision.show_proposal_decisions.reason}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                      No final review decision has been recorded.
+                    </p>
+                  )}
+                  {revision.show_counteroffers.map((counteroffer) => (
+                    <ProposalCounterofferCard
+                      canRespond={allowedActions.respondToCounteroffer}
+                      counteroffer={counteroffer}
+                      key={counteroffer.id}
+                      slot={
+                        candidateSlots.find(
+                          ({ slot }) =>
+                            slot.id === counteroffer.candidate_slot_id,
+                        )?.slot
+                      }
+                    />
+                  ))}
+                </div>
+                {revision.decision_state === 'pending' &&
+                allowedActions.reviewProposalRevisions ? (
+                  <>
+                    <ProposalDecisionControls
+                      actorUserId={actorUserId}
+                      canUseOwnerOverride={
+                        allowedActions.useOwnerSelfApproval &&
+                        revision.submitted_by === actorUserId
+                      }
+                      onDecided={(decision) => {
+                        setProposalRevisions((current) =>
+                          current.map((candidate) =>
+                            candidate.id === revision.id
+                              ? {
+                                  ...candidate,
+                                  decision_state:
+                                    decision.action === 'approve'
+                                      ? 'approved'
+                                      : decision.action === 'request_edits'
+                                        ? 'changes_requested'
+                                        : 'denied',
+                                  decision_version:
+                                    candidate.decision_version + 1,
+                                  show_proposal_decisions: {
+                                    action: decision.action,
+                                    actor_user_id: decision.actorUserId,
+                                    command_id: decision.commandId,
+                                    created_at: decision.createdAt,
+                                    id: decision.id,
+                                    owner_override: decision.ownerOverride,
+                                    reason: decision.reason,
+                                    revision_version: decision.revisionVersion,
+                                  },
+                                }
+                              : candidate,
+                          ),
+                        )
+                        if (decision.action === 'approve') {
+                          setLifecycleStatus('approved')
+                        } else if (decision.action === 'request_edits') {
+                          setLifecycleStatus('draft')
+                        }
+                      }}
+                      revision={revision}
+                    />
+                    {allowedActions.issueCounteroffer &&
+                    revision.submitted_by !== actorUserId ? (
+                      <ProposalCounterofferForm
+                        occurrences={event.show_occurrences}
+                        revision={revision}
+                        theater={theater}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+                {revision.decision_state === 'denied' &&
+                allowedActions.seedDeniedReplacement ? (
+                  <DeniedProposalReplacementForm
+                    revisionId={revision.id}
+                    theaterSlug={theater.slug}
+                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {overview.sections.some(({ label }) => label === 'History') ? (
         <section
           className="island-shell mt-5 rounded-lg px-6 py-6"
@@ -2124,6 +2157,144 @@ export function ManagedEventWorkspace({
   }
 
   return content
+}
+
+function ProposalRevisionSnapshot({ snapshot }: { snapshot: Json }) {
+  const revision = asJsonRecord(snapshot)
+  const occurrences = asJsonRecords(revision?.occurrences)
+  const leadership = asJsonRecords(revision?.leadership)
+  const resourceRequests = asJsonRecords(revision?.resourceRequests)
+  const proposedCast = asJsonArray(revision?.proposedCastUserIds)
+
+  if (!revision) {
+    return (
+      <p className="mt-4 text-sm text-[var(--sea-ink-soft)]">
+        This historical Proposal Revision has no readable snapshot payload.
+      </p>
+    )
+  }
+
+  return (
+    <details className="mt-4 rounded-md bg-[var(--sand)]/35 px-4 py-3">
+      <summary className="cursor-pointer font-bold">
+        Immutable submitted snapshot
+      </summary>
+      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="font-bold">Minimum viable Cast</dt>
+          <dd>{displaySnapshotValue(revision.minimumViableCast)}</dd>
+        </div>
+        <div>
+          <dt className="font-bold">Target Cast size</dt>
+          <dd>{displaySnapshotValue(revision.targetCastSize)}</dd>
+        </div>
+        <div>
+          <dt className="font-bold">Proposed Cast</dt>
+          <dd>{proposedCast.length} selected</dd>
+        </div>
+        <div>
+          <dt className="font-bold">Leadership</dt>
+          <dd>{leadership.length} recorded</dd>
+        </div>
+      </dl>
+      <div className="mt-4 grid gap-3">
+        <div>
+          <h4 className="font-bold">Occurrences</h4>
+          {occurrences.length > 0 ? (
+            <ul className="mt-2 grid gap-2 text-sm">
+              {occurrences.map((occurrence, index) => {
+                const slot = asJsonRecord(occurrence.confirmedSlot)
+                return (
+                  <li
+                    className="rounded bg-white/70 px-3 py-2"
+                    key={asSnapshotString(occurrence.id) ?? index}
+                  >
+                    Occurrence{' '}
+                    {asSnapshotString(occurrence.position) ?? index + 1} ·{' '}
+                    {asSnapshotString(occurrence.type) ?? 'scheduled'}
+                    {slot ? (
+                      <span>
+                        {' '}
+                        ·{' '}
+                        {asSnapshotString(slot.localStartsAt) ??
+                          'time not recorded'}
+                        {' · '}
+                        {asSnapshotString(slot.durationMinutes) ??
+                          'duration not recorded'}
+                        {' minutes · '}
+                        {asSnapshotString(slot.locationName) ??
+                          'location not recorded'}
+                      </span>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+              No Occurrences were captured in this snapshot.
+            </p>
+          )}
+        </div>
+        <div>
+          <h4 className="font-bold">Requested resources</h4>
+          {resourceRequests.length > 0 ? (
+            <ul className="mt-2 grid gap-2 text-sm">
+              {resourceRequests.map((request, index) => (
+                <li
+                  className="rounded bg-white/70 px-3 py-2"
+                  key={asSnapshotString(request.id) ?? index}
+                >
+                  {asSnapshotString(request.label) ?? 'Requested resource'} ·{' '}
+                  {asSnapshotString(request.quantity) ?? '0'} ·{' '}
+                  {asSnapshotString(request.type) ?? 'other'}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+              No resource requests were captured in this snapshot.
+            </p>
+          )}
+        </div>
+      </div>
+      <details className="mt-4 rounded bg-white/70 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-bold">
+          Exact immutable record
+        </summary>
+        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words text-xs text-[var(--sea-ink-soft)]">
+          {JSON.stringify(snapshot, null, 2)}
+        </pre>
+      </details>
+    </details>
+  )
+}
+
+function asJsonArray(value: Json | undefined) {
+  return Array.isArray(value) ? value : []
+}
+
+function asJsonRecord(value: Json | undefined) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value
+    : null
+}
+
+function asJsonRecords(value: Json | undefined) {
+  return asJsonArray(value).flatMap((item) => {
+    const record = asJsonRecord(item)
+    return record ? [record] : []
+  })
+}
+
+function asSnapshotString(value: Json | undefined) {
+  return typeof value === 'string' || typeof value === 'number'
+    ? String(value)
+    : null
+}
+
+function displaySnapshotValue(value: Json | undefined) {
+  return asSnapshotString(value) ?? 'Not set'
 }
 
 function NumberField({
@@ -2435,17 +2606,33 @@ function ProposalDecisionControls({
   }
 
   return (
-    <div className="mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4">
-      <p className="font-extrabold">Record review decision</p>
+    <div
+      className={
+        isAuthor
+          ? 'mt-4 grid gap-3 rounded-md border-2 border-amber-400 bg-amber-50 px-4 py-4 text-amber-950'
+          : 'mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4'
+      }
+    >
+      <p className="font-extrabold">
+        {isAuthor
+          ? 'Exceptional Owner self-approval override'
+          : 'Record review decision'}
+      </p>
       {isAuthor ? (
-        <label className="flex items-start gap-3 text-sm font-semibold">
-          <input
-            checked={ownerOverride}
-            onChange={(change) => setOwnerOverride(change.target.checked)}
-            type="checkbox"
-          />
-          Explicitly invoke the audited Owner self-approval override
-        </label>
+        <>
+          <p className="text-sm">
+            Theater policy permits the current Owner to approve their own
+            revision only as this separately reasoned and audited exception.
+          </p>
+          <label className="flex items-start gap-3 text-sm font-semibold">
+            <input
+              checked={ownerOverride}
+              onChange={(change) => setOwnerOverride(change.target.checked)}
+              type="checkbox"
+            />
+            Explicitly invoke the audited Owner self-approval override
+          </label>
+        </>
       ) : (
         <label className="grid gap-2 text-sm font-bold">
           Decision
