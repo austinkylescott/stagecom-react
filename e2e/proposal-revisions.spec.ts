@@ -181,6 +181,15 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await expect(
       page.getByText('Publish the Theater before publishing this Event.'),
     ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Public Page' }),
+    ).toBeVisible()
+    await expect(page.getByText('Producer work needed')).toBeVisible()
+    await expect(
+      page.getByText(
+        'Publication is unavailable while Producer work remains above.',
+      ),
+    ).toBeVisible()
 
     const { error: theaterSetupError } = await fixture.admin
       .from('theaters')
@@ -230,7 +239,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await waitForReactHandler(page.getByLabel('Public title'), 'onChange')
     const preview = page
       .getByRole('article')
-      .filter({ hasText: 'Anonymous preview' })
+      .filter({ hasText: 'Exact eligible anonymous snapshot' })
     await expect(preview.getByText('The Exact Public Event')).toBeVisible()
     await expect(
       preview.getByText('This is the exact anonymous description.'),
@@ -262,7 +271,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       page.getByText('Management must explicitly allow this At Risk Event.'),
     ).toBeVisible()
     const publishButton = page.getByRole('button', {
-      name: 'Publish anonymous snapshot',
+      name: 'Publish exact anonymous snapshot',
     })
     await expect(publishButton).toHaveCount(0)
     await waitForReactHandler(
@@ -281,14 +290,14 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await page.reload()
     await page.waitForTimeout(500)
     await expect(
-      page.getByRole('button', { name: 'Publish anonymous snapshot' }),
+      page.getByRole('button', { name: 'Publish exact anonymous snapshot' }),
     ).toBeEnabled()
     await waitForReactHandler(
-      page.getByRole('button', { name: 'Publish anonymous snapshot' }),
+      page.getByRole('button', { name: 'Publish exact anonymous snapshot' }),
       'onClick',
     )
     await page
-      .getByRole('button', { name: 'Publish anonymous snapshot' })
+      .getByRole('button', { name: 'Publish exact anonymous snapshot' })
       .click()
     await expect(page.getByText('published', { exact: true })).toBeVisible()
 

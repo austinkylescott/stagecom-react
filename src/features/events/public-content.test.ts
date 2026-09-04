@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { publishEvent, saveEventPublicContent } from './commands'
-import { evaluatePublicReadiness } from './public-content-queries'
+import {
+  evaluatePublicReadiness,
+  partitionPublicReadinessBlockers,
+} from './public-content-queries'
 import { getPublishedEventBySlug } from './public-queries'
 import { saveEventPublicContentInputSchema } from './schemas'
 
@@ -213,23 +216,45 @@ describe('versioned public Event content', () => {
   })
 
   it('returns explicit readiness blockers for the UI', () => {
-    expect(
-      evaluatePublicReadiness({
-        atRiskContinuationAllowed: false,
-        eventAtRisk: false,
-        hasDraft: false,
-        hasDescription: false,
-        hasImage: false,
-        hasCurrentOperationalApproval: false,
-        hasPublicPerformance: false,
-        theaterPublished: false,
-      }).map((blocker) => blocker.code),
-    ).toEqual([
+    const blockers = evaluatePublicReadiness({
+      atRiskContinuationAllowed: false,
+      eventAtRisk: false,
+      hasDraft: false,
+      hasDescription: false,
+      hasImage: false,
+      hasCurrentOperationalApproval: false,
+      hasPublicPerformance: false,
+      theaterPublished: false,
+    })
+
+    expect(blockers.map((blocker) => blocker.code)).toEqual([
       'theater_unpublished',
       'operational_approval_missing',
       'public_content_missing',
       'public_performance_missing',
     ])
+    expect(partitionPublicReadinessBlockers(blockers)).toEqual({
+      producer: [
+        {
+          code: 'public_content_missing',
+          message: 'Prepare the Event public-content revision.',
+        },
+        {
+          code: 'public_performance_missing',
+          message: 'Confirm at least one public Performance.',
+        },
+      ],
+      theaterOperator: [
+        {
+          code: 'theater_unpublished',
+          message: 'Publish the Theater before publishing this Event.',
+        },
+        {
+          code: 'operational_approval_missing',
+          message: 'Operational Approval is required.',
+        },
+      ],
+    })
 
     expect(
       evaluatePublicReadiness({

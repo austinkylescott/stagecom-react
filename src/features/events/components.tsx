@@ -21,8 +21,10 @@ import {
   withdrawFromEventCastFn,
 } from './server-functions'
 import { ProposalPreparation } from './proposal-preparation/production'
+import { partitionPublicReadinessBlockers } from './public-content-readiness'
 
 import type { Database, Json } from '@/server/db/database.types'
+import type { PublicReadinessBlocker } from './public-content-readiness'
 import type { EventOverviewReadModel } from './event-overview/read-model'
 import type { ProposalPreparationReadModel } from './proposal-preparation/types'
 
@@ -514,10 +516,11 @@ export function ManagedEventWorkspace({
   publicContent: {
     allowedActions: {
       editPublicContent: boolean
+      isTheaterOperator: boolean
       publishEvent: boolean
     }
     atRiskContinuationRequired: boolean
-    blockers: Array<{ code: string; message: string }>
+    blockers: PublicReadinessBlocker[]
     draft: {
       admissionPriceCents: number | null
       castCredits: Array<{
@@ -629,6 +632,9 @@ export function ManagedEventWorkspace({
   const [proposalRevisions, setProposalRevisions] = useState(
     event.show_proposal_revisions,
   )
+  const publicReadiness = publicContent
+    ? partitionPublicReadinessBlockers(publicContent.blockers)
+    : null
   const canViewReview = overview.sections.some(
     ({ label }) => label === 'Review',
   )
@@ -962,12 +968,12 @@ export function ManagedEventWorkspace({
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-extrabold">Public presentation</h2>
+              <h2 className="text-2xl font-extrabold">Public Page</h2>
               <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
                 {publicDraft.revisionNumber
                   ? `Unpublished revision ${publicDraft.revisionNumber}, version ${publicDraft.version}.`
                   : 'No public-content revision has been saved yet.'}{' '}
-                The published anonymous snapshot is not changed by this form.
+                Producer edits never change the published anonymous snapshot.
               </p>
             </div>
             {publicContent.publishedRevisionId ? (
@@ -976,11 +982,43 @@ export function ManagedEventWorkspace({
               </span>
             ) : null}
           </div>
-          {publicContent.blockers.length > 0 ? (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-md border border-[var(--line)] bg-white px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+                Operational Approval
+              </p>
+              <p className="mt-1 font-extrabold capitalize">
+                {lifecycleStatus === 'approved' ? 'approved' : 'not approved'}
+              </p>
+            </div>
+            <div className="rounded-md border border-[var(--line)] bg-white px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+                Publication
+              </p>
+              <p className="mt-1 font-extrabold capitalize">
+                {event.publication_status === 'published'
+                  ? 'Published'
+                  : 'Unpublished'}
+              </p>
+            </div>
+          </div>
+          {publicReadiness?.producer.length ? (
             <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-              <p className="font-bold text-amber-950">Readiness blockers</p>
+              <p className="font-bold text-amber-950">Producer work needed</p>
               <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
-                {publicContent.blockers.map((blocker) => (
+                {publicReadiness.producer.map((blocker) => (
+                  <li key={blocker.code}>{blocker.message}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {publicReadiness?.theaterOperator.length ? (
+            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+              <p className="font-bold text-amber-950">
+                Theater Operator conditions
+              </p>
+              <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
+                {publicReadiness.theaterOperator.map((blocker) => (
                   <li key={blocker.code}>{blocker.message}</li>
                 ))}
               </ul>
@@ -989,7 +1027,9 @@ export function ManagedEventWorkspace({
           {publicContent.preview ? (
             <article className="mt-5 rounded-lg border border-[var(--line)] bg-white px-5 py-5">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
-                Anonymous preview
+                {publicContent.blockers.length === 0
+                  ? 'Exact eligible anonymous snapshot'
+                  : 'Draft anonymous preview'}
               </p>
               <h3 className="mt-2 text-2xl font-extrabold">
                 {publicContent.preview.title}
@@ -1044,38 +1084,54 @@ export function ManagedEventWorkspace({
               At Risk Event to Publication.
             </p>
           ) : null}
-          {publicContent.allowedActions.publishEvent &&
-          publicDraft.id &&
-          publicDraft.version ? (
-            <button
-              className="mt-5 rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-              disabled={isPublishing}
-              onClick={async () => {
-                setPublicContentError(null)
-                setIsPublishing(true)
-                try {
-                  const result = await publishEventFn({
-                    data: {
-                      commandId: crypto.randomUUID(),
-                      eventId: event.id,
-                      expectedVersion: publicDraft.version!,
-                      publicContentRevisionId: publicDraft.id!,
-                    },
-                  })
-                  if (!result.ok) {
-                    setPublicContentError(result.error.message)
-                    return
+          <section className="mt-5 border-t border-[var(--line)] pt-5">
+            <h3 className="text-xl font-extrabold">Publication</h3>
+            {publicContent.allowedActions.publishEvent &&
+            publicDraft.id &&
+            publicDraft.version ? (
+              <button
+                className="mt-4 rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                disabled={isPublishing}
+                onClick={async () => {
+                  setPublicContentError(null)
+                  setIsPublishing(true)
+                  try {
+                    const result = await publishEventFn({
+                      data: {
+                        commandId: crypto.randomUUID(),
+                        eventId: event.id,
+                        expectedVersion: publicDraft.version!,
+                        publicContentRevisionId: publicDraft.id!,
+                      },
+                    })
+                    if (!result.ok) {
+                      setPublicContentError(result.error.message)
+                      return
+                    }
+                    window.location.reload()
+                  } finally {
+                    setIsPublishing(false)
                   }
-                  window.location.reload()
-                } finally {
-                  setIsPublishing(false)
-                }
-              }}
-              type="button"
-            >
-              {isPublishing ? 'Publishing…' : 'Publish anonymous snapshot'}
-            </button>
-          ) : null}
+                }}
+                type="button"
+              >
+                {isPublishing
+                  ? 'Publishing…'
+                  : 'Publish exact anonymous snapshot'}
+              </button>
+            ) : publicContent.allowedActions.isTheaterOperator ? (
+              <p className="mt-2 text-sm font-semibold text-[var(--sea-ink-soft)]">
+                {publicReadiness?.producer.length
+                  ? 'Publication is unavailable while Producer work remains above.'
+                  : 'Publication is unavailable until the Theater Operator conditions above are resolved.'}
+              </p>
+            ) : (
+              <p className="mt-2 text-sm font-semibold text-[var(--sea-ink-soft)]">
+                Publication remains a Theater Operator decision after this
+                snapshot is eligible.
+              </p>
+            )}
+          </section>
           <form
             className="mt-5 grid gap-5"
             onSubmit={async (submitEvent) => {

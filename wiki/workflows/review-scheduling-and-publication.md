@@ -93,6 +93,15 @@ No. Operational Approval makes the Event eligible for publication. The Theater i
 
 Producer changes to title, description, image, or other public copy create an unpublished content revision. Owner/Admin performs a lightweight publish action without repeating operational review. Ticket-price and Sales Channel changes use the same lightweight approval path.
 
+The Event **Public Page** separates those responsibilities in the workspace:
+Producers prepare admission, credits, and versioned public content there without
+gaining Publication authority. Readiness names Producer work separately from
+Theater Operator conditions, so missing content is an unblockable Producer
+commitment rather than a false Operator decision. Operational Approval and
+Publication remain visible as independent states. Only when the current draft
+is eligible does an Owner or Admin see the exact anonymous snapshot and the
+adjacent Publication action.
+
 The workspace renders the exact allowlisted snapshot selected by the next
 publish command. Publication locks the Event and selected revision, rechecks a
 published Theater, current Operational Approval, complete copy and admission,
