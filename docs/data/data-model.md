@@ -153,8 +153,8 @@ no result for an unpublished Event or an Event under an unpublished Theater.
 uncertain fact per invited Member and Candidate Slot. It retains the responding
 actor, response timestamp, optimistic-concurrency version, and last command
 identity. `show_occurrence_calls` stores one versioned required, optional, or
-not-called expectation per accepted Cast Member and Occurrence with the
-assigning Director and timestamp. Each command identity is also the durable
+not-called expectation per accepted Cast Member or accepted Event staff member
+and Occurrence with the assigning Director and timestamp. Each command identity is also the durable
 activity-event identity, making safe retries idempotent while stale versions
 return conflicts. Participation remains exclusively on `show_cast`; neither
 coordination table writes or infers the other concept.

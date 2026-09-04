@@ -148,7 +148,11 @@ export async function getMyPersonalCalendar() {
   const cast = castResult.data ?? []
   const staff = staffResult.data ?? []
   const leadership = leadershipResult.data ?? []
-  const calls = callsResult.data ?? []
+  const calls = (callsResult.data ?? []).filter(
+    (call) =>
+      cast.some((membership) => membership.show_id === call.show_id) ||
+      staff.some((assignment) => assignment.show_id === call.show_id),
+  )
   const eventById = new Map(events.map((event) => [event.id, event]))
   const occurrenceById = new Map(occurrences.map((entry) => [entry.id, entry]))
   const entries = [...commitmentEntries] as Parameters<
@@ -211,7 +215,11 @@ export async function getMyPersonalCalendar() {
       endsAt: occurrence.endsAt,
       event: { slug: event.slug, title: event.title },
       id: `call:${call.occurrence_id}:${call.call}`,
-      relationship: `Called participant · ${call.call === 'required' ? 'Required Call' : 'Optional Call'}`,
+      relationship: cast.some(
+        (membership) => membership.show_id === call.show_id,
+      )
+        ? `Cast Member · ${call.call === 'required' ? 'Required Call' : 'Optional Call'}`
+        : `Event staff · ${call.call === 'required' ? 'Required Call' : 'Optional Call'}`,
       startsAt: occurrence.startsAt,
       targetAnchor: `#occurrence-call-${call.occurrence_id}`,
       theater,

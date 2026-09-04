@@ -387,7 +387,7 @@ export type EventPersistence = {
   setOccurrenceCall: (input: {
     actorUserId: string
     call: 'required' | 'optional' | 'not_called'
-    castMemberUserId: string
+    participantUserId: string
     commandId: string
     expectedVersion: number | null
     occurrenceId: string
@@ -1300,7 +1300,7 @@ export function createSupabaseEventPersistence(): EventPersistence {
       const { data, error } = await supabase.rpc('set_occurrence_call', {
         p_actor_user_id: input.actorUserId,
         p_call: input.call,
-        p_cast_member_user_id: input.castMemberUserId,
+        p_participant_user_id: input.participantUserId,
         p_command_id: input.commandId,
         p_expected_version: input.expectedVersion ?? undefined,
         p_occurrence_id: input.occurrenceId,

@@ -198,7 +198,7 @@ export async function getManagedEventWorkspace(
       : actorCast?.status === 'pending' && actorCast.source === 'invited'
         ? ('pending_invitee' as const)
         : actorStaffAssignment?.status === 'accepted'
-          ? ('accepted_cast' as const)
+          ? ('accepted_staff' as const)
           : actorStaffAssignment?.status === 'pending'
             ? ('pending_invitee' as const)
             : null
@@ -331,6 +331,25 @@ export async function getManagedEventWorkspace(
         })
       : []
   const orderedOccurrences = orderOccurrences(managedEvent.show_occurrences)
+  const staffOccurrenceIds = new Set(
+    callsResult.data
+      .filter(
+        (call) =>
+          call.user_id === access.data.actorUserId && call.call !== 'not_called',
+      )
+      .map((call) => call.occurrence_id),
+  )
+  const visibleOccurrences =
+    view === 'accepted_staff'
+      ? orderedOccurrences
+          .filter((occurrence) => staffOccurrenceIds.has(occurrence.id))
+          .map((occurrence) => ({
+            ...occurrence,
+            candidate_slots: occurrence.candidate_slots.filter(
+              (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
+            ),
+          }))
+      : orderedOccurrences
   const orderedResourceRequests = orderByPosition(
     managedEvent.show_resource_requests,
   )
@@ -400,7 +419,7 @@ export async function getManagedEventWorkspace(
         role,
       })),
       minimumViableCast: managedEvent.minimum_viable_cast,
-      occurrences: orderedOccurrences.map((occurrence) => {
+      occurrences: visibleOccurrences.map((occurrence) => {
         const confirmedSlot = occurrence.candidate_slots.find(
           (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
         )
@@ -481,7 +500,7 @@ export async function getManagedEventWorkspace(
     event: {
       ...managedEvent,
       show_availability_responses: visibleAvailability,
-      show_cast: visibleCast,
+      show_cast: view === 'accepted_staff' ? [] : visibleCast,
       show_staff_assignments:
         view === 'operational'
           ? managedEvent.show_staff_assignments
@@ -489,11 +508,16 @@ export async function getManagedEventWorkspace(
             ? [actorStaffAssignment]
             : [],
       show_leadership:
-        view === 'pending_invitee' ? [] : managedEvent.show_leadership,
-      show_occurrences: orderedOccurrences.map((occurrence) => ({
+        view === 'operational' || view === 'accepted_cast'
+          ? managedEvent.show_leadership
+          : [],
+      show_occurrences: visibleOccurrences.map((occurrence) => ({
         ...occurrence,
         show_occurrence_calls: callsResult.data.filter(
-          (call) => call.occurrence_id === occurrence.id,
+          (call) =>
+            call.occurrence_id === occurrence.id &&
+            (view !== 'accepted_staff' ||
+              call.user_id === access.data.actorUserId),
         ),
         show_candidate_slots: occurrence.candidate_slots,
       })),
@@ -518,7 +542,9 @@ export async function getManagedEventWorkspace(
             )
           : [],
       show_proposed_cast:
-        view === 'pending_invitee' ? [] : managedEvent.show_proposed_cast,
+        view === 'operational' || view === 'accepted_cast'
+          ? managedEvent.show_proposed_cast
+          : [],
     },
     overview,
     proposalPreparation,

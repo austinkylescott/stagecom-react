@@ -1143,7 +1143,7 @@ async function createFixture(
   const { error: callError } = await admin.rpc('set_occurrence_call', {
     p_actor_user_id: director.userId,
     p_call: 'required',
-    p_cast_member_user_id: accepted.userId,
+    p_participant_user_id: accepted.userId,
     p_command_id: crypto.randomUUID(),
     p_occurrence_id: occurrenceId,
   })

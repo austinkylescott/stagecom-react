@@ -831,7 +831,7 @@ export async function setOccurrenceCall(
       await dependencies.persistence.setOccurrenceCall({
         actorUserId: currentUser.data.id,
         call: input.call,
-        castMemberUserId: input.castMemberUserId,
+        participantUserId: input.participantUserId,
         commandId: input.commandId,
         expectedVersion: input.expectedVersion,
         occurrenceId: input.occurrenceId,
