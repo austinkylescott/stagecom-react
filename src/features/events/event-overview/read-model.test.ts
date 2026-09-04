@@ -36,6 +36,31 @@ describe('Event Overview read model', () => {
       },
     ])
     expect(model.primaryAction).toBeNull()
+    expect(model.sections).toContainEqual({
+      label: 'Review',
+      target: '#review',
+    })
+  })
+
+  it('keeps the author explanation when the author is not a Reviewer', () => {
+    const model = createEventOverviewReadModel({
+      actions: {},
+      actor: { isReviewer: false, roles: [], userId: 'author' },
+      event: event({ submittedBy: 'author' }),
+    })
+
+    expect(model.blockedActions).toEqual([
+      {
+        explanation:
+          'Another eligible Reviewer must decide your Proposal Revision.',
+        label: 'Your Proposal Revision awaits review',
+        relationship: 'Proposal author',
+      },
+    ])
+    expect(model.sections).toContainEqual({
+      label: 'Review',
+      target: '#review',
+    })
   })
 
   it('keeps independent Event state and authorized section navigation in the overview', () => {

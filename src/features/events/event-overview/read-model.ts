@@ -95,14 +95,12 @@ export function createEventOverviewReadModel(input: OverviewInput) {
     })
   }
 
-  if (
-    input.actions.reviewProposalRevisions &&
-    latestRevision?.decisionState === 'pending'
-  ) {
-    if (
-      latestRevision.submittedBy === input.actor.userId ||
-      (!input.actor.userId && latestRevision.submittedBy === 'actor')
-    ) {
+  const actorAuthoredLatestRevision =
+    latestRevision?.submittedBy === input.actor.userId ||
+    (!input.actor.userId && latestRevision?.submittedBy === 'actor')
+
+  if (latestRevision?.decisionState === 'pending') {
+    if (actorAuthoredLatestRevision) {
       blockedActions.push({
         explanation:
           'Another eligible Reviewer must decide your Proposal Revision.',
@@ -116,7 +114,7 @@ export function createEventOverviewReadModel(input: OverviewInput) {
           target: '#review',
         })
       }
-    } else {
+    } else if (input.actions.reviewProposalRevisions) {
       actions.push({
         label: 'Review Proposal Revision',
         relationship: 'Reviewer',
@@ -156,7 +154,8 @@ export function createEventOverviewReadModel(input: OverviewInput) {
     input.event.view === 'pending_invitee'
       ? [{ label: 'Cast & Team', target: '#cast-team' }]
       : []),
-    ...(latestRevision && (input.actor.isReviewer || isTheaterOperator)
+    ...(latestRevision &&
+    (input.actor.isReviewer || isTheaterOperator || actorAuthoredLatestRevision)
       ? [{ label: 'Review', target: '#review' }]
       : []),
     ...(input.event.publicContentAvailable
