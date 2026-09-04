@@ -40,6 +40,13 @@ export type GovernancePersistence = {
     theaterId: string
     userId: string
   }) => Promise<{ changed: boolean }>
+  updateEventPolicy: (input: {
+    actorUserId: string
+    counterofferResponseHours: number
+    ownerSelfApprovalEnabled: boolean
+    producerEligibility: ProducerEligibility
+    theaterId: string
+  }) => Promise<TheaterGovernance>
   updateGovernance: (
     input: Omit<TheaterGovernance, 'primaryVenueId'> & { actorUserId: string },
   ) => Promise<TheaterGovernance>
@@ -132,6 +139,43 @@ export function createSupabaseGovernancePersistence(): GovernancePersistence {
       }
 
       return { changed: data }
+    },
+    async updateEventPolicy(input) {
+      const supabase = createSupabaseServiceRoleClient()
+      const { data, error } = await supabase.rpc(
+        'update_theater_event_policy',
+        {
+          p_actor_user_id: input.actorUserId,
+          p_counteroffer_response_hours: input.counterofferResponseHours,
+          p_owner_self_approval_enabled: input.ownerSelfApprovalEnabled,
+          p_producer_eligibility: input.producerEligibility,
+          p_theater_id: input.theaterId,
+        },
+      )
+
+      if (error) {
+        if (error.code === '42501') {
+          throw appError('forbidden', 'Owner or Admin access is required.')
+        }
+        throw appError(
+          'external_service_error',
+          'Event Policy could not be saved.',
+        )
+      }
+
+      const row = data.at(0)
+      if (!row) throw appError('not_found', 'Theater was not found.')
+
+      return {
+        counterofferResponseHours: row.counteroffer_response_hours,
+        ownerSelfApprovalEnabled: row.owner_self_approval_enabled,
+        primaryVenueId: row.primary_venue_id,
+        primaryVenueName: row.primary_venue_name ?? '',
+        producerEligibility: row.producer_eligibility,
+        setupBufferMinutes: row.setup_buffer_minutes,
+        theaterId: row.id,
+        turnoverBufferMinutes: row.turnover_buffer_minutes,
+      }
     },
     async updateGovernance(input) {
       const supabase = createSupabaseServiceRoleClient()

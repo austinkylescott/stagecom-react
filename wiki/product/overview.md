@@ -49,16 +49,20 @@ relationship, and relevant timing, and provides an anchored path to the
 relevant Event action. Theater selection remains below personal commitments;
 shared Theater work is not yet part of this surface.
 
-Authorized Event collaborators now enter a stable Event Overview before the
-existing single-scroll controls. The Overview keeps lifecycle, Proposal
+Authorized Event collaborators enter a stable Event Overview and select one
+authorized workspace section at a time rather than navigating a legacy
+single-scroll composition. The Overview keeps lifecycle, Proposal
 decision, Publication, and operational health independent; identifies the
 viewer’s current relationships; and gives a deterministic primary action before
 relationship-labeled secondary or blocked actions. Its authorized projection
 summarizes the next confirmed Occurrence, leadership, participation, requested
 staffing, viability, and public status. The section links expose only meaningful
-authorized content while Schedule & Plan, Cast & Team, Review, Public Page, and
-History continue to reuse the established command surfaces during the staged
-migration.
+authorized content: Schedule & Plan owns planning, Cast & Team owns
+participation and staffing, Review owns Proposal Revisions and decisions, and
+Public Page owns publication work. History is a separately authorized read of
+factual Event domain activity and preserved decisions; it is not a Notifications
+or Work Queue projection. Fragment links, including action links to a nested
+control, resolve their owning stable section.
 
 People is available to every active Theater Member. Its Directory discloses
 only active display names and Owner/Admin badges. Theater Operators receive

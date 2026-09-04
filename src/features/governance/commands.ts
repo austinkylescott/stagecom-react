@@ -8,6 +8,7 @@ import type { AppResult } from '@/server/errors'
 import type { GovernancePersistence } from './persistence'
 import type {
   setTheaterMemberCapabilityInputSchema,
+  updateEventPolicyInputSchema,
   updateTheaterGovernanceInputSchema,
 } from './schemas'
 
@@ -81,6 +82,55 @@ export async function updateTheaterGovernance(
       error,
       'Theater governance could not be saved.',
     )
+  }
+}
+
+export async function updateEventPolicy(
+  input: z.infer<typeof updateEventPolicyInputSchema>,
+  dependencies: GovernanceCommandDependencies = getDefaultDependencies(),
+) {
+  const currentUser = await dependencies.getCurrentUser()
+  if (!currentUser.ok) return currentUser
+
+  try {
+    const authorized = await dependencies.persistence.authorizeManagement({
+      theaterId: input.theaterId,
+      userId: currentUser.data.id,
+    })
+    if (!authorized) {
+      return err(appError('forbidden', 'Owner or Admin access is required.'))
+    }
+
+    if (
+      input.ownerSelfApprovalEnabled !== undefined &&
+      !(await dependencies.persistence.authorizeOwner({
+        theaterId: input.theaterId,
+        userId: currentUser.data.id,
+      }))
+    ) {
+      return err(
+        appError(
+          'forbidden',
+          'Only the current Owner may change self-approval.',
+        ),
+      )
+    }
+
+    return ok(
+      await dependencies.persistence.updateEventPolicy({
+        actorUserId: currentUser.data.id,
+        counterofferResponseHours: input.counterofferResponseHours,
+        ownerSelfApprovalEnabled:
+          input.ownerSelfApprovalEnabled ??
+          (await dependencies.persistence.getOwnerSelfApprovalEnabled({
+            theaterId: input.theaterId,
+          })),
+        producerEligibility: input.producerEligibility,
+        theaterId: input.theaterId,
+      }),
+    )
+  } catch (error) {
+    return governanceCommandFailure(error, 'Event Policy could not be saved.')
   }
 }
 

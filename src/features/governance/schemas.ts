@@ -20,6 +20,13 @@ export const updateTheaterGovernanceInputSchema = z.object({
   turnoverBufferMinutes: z.number().int().min(0).max(1440),
 })
 
+export const updateEventPolicyInputSchema = z.object({
+  counterofferResponseHours: z.number().int().min(1).max(720),
+  ownerSelfApprovalEnabled: z.boolean().optional(),
+  producerEligibility: producerEligibilitySchema,
+  theaterId: uuidSchema,
+})
+
 export const setTheaterMemberCapabilityInputSchema = z.object({
   capability: theaterCapabilitySchema,
   enabled: z.boolean(),

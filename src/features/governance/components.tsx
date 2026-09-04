@@ -1,6 +1,9 @@
 import { useState } from 'react'
 
-import { updateTheaterGovernanceFn } from './server-functions'
+import {
+  updateEventPolicyFn,
+  updateTheaterGovernanceFn,
+} from './server-functions'
 
 import type { ProducerEligibility } from './persistence'
 
@@ -48,11 +51,27 @@ export function TheaterGovernanceSettings({
             try {
               const { ownerSelfApprovalEnabled, ...ordinaryGovernance } =
                 governance
-              const result = await updateTheaterGovernanceFn({
-                data: canManageOwnerSelfApproval
-                  ? governance
-                  : ordinaryGovernance,
-              })
+              const result =
+                section === 'event-policy'
+                  ? await updateEventPolicyFn({
+                      data: {
+                        counterofferResponseHours:
+                          governance.counterofferResponseHours,
+                        ...(canManageOwnerSelfApproval
+                          ? {
+                              ownerSelfApprovalEnabled:
+                                governance.ownerSelfApprovalEnabled,
+                            }
+                          : {}),
+                        producerEligibility: governance.producerEligibility,
+                        theaterId: governance.theaterId,
+                      },
+                    })
+                  : await updateTheaterGovernanceFn({
+                      data: canManageOwnerSelfApproval
+                        ? governance
+                        : ordinaryGovernance,
+                    })
 
               if (!result.ok) {
                 setMessage(result.error.message)

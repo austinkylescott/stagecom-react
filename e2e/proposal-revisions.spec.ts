@@ -39,6 +39,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
 
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
+    await page.getByRole('link', { name: 'Review' }).click()
     await expect(
       page.getByRole('heading', { name: 'Proposal Revision' }),
     ).toBeVisible()
@@ -114,9 +115,9 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
         'Another eligible Reviewer must decide your Proposal Revision.',
       ),
     ).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible()
     await page.getByRole('link', { name: 'Review', exact: true }).click()
     await expect(page).toHaveURL(/#review$/)
+    await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible()
     const snapshot = page.getByText('Immutable submitted snapshot')
     await snapshot.click()
     await expect(page.getByText('Minimum viable Cast')).toBeVisible()
@@ -181,6 +182,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await expect(
       page.getByText('Publish the Theater before publishing this Event.'),
     ).toBeVisible()
+    await page.getByRole('link', { name: 'Public Page', exact: true }).click()
     await expect(
       page.getByRole('heading', { name: 'Public Page' }),
     ).toBeVisible()
@@ -505,6 +507,7 @@ test('Reviewer Counteroffer holds the Primary Venue until explicit viable accept
     })
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
+    await page.getByRole('link', { name: 'Review' }).click()
     await page.getByRole('button', { name: 'accept Counteroffer' }).click()
     await expect(
       page.getByRole('heading', { name: 'Proposal Revision 2' }),

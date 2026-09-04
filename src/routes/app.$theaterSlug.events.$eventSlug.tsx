@@ -51,6 +51,7 @@ function EventWorkspacePage() {
       actorUserId={data.actorUserId}
       allowedActions={data.allowedActions}
       event={data.event}
+      history={data.history}
       overview={data.overview}
       proposalPreparation={data.proposalPreparation}
       publicContent={data.publicContent}

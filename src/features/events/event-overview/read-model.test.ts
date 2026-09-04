@@ -110,6 +110,23 @@ describe('Event Overview read model', () => {
       target: '#cast-team',
     })
   })
+
+  it('keeps planning and first participation actions reachable before records exist', () => {
+    const model = createEventOverviewReadModel({
+      actions: {},
+      actor: { isReviewer: false, leadershipRoles: ['producer'], roles: [] },
+      event: { ...event(), cast: [], occurrences: [], staffAssignments: [] },
+    })
+
+    expect(model.sections).toContainEqual({
+      label: 'Schedule & Plan',
+      target: '#schedule-plan',
+    })
+    expect(model.sections).toContainEqual({
+      label: 'Cast & Team',
+      target: '#cast-team',
+    })
+  })
 })
 
 function event(
@@ -123,6 +140,7 @@ function event(
 ) {
   return {
     cast: overrides.castStatus ? [{ status: overrides.castStatus }] : [],
+    hasHistory: true,
     lifecycleStatus: overrides.lifecycleStatus ?? 'approved',
     leadership: [{ displayName: 'Producer Person', role: 'producer' }],
     minimumViableCast: 2,
