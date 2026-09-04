@@ -193,12 +193,12 @@ export async function getManagedEventWorkspace(
     isTheaterAdmin || isReviewer || actorLeadership.length > 0
   const view = hasOperationalView
     ? ('operational' as const)
-    : actorCast?.status === 'accepted'
-      ? ('accepted_cast' as const)
-      : actorCast?.status === 'pending' && actorCast.source === 'invited'
-        ? ('pending_invitee' as const)
-        : actorStaffAssignment?.status === 'accepted'
-          ? ('accepted_staff' as const)
+    : actorStaffAssignment?.status === 'accepted'
+      ? ('accepted_staff' as const)
+      : actorCast?.status === 'accepted'
+        ? ('accepted_cast' as const)
+        : actorCast?.status === 'pending' && actorCast.source === 'invited'
+          ? ('pending_invitee' as const)
           : actorStaffAssignment?.status === 'pending'
             ? ('pending_invitee' as const)
             : null
@@ -247,6 +247,7 @@ export async function getManagedEventWorkspace(
     Math.max(...confirmedSlotEndsAt) <= Date.now()
 
   const visibleCast = managedEvent.show_cast.filter((castMember) => {
+    if (!actorCast) return false
     if (view !== 'pending_invitee') return true
     return (
       castMember.user_id === access.data.actorUserId ||
@@ -299,11 +300,17 @@ export async function getManagedEventWorkspace(
   }
 
   const visibleAvailability =
-    view === 'pending_invitee'
-      ? availabilityResult.data.filter(
+    view === 'operational'
+      ? availabilityResult.data
+      : availabilityResult.data.filter(
           (response) => response.user_id === access.data.actorUserId,
         )
-      : availabilityResult.data
+  const visibleOccurrenceCalls =
+    view === 'operational'
+      ? callsResult.data
+      : callsResult.data.filter(
+          (call) => call.user_id === access.data.actorUserId,
+        )
   const primaryVenueCommitments = commitmentsResult.data.flatMap((event) =>
     event.show_occurrences.flatMap((occurrence) =>
       occurrence.confirmed_slot?.location_kind === 'primary_venue'
@@ -335,7 +342,8 @@ export async function getManagedEventWorkspace(
     callsResult.data
       .filter(
         (call) =>
-          call.user_id === access.data.actorUserId && call.call !== 'not_called',
+          call.user_id === access.data.actorUserId &&
+          call.call !== 'not_called',
       )
       .map((call) => call.occurrence_id),
   )
@@ -454,6 +462,9 @@ export async function getManagedEventWorkspace(
               resourceType: request.resource_type,
             }))
           : [],
+      staffAssignments: managedEvent.show_staff_assignments.map(
+        ({ status }) => ({ status }),
+      ),
       view,
     },
   })
@@ -513,7 +524,7 @@ export async function getManagedEventWorkspace(
           : [],
       show_occurrences: visibleOccurrences.map((occurrence) => ({
         ...occurrence,
-        show_occurrence_calls: callsResult.data.filter(
+        show_occurrence_calls: visibleOccurrenceCalls.filter(
           (call) =>
             call.occurrence_id === occurrence.id &&
             (view !== 'accepted_staff' ||

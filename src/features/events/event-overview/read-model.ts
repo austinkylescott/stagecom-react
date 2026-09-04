@@ -37,6 +37,7 @@ type OverviewInput = {
       quantity: number
       resourceType: string
     }>
+    staffAssignments?: Array<{ status: string }>
     view: 'operational' | 'accepted_cast' | 'accepted_staff' | 'pending_invitee'
   }
 }
@@ -150,7 +151,9 @@ export function createEventOverviewReadModel(input: OverviewInput) {
     ...(input.event.occurrences.length > 0
       ? [{ label: 'Schedule & Plan', target: '#schedule-plan' }]
       : []),
-    ...(input.event.cast.length > 0 || input.event.view === 'pending_invitee'
+    ...(input.event.cast.length > 0 ||
+    (input.event.staffAssignments?.length ?? 0) > 0 ||
+    input.event.view === 'pending_invitee'
       ? [{ label: 'Cast & Team', target: '#cast-team' }]
       : []),
     ...(latestRevision && (input.actor.isReviewer || isTheaterOperator)

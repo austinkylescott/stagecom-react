@@ -119,6 +119,7 @@ export type PreparationContextValue = {
 
 export type ProposalPreparationModule = {
   PlanSection: () => ReactNode
+  ProposedCastSection: () => ReactNode
   RevisionSection: () => ReactNode
   Root: (props: {
     children: ReactNode
@@ -565,10 +566,10 @@ export function createProposalPreparationModule(
     )
   }
 
-  const { PlanSection, RevisionSection } =
+  const { PlanSection, ProposedCastSection, RevisionSection } =
     createProposalPreparationSections(usePreparation)
 
-  return { PlanSection, RevisionSection, Root }
+  return { PlanSection, ProposedCastSection, RevisionSection, Root }
 }
 
 function newCandidateSlot(
