@@ -99,6 +99,7 @@ describe('ProposalPreparation', () => {
 
     render(
       <Preparation.Root initial={initial}>
+        <Preparation.ProposedCastSection />
         <Preparation.RevisionSection />
         <Preparation.PlanSection />
       </Preparation.Root>,
@@ -179,6 +180,7 @@ describe('ProposalPreparation', () => {
 
     render(
       <Preparation.Root initial={initial}>
+        <Preparation.ProposedCastSection />
         <Preparation.RevisionSection />
         <Preparation.PlanSection />
       </Preparation.Root>,

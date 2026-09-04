@@ -13,28 +13,25 @@ import type { PreparationContextValue } from './module'
 export function createProposalPreparationSections(
   usePreparation: () => PreparationContextValue,
 ) {
-  function RevisionSection() {
+  function ProposedCastSection() {
     const preparation = usePreparation()
     const { state } = preparation
-    const plan = state.draftOperationalPlan
     const castDirty = !setsEqual(
       state.draftProposedCastUserIds,
       state.recordedProposedCastUserIds,
     )
     const castFrozen = isPartitionFrozen(state.phase, 'proposedCast')
-    const submitted = state.phase.kind === 'submitted' ? state.phase : null
 
     return (
-      <section className="island-shell mt-5 rounded-lg px-6 py-6">
-        <h2 className="text-2xl font-extrabold">Proposal Revision</h2>
+      <div className="mt-7">
+        <h3 className="text-xl font-extrabold">Proposed Cast</h3>
         <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-          Select accepted Cast Members deliberately, compare the evidence, save
-          the preferred Confirmed Slots in the operational plan, then submit one
-          immutable snapshot for review.
+          Select accepted Cast Members deliberately for the Event's next
+          Proposal Revision. This does not change Cast membership.
         </p>
 
-        <fieldset className="mt-5 grid gap-2">
-          <legend className="font-extrabold">Proposed Cast</legend>
+        <fieldset className="mt-4 grid gap-2">
+          <legend className="sr-only">Proposed Cast Members</legend>
           {state.model.acceptedCastMembers.map((castMember) => (
             <label
               className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
@@ -90,6 +87,23 @@ export function createProposalPreparationSections(
             {state.castProblem.message}
           </p>
         ) : null}
+      </div>
+    )
+  }
+
+  function RevisionSection() {
+    const preparation = usePreparation()
+    const { state } = preparation
+    const plan = state.draftOperationalPlan
+    const submitted = state.phase.kind === 'submitted' ? state.phase : null
+
+    return (
+      <section className="island-shell mt-5 rounded-lg px-6 py-6">
+        <h2 className="text-2xl font-extrabold">Proposal Revision</h2>
+        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+          Compare Candidate Slot evidence, save the preferred Confirmed Slots in
+          the operational plan, then submit one immutable snapshot for review.
+        </p>
 
         <div className="mt-7 grid gap-4">
           <h3 className="text-xl font-extrabold">
@@ -585,7 +599,7 @@ export function createProposalPreparationSections(
     )
   }
 
-  return { PlanSection, RevisionSection }
+  return { PlanSection, ProposedCastSection, RevisionSection }
 }
 
 function NumberField({

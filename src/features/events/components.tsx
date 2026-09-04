@@ -654,6 +654,10 @@ export function ManagedEventWorkspace({
           : []
       }),
   ]
+  const visibleCalledParticipants =
+    view === 'operational'
+      ? calledParticipants
+      : calledParticipants.filter(({ userId }) => userId === actorUserId)
   const candidateSlots = event.show_occurrences.flatMap((occurrence) =>
     occurrence.show_candidate_slots.map((slot) => ({
       occurrence,
@@ -1296,361 +1300,377 @@ export function ManagedEventWorkspace({
           </form>
         </section>
       ) : null}
-      {event.show_leadership.length > 0 ? (
+      <div aria-labelledby="cast-team-heading" id="cast-team">
         <section className="island-shell mt-5 rounded-lg px-6 py-6">
-          <h2 className="text-2xl font-extrabold">Leadership</h2>
-          <ul className="mt-3 grid gap-2">
-            {event.show_leadership.map((leader) => (
-              <li key={`${leader.role}-${leader.user_id}`}>
-                {leader.profiles.display_name} · {leader.role}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-5 text-sm font-semibold text-[var(--sea-ink-soft)]">
-            Accepted Cast Members:{' '}
-            {cast.filter(({ status }) => status === 'accepted').length}.
-            Leadership never creates Cast membership; casting begins with a
-            separate invitation and acceptance.
+          <h2 className="text-2xl font-extrabold" id="cast-team-heading">
+            Cast &amp; Team
+          </h2>
+          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+            Coordinate leadership, Cast participation, named Event staff,
+            Availability Responses, Proposed Cast, and Occurrence Calls without
+            treating Event staff assignments as Cast membership.
           </p>
         </section>
-      ) : null}
-      {view !== 'accepted_staff' ? (
-        <>
-          <span className="block scroll-mt-6" id="cast-team" />
-          <section
-            className="island-shell mt-5 rounded-lg px-6 py-6"
-            id="cast-participation"
-          >
-            <h2 className="text-2xl font-extrabold">Cast participation</h2>
-            {view === 'pending_invitee' ? (
-              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-                Your participation response is separate from every Candidate
-                Slot Availability Response.
-              </p>
-            ) : null}
-            <div className="mt-4 grid gap-2">
-              {cast.map((castMember) => (
-                <div
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                  key={castMember.user_id}
-                >
-                  <span className="font-bold">
-                    {castMember.profiles.display_name}
-                  </span>
-                  <span className="text-sm font-semibold capitalize text-[var(--sea-ink-soft)]">
-                    {castMember.status}
-                  </span>
-                </div>
+        {event.show_leadership.length > 0 ? (
+          <section className="island-shell mt-5 rounded-lg px-6 py-6">
+            <h2 className="text-2xl font-extrabold">Leadership</h2>
+            <ul className="mt-3 grid gap-2">
+              {event.show_leadership.map((leader) => (
+                <li key={`${leader.role}-${leader.user_id}`}>
+                  {leader.profiles.display_name} · {leader.role}
+                </li>
               ))}
-              {cast.length === 0 ? (
-                <p className="text-sm text-[var(--sea-ink-soft)]">
-                  No Cast invitations yet.
+            </ul>
+            <p className="mt-5 text-sm font-semibold text-[var(--sea-ink-soft)]">
+              Accepted Cast Members:{' '}
+              {cast.filter(({ status }) => status === 'accepted').length}.
+              Leadership never creates Cast membership; casting begins with a
+              separate invitation and acceptance.
+            </p>
+          </section>
+        ) : null}
+        {view !== 'accepted_staff' ? (
+          <>
+            <section
+              className="island-shell mt-5 rounded-lg px-6 py-6"
+              id="cast-participation"
+            >
+              <h2 className="text-2xl font-extrabold">Cast participation</h2>
+              {view === 'pending_invitee' ? (
+                <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                  Your participation response is separate from every Candidate
+                  Slot Availability Response.
                 </p>
               ) : null}
-            </div>
-            {allowedActions.inviteCast ? (
-              <div className="mt-5 flex flex-wrap items-end gap-3">
-                <label className="grid min-w-64 gap-2 text-sm font-bold">
-                  Active Theater Member
-                  <select
-                    className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                    onChange={(change) => setInviteeUserId(change.target.value)}
-                    value={inviteeUserId}
+              <div className="mt-4 grid gap-2">
+                {cast.map((castMember) => (
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                    key={castMember.user_id}
                   >
-                    <option value="">Choose a Member</option>
-                    {activeMembers
-                      .filter(
-                        (member) =>
-                          !cast.some(
-                            (castMember) =>
-                              castMember.user_id === member.userId,
-                          ),
-                      )
-                      .map((member) => (
-                        <option key={member.userId} value={member.userId}>
-                          {member.displayName}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <button
-                  className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-                  disabled={!inviteeUserId || isCasting}
-                  onClick={async () => {
-                    setCastingError(null)
-                    setIsCasting(true)
-                    try {
-                      const result = await inviteEventCastMemberFn({
-                        data: {
-                          eventId: event.id,
-                          memberUserId: inviteeUserId,
-                        },
-                      })
-                      if (!result.ok) {
-                        setCastingError(result.error.message)
-                        return
-                      }
-                      const member = activeMembers.find(
-                        ({ userId }) => userId === inviteeUserId,
-                      )
-                      if (member) {
-                        setCast((current) => [
-                          ...current,
-                          {
-                            invited_at: new Date().toISOString(),
-                            profiles: { display_name: member.displayName },
-                            responded_at: null,
-                            source: 'invited',
-                            status: 'pending',
-                            user_id: member.userId,
-                          },
-                        ])
-                      }
-                      setInviteeUserId('')
-                    } finally {
-                      setIsCasting(false)
-                    }
-                  }}
-                  type="button"
-                >
-                  {isCasting ? 'Inviting…' : 'Invite to Cast'}
-                </button>
+                    <span className="font-bold">
+                      {castMember.profiles.display_name}
+                    </span>
+                    <span className="text-sm font-semibold capitalize text-[var(--sea-ink-soft)]">
+                      {castMember.status}
+                    </span>
+                  </div>
+                ))}
+                {cast.length === 0 ? (
+                  <p className="text-sm text-[var(--sea-ink-soft)]">
+                    No Cast invitations yet.
+                  </p>
+                ) : null}
               </div>
-            ) : null}
-            {allowedActions.respondToInvitation &&
-            ownInvitation?.status === 'pending' ? (
-              <div className="mt-5 flex flex-wrap gap-3">
-                {(['accepted', 'declined'] as const).map((response) => (
+              {allowedActions.inviteCast ? (
+                <div className="mt-5 flex flex-wrap items-end gap-3">
+                  <label className="grid min-w-64 gap-2 text-sm font-bold">
+                    Active Theater Member
+                    <select
+                      className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                      onChange={(change) =>
+                        setInviteeUserId(change.target.value)
+                      }
+                      value={inviteeUserId}
+                    >
+                      <option value="">Choose a Member</option>
+                      {activeMembers
+                        .filter(
+                          (member) =>
+                            !cast.some(
+                              (castMember) =>
+                                castMember.user_id === member.userId,
+                            ),
+                        )
+                        .map((member) => (
+                          <option key={member.userId} value={member.userId}>
+                            {member.displayName}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
                   <button
-                    className="rounded-md border border-[var(--line)] bg-white px-5 py-3 font-extrabold capitalize disabled:opacity-60"
-                    disabled={isCasting}
-                    key={response}
+                    className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                    disabled={!inviteeUserId || isCasting}
                     onClick={async () => {
                       setCastingError(null)
                       setIsCasting(true)
                       try {
-                        const result = await respondToEventCastInvitationFn({
-                          data: { eventId: event.id, response },
+                        const result = await inviteEventCastMemberFn({
+                          data: {
+                            eventId: event.id,
+                            memberUserId: inviteeUserId,
+                          },
                         })
                         if (!result.ok) {
                           setCastingError(result.error.message)
                           return
                         }
-                        setCast((current) =>
-                          current.map((castMember) =>
-                            castMember.user_id === actorUserId
-                              ? {
-                                  ...castMember,
-                                  responded_at: new Date().toISOString(),
-                                  status: response,
-                                }
-                              : castMember,
-                          ),
+                        const member = activeMembers.find(
+                          ({ userId }) => userId === inviteeUserId,
                         )
+                        if (member) {
+                          setCast((current) => [
+                            ...current,
+                            {
+                              invited_at: new Date().toISOString(),
+                              profiles: { display_name: member.displayName },
+                              responded_at: null,
+                              source: 'invited',
+                              status: 'pending',
+                              user_id: member.userId,
+                            },
+                          ])
+                        }
+                        setInviteeUserId('')
                       } finally {
                         setIsCasting(false)
                       }
                     }}
                     type="button"
                   >
-                    {response === 'accepted'
-                      ? 'Accept invitation'
-                      : 'Decline invitation'}
+                    {isCasting ? 'Inviting…' : 'Invite to Cast'}
                   </button>
-                ))}
+                </div>
+              ) : null}
+              {allowedActions.respondToInvitation &&
+              ownInvitation?.status === 'pending' ? (
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {(['accepted', 'declined'] as const).map((response) => (
+                    <button
+                      className="rounded-md border border-[var(--line)] bg-white px-5 py-3 font-extrabold capitalize disabled:opacity-60"
+                      disabled={isCasting}
+                      key={response}
+                      onClick={async () => {
+                        setCastingError(null)
+                        setIsCasting(true)
+                        try {
+                          const result = await respondToEventCastInvitationFn({
+                            data: { eventId: event.id, response },
+                          })
+                          if (!result.ok) {
+                            setCastingError(result.error.message)
+                            return
+                          }
+                          setCast((current) =>
+                            current.map((castMember) =>
+                              castMember.user_id === actorUserId
+                                ? {
+                                    ...castMember,
+                                    responded_at: new Date().toISOString(),
+                                    status: response,
+                                  }
+                                : castMember,
+                            ),
+                          )
+                        } finally {
+                          setIsCasting(false)
+                        }
+                      }}
+                      type="button"
+                    >
+                      {response === 'accepted'
+                        ? 'Accept invitation'
+                        : 'Decline invitation'}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {allowedActions.withdrawFromCast &&
+              ownInvitation?.status === 'accepted' ? (
+                <button
+                  className="mt-5 rounded-md border border-red-300 bg-white px-5 py-3 font-extrabold text-red-800 disabled:opacity-60"
+                  disabled={isCasting}
+                  onClick={async () => {
+                    setCastingError(null)
+                    setIsCasting(true)
+                    try {
+                      const result = await withdrawFromEventCastFn({
+                        data: {
+                          commandId: crypto.randomUUID(),
+                          eventId: event.id,
+                          expectedHealthVersion: operationalHealthVersion,
+                        },
+                      })
+                      if (!result.ok) {
+                        setCastingError(result.error.message)
+                        return
+                      }
+                      setCast((current) =>
+                        current.map((castMember) =>
+                          castMember.user_id === actorUserId
+                            ? { ...castMember, status: 'withdrawn' }
+                            : castMember,
+                        ),
+                      )
+                      setOperationalHealth(result.data.operationalHealth)
+                      setOperationalHealthVersion(
+                        result.data.operationalHealthVersion,
+                      )
+                    } finally {
+                      setIsCasting(false)
+                    }
+                  }}
+                  type="button"
+                >
+                  Withdraw from Event
+                </button>
+              ) : null}
+              {castingError ? (
+                <p className="mt-3 font-bold text-red-700">{castingError}</p>
+              ) : null}
+            </section>
+          </>
+        ) : null}
+        {event.show_resource_requests.length > 0 ||
+        event.show_staff_assignments.length > 0 ||
+        allowedActions.inviteStaff ? (
+          <section
+            className="island-shell mt-5 rounded-lg px-6 py-6"
+            id="event-staff-assignment"
+          >
+            <h2 className="text-2xl font-extrabold">
+              Event staff assignments and coverage
+            </h2>
+            {event.show_resource_requests
+              .filter((request) => request.resource_type === 'staff')
+              .map((request) => {
+                const assignments = event.show_staff_assignments.filter(
+                  (assignment) => assignment.resource_request_id === request.id,
+                )
+                const acceptedCoverage = assignments.filter(
+                  (assignment) => assignment.status === 'accepted',
+                ).length
+
+                return (
+                  <div
+                    className="mt-4 rounded-md border border-[var(--line)] bg-[var(--sand)]/40 px-4 py-3"
+                    key={request.id}
+                  >
+                    <h3 className="font-extrabold">{request.label}</h3>
+                    <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                      Accepted coverage: {acceptedCoverage} of{' '}
+                      {request.quantity} requested
+                    </p>
+                  </div>
+                )
+              })}
+            {event.show_staff_assignments.map((assignment) => (
+              <div
+                className="mt-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                key={assignment.id}
+              >
+                <p className="font-bold">
+                  {activeMembers.find(
+                    (member) => member.userId === assignment.user_id,
+                  )?.displayName ?? 'Theater Member'}{' '}
+                  · {assignment.responsibility}
+                </p>
+                <p className="text-sm capitalize text-[var(--sea-ink-soft)]">
+                  {assignment.status}
+                </p>
+                {allowedActions.respondToStaffInvitation &&
+                assignment.user_id === actorUserId ? (
+                  <div className="mt-3 flex gap-3">
+                    {(['accepted', 'declined'] as const).map((response) => (
+                      <button
+                        className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-bold"
+                        key={response}
+                        onClick={async () => {
+                          const result = await respondToEventStaffInvitationFn({
+                            data: { assignmentId: assignment.id, response },
+                          })
+                          if (result.ok) window.location.reload()
+                          else setCastingError(result.error.message)
+                        }}
+                        type="button"
+                      >
+                        {response === 'accepted'
+                          ? 'Accept assignment'
+                          : 'Decline'}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-            {allowedActions.withdrawFromCast &&
-            ownInvitation?.status === 'accepted' ? (
+            ))}
+          </section>
+        ) : null}
+        {allowedActions.inviteStaff ? (
+          <section
+            className="island-shell mt-5 rounded-lg px-6 py-6"
+            id="event-staff-invitation"
+          >
+            <h2 className="text-2xl font-extrabold">Invite Event staff</h2>
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <label className="grid gap-2 text-sm font-bold">
+                Staffing need
+                <select
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  onChange={(change) => setStaffRequestId(change.target.value)}
+                  value={staffRequestId}
+                >
+                  <option value="">Choose a need</option>
+                  {event.show_resource_requests
+                    .filter((request) => request.resource_type === 'staff')
+                    .map((request) => (
+                      <option key={request.id} value={request.id}>
+                        {request.label} · {request.quantity} required
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-bold">
+                Active Theater Member
+                <select
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  onChange={(change) =>
+                    setStaffInviteeUserId(change.target.value)
+                  }
+                  value={staffInviteeUserId}
+                >
+                  <option value="">Choose a Member</option>
+                  {activeMembers.map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
-                className="mt-5 rounded-md border border-red-300 bg-white px-5 py-3 font-extrabold text-red-800 disabled:opacity-60"
-                disabled={isCasting}
+                className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                disabled={!staffInviteeUserId || !staffRequestId || isCasting}
                 onClick={async () => {
                   setCastingError(null)
                   setIsCasting(true)
                   try {
-                    const result = await withdrawFromEventCastFn({
+                    const result = await inviteEventStaffMemberFn({
                       data: {
-                        commandId: crypto.randomUUID(),
                         eventId: event.id,
-                        expectedHealthVersion: operationalHealthVersion,
+                        memberUserId: staffInviteeUserId,
+                        resourceRequestId: staffRequestId,
                       },
                     })
                     if (!result.ok) {
                       setCastingError(result.error.message)
                       return
                     }
-                    setCast((current) =>
-                      current.map((castMember) =>
-                        castMember.user_id === actorUserId
-                          ? { ...castMember, status: 'withdrawn' }
-                          : castMember,
-                      ),
-                    )
-                    setOperationalHealth(result.data.operationalHealth)
-                    setOperationalHealthVersion(
-                      result.data.operationalHealthVersion,
-                    )
+                    window.location.reload()
                   } finally {
                     setIsCasting(false)
                   }
                 }}
                 type="button"
               >
-                Withdraw from Event
+                Invite staff
               </button>
-            ) : null}
-            {castingError ? (
-              <p className="mt-3 font-bold text-red-700">{castingError}</p>
-            ) : null}
-          </section>
-        </>
-      ) : null}
-      {event.show_resource_requests.length > 0 ||
-      event.show_staff_assignments.length > 0 ||
-      allowedActions.inviteStaff ? (
-        <section
-          className="island-shell mt-5 rounded-lg px-6 py-6"
-          id="event-staff-assignment"
-        >
-          <h2 className="text-2xl font-extrabold">
-            Event staff assignments and coverage
-          </h2>
-          {event.show_resource_requests
-            .filter((request) => request.resource_type === 'staff')
-            .map((request) => {
-              const assignments = event.show_staff_assignments.filter(
-                (assignment) => assignment.resource_request_id === request.id,
-              )
-              const acceptedCoverage = assignments.filter(
-                (assignment) => assignment.status === 'accepted',
-              ).length
-
-              return (
-                <div
-                  className="mt-4 rounded-md border border-[var(--line)] bg-[var(--sand)]/40 px-4 py-3"
-                  key={request.id}
-                >
-                  <h3 className="font-extrabold">{request.label}</h3>
-                  <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-                    Accepted coverage: {acceptedCoverage} of {request.quantity}{' '}
-                    requested
-                  </p>
-                </div>
-              )
-            })}
-          {event.show_staff_assignments.map((assignment) => (
-            <div
-              className="mt-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
-              key={assignment.id}
-            >
-              <p className="font-bold">
-                {activeMembers.find(
-                  (member) => member.userId === assignment.user_id,
-                )?.displayName ?? 'Theater Member'}{' '}
-                · {assignment.responsibility}
-              </p>
-              <p className="text-sm capitalize text-[var(--sea-ink-soft)]">
-                {assignment.status}
-              </p>
-              {allowedActions.respondToStaffInvitation &&
-              assignment.user_id === actorUserId ? (
-                <div className="mt-3 flex gap-3">
-                  {(['accepted', 'declined'] as const).map((response) => (
-                    <button
-                      className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-bold"
-                      key={response}
-                      onClick={async () => {
-                        const result = await respondToEventStaffInvitationFn({
-                          data: { assignmentId: assignment.id, response },
-                        })
-                        if (result.ok) window.location.reload()
-                        else setCastingError(result.error.message)
-                      }}
-                      type="button"
-                    >
-                      {response === 'accepted'
-                        ? 'Accept assignment'
-                        : 'Decline'}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
-          ))}
-        </section>
-      ) : null}
-      {allowedActions.inviteStaff ? (
-        <section
-          className="island-shell mt-5 rounded-lg px-6 py-6"
-          id="event-staff-invitation"
-        >
-          <h2 className="text-2xl font-extrabold">Invite Event staff</h2>
-          <div className="mt-4 flex flex-wrap items-end gap-3">
-            <label className="grid gap-2 text-sm font-bold">
-              Staffing need
-              <select
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                onChange={(change) => setStaffRequestId(change.target.value)}
-                value={staffRequestId}
-              >
-                <option value="">Choose a need</option>
-                {event.show_resource_requests
-                  .filter((request) => request.resource_type === 'staff')
-                  .map((request) => (
-                    <option key={request.id} value={request.id}>
-                      {request.label} · {request.quantity} required
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="grid gap-2 text-sm font-bold">
-              Active Theater Member
-              <select
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-                onChange={(change) =>
-                  setStaffInviteeUserId(change.target.value)
-                }
-                value={staffInviteeUserId}
-              >
-                <option value="">Choose a Member</option>
-                {activeMembers.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-              disabled={!staffInviteeUserId || !staffRequestId || isCasting}
-              onClick={async () => {
-                setCastingError(null)
-                setIsCasting(true)
-                try {
-                  const result = await inviteEventStaffMemberFn({
-                    data: {
-                      eventId: event.id,
-                      memberUserId: staffInviteeUserId,
-                      resourceRequestId: staffRequestId,
-                    },
-                  })
-                  if (!result.ok) {
-                    setCastingError(result.error.message)
-                    return
-                  }
-                  window.location.reload()
-                } finally {
-                  setIsCasting(false)
-                }
-              }}
-              type="button"
-            >
-              Invite staff
-            </button>
-          </div>
-        </section>
-      ) : null}
+          </section>
+        ) : null}
+        {view === 'operational' && proposalPreparation ? (
+          <ProposalPreparation.ProposedCastSection />
+        ) : null}
+      </div>
       {view === 'operational' && proposalPreparation ? (
         <>
           <ProposalPreparation.RevisionSection />
@@ -1965,7 +1985,7 @@ export function ManagedEventWorkspace({
                         </span>
                       </h4>
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        {calledParticipants.map((participant) => {
+                        {visibleCalledParticipants.map((participant) => {
                           const currentCall = occurrenceCalls.find(
                             (call) =>
                               call.occurrence_id === occurrence.id &&
@@ -1994,7 +2014,7 @@ export function ManagedEventWorkspace({
                                     const result = await setOccurrenceCallFn({
                                       data: {
                                         call,
-                                    participantUserId: participant.userId,
+                                        participantUserId: participant.userId,
                                         commandId: crypto.randomUUID(),
                                         expectedVersion:
                                           currentCall?.version ?? null,

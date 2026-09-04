@@ -68,6 +68,23 @@ describe('Event Overview read model', () => {
     })
     expect(model.relationships).toEqual(['Cast invitee'])
   })
+
+  it('keeps Cast & Team reachable for an Event staff member without Cast membership', () => {
+    const model = createEventOverviewReadModel({
+      actions: {},
+      actor: { isReviewer: false, roles: [] },
+      event: {
+        ...event(),
+        staffAssignments: [{ status: 'accepted' }],
+        view: 'accepted_staff',
+      },
+    })
+
+    expect(model.sections).toContainEqual({
+      label: 'Cast & Team',
+      target: '#cast-team',
+    })
+  })
 })
 
 function event(
