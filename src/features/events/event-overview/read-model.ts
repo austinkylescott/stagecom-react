@@ -37,7 +37,7 @@ type OverviewInput = {
       quantity: number
       resourceType: string
     }>
-    view: 'operational' | 'accepted_cast' | 'pending_invitee'
+    view: 'operational' | 'accepted_cast' | 'accepted_staff' | 'pending_invitee'
   }
 }
 
@@ -178,6 +178,7 @@ export function createEventOverviewReadModel(input: OverviewInput) {
       : input.actor.castStatus === 'pending'
         ? ['Cast invitee']
         : []),
+    ...(input.event.view === 'accepted_staff' ? ['Event staff member'] : []),
   ]
 
   return {

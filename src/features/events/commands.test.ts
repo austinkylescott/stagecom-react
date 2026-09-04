@@ -743,7 +743,7 @@ describe('managed Event commands', () => {
             call: input.call,
             commandId: input.commandId,
             occurrenceId: input.occurrenceId,
-            userId: input.castMemberUserId,
+            userId: input.participantUserId,
             version: 1,
           }
         },
@@ -753,7 +753,7 @@ describe('managed Event commands', () => {
     const result = await setOccurrenceCall(
       {
         call: 'required',
-        castMemberUserId: '20000000-0000-0000-0000-000000000001',
+        participantUserId: '20000000-0000-0000-0000-000000000001',
         commandId: '40000000-0000-0000-0000-000000000002',
         expectedVersion: null,
         occurrenceId: '30000000-0000-0000-0000-000000000001',

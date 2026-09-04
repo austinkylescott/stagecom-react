@@ -154,7 +154,7 @@ export async function getMyCallsheet() {
       .select('id, show_id, responsibility, status')
       .in('show_id', eventIds)
       .eq('user_id', currentUser.data.id)
-      .eq('status', 'pending'),
+      .in('status', ['pending', 'accepted']),
     supabase
       .from('show_cast')
       .select('show_id, status, source')
@@ -362,17 +362,19 @@ export async function getMyCallsheet() {
       })
     }),
     ...staffResult.data.flatMap((assignment) =>
-      toCommitment({
-        action: 'Respond to staff assignment',
-        actionableAt: null,
-        event: eventById.get(assignment.show_id),
-        id: `staff-assignment:${assignment.id}`,
-        responseId: assignment.id,
-        kind: 'staff_invitation',
-        relationship: `Event staff invitee · ${assignment.responsibility}`,
-        targetAnchor: '#event-staff-assignment',
-        theaterById,
-      }),
+      assignment.status === 'pending'
+        ? toCommitment({
+            action: 'Respond to staff assignment',
+            actionableAt: null,
+            event: eventById.get(assignment.show_id),
+            id: `staff-assignment:${assignment.id}`,
+            responseId: assignment.id,
+            kind: 'staff_invitation',
+            relationship: `Event staff invitee · ${assignment.responsibility}`,
+            targetAnchor: '#event-staff-assignment',
+            theaterById,
+          })
+        : [],
     ),
     ...revisions.flatMap((revision) => {
       if (
@@ -430,6 +432,15 @@ export async function getMyCallsheet() {
       })
     }),
     ...callResult.data.flatMap((call) => {
+      const staffAssignment = staffResult.data.find(
+        (assignment) =>
+          assignment.show_id === call.show_id &&
+          assignment.status === 'accepted',
+      )
+      const castMember = castResult.data.find(
+        (cast) => cast.show_id === call.show_id && cast.status === 'accepted',
+      )
+      if (!staffAssignment && !castMember) return []
       const startsAt = callStartsAtByOccurrenceId.get(call.occurrence_id)
       if (!startsAt || Date.parse(startsAt) < Date.now()) return []
       return toCommitment({
@@ -438,7 +449,9 @@ export async function getMyCallsheet() {
         event: eventById.get(call.show_id),
         id: `occurrence-call:${call.occurrence_id}`,
         kind: 'occurrence_call',
-        relationship: 'Cast Member',
+        relationship: castMember
+          ? 'Cast Member'
+          : `Event staff · ${staffAssignment?.responsibility ?? 'Assigned responsibility'}`,
         targetAnchor: `#occurrence-call-${call.occurrence_id}`,
         theaterById,
       })

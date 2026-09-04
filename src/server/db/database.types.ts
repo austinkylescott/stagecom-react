@@ -953,13 +953,6 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'show_occurrence_calls_show_id_user_id_fkey'
-            columns: ['show_id', 'user_id']
-            isOneToOne: false
-            referencedRelation: 'show_cast'
-            referencedColumns: ['show_id', 'user_id']
-          },
-          {
             foreignKeyName: 'show_occurrence_calls_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
@@ -3632,10 +3625,10 @@ export type Database = {
         Args: {
           p_actor_user_id: string
           p_call: Database['public']['Enums']['occurrence_call']
-          p_cast_member_user_id: string
           p_command_id: string
           p_expected_version?: number
           p_occurrence_id: string
+          p_participant_user_id: string
         }
         Returns: {
           actor_user_id: string
