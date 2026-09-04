@@ -18,6 +18,7 @@ type OverviewInput = {
   }
   event: {
     cast: Array<{ status: string }>
+    hasHistory: boolean
     lifecycleStatus: string
     leadership: Array<{ displayName: string; role: string }>
     minimumViableCast: number | null
@@ -146,22 +147,25 @@ export function createEventOverviewReadModel(input: OverviewInput) {
 
   const sections = [
     { label: 'Overview', target: '#overview' },
-    ...(input.event.occurrences.length > 0
-      ? [{ label: 'Schedule & Plan', target: '#schedule-plan' }]
-      : []),
+    { label: 'Schedule & Plan', target: '#schedule-plan' },
     ...(input.event.cast.length > 0 ||
     (input.event.staffAssignments?.length ?? 0) > 0 ||
-    input.event.view === 'pending_invitee'
+    input.event.view === 'pending_invitee' ||
+    isTheaterOperator ||
+    (input.actor.leadershipRoles?.length ?? 0) > 0
       ? [{ label: 'Cast & Team', target: '#cast-team' }]
       : []),
     ...(latestRevision &&
-    (input.actor.isReviewer || isTheaterOperator || actorAuthoredLatestRevision)
+    (input.actor.isReviewer ||
+      isTheaterOperator ||
+      actorAuthoredLatestRevision ||
+      (input.actor.leadershipRoles?.length ?? 0) > 0)
       ? [{ label: 'Review', target: '#review' }]
       : []),
     ...(input.event.publicContentAvailable
       ? [{ label: 'Public Page', target: '#public-page' }]
       : []),
-    ...(input.event.view === 'operational' && latestRevision
+    ...(input.event.hasHistory
       ? [{ label: 'History', target: '#history' }]
       : []),
   ]

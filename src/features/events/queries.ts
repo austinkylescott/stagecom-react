@@ -14,6 +14,7 @@ import {
   orderOccurrences,
 } from './proposal-preparation/read-model'
 import { createEventOverviewReadModel } from './event-overview/read-model'
+import { createEventHistoryReadModel } from './event-history/read-model'
 
 import type { z } from 'zod'
 import type {
@@ -191,6 +192,7 @@ export async function getManagedEventWorkspace(
     capabilityResult.data.some(({ capability }) => capability === 'reviewer')
   const canViewProposalReview =
     isReviewer ||
+    actorLeadership.length > 0 ||
     managedEvent.show_proposal_revisions.some(
       (revision) => revision.submitted_by === access.data.actorUserId,
     )
@@ -266,7 +268,7 @@ export async function getManagedEventWorkspace(
   const occurrenceIds = managedEvent.show_occurrences.map(
     (occurrence) => occurrence.id,
   )
-  const [availabilityResult, callsResult, commitmentsResult] =
+  const [availabilityResult, callsResult, commitmentsResult, activityResult] =
     await Promise.all([
       candidateSlotIds.length > 0
         ? supabase
@@ -294,12 +296,22 @@ export async function getManagedEventWorkspace(
             .eq('lifecycle_status', 'approved')
             .neq('id', managedEvent.id)
         : Promise.resolve({ data: [], error: null }),
+      supabase
+        .from('activity_events')
+        .select(
+          'id, action, actor_user_id, created_at, payload, visibility, profiles!activity_events_actor_user_id_fkey(display_name)',
+        )
+        .eq('theater_id', access.data.theater.id)
+        .eq('entity_type', 'event')
+        .eq('entity_id', managedEvent.id)
+        .order('created_at', { ascending: false }),
     ])
 
   if (
     availabilityResult.error ||
     callsResult.error ||
-    commitmentsResult.error
+    commitmentsResult.error ||
+    activityResult.error
   ) {
     return err(appError('external_service_error', 'Event could not be loaded.'))
   }
@@ -366,6 +378,19 @@ export async function getManagedEventWorkspace(
   const orderedResourceRequests = orderByPosition(
     managedEvent.show_resource_requests,
   )
+  const history = createEventHistoryReadModel({
+    actorUserId: access.data.actorUserId,
+    canViewAdminActivity: isTheaterAdmin,
+    events: activityResult.data.map((activity) => ({
+      action: activity.action,
+      actorDisplayName: activity.profiles?.display_name ?? null,
+      actorUserId: activity.actor_user_id,
+      createdAt: activity.created_at,
+      id: activity.id,
+      payload: activity.payload,
+      visibility: activity.visibility,
+    })),
+  })
   const proposalPreparation = createProposalPreparationReadModel({
     acceptedCastMembers: visibleCast
       .filter(({ status }) => status === 'accepted')
@@ -467,6 +492,7 @@ export async function getManagedEventWorkspace(
               resourceType: request.resource_type,
             }))
           : [],
+      hasHistory: history.entries.length > 0,
       staffAssignments: managedEvent.show_staff_assignments.map(
         ({ status }) => ({ status }),
       ),
@@ -562,6 +588,7 @@ export async function getManagedEventWorkspace(
           ? managedEvent.show_proposed_cast
           : [],
     },
+    history,
     overview,
     proposalPreparation,
     theater: access.data.theater,

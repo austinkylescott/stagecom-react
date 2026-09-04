@@ -107,6 +107,10 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await owner.page.getByRole('button', { name: 'Save settings' }).click()
     await expect(owner.page.getByText('Governance saved.')).toBeVisible()
     await owner.page.goto(`/app/${fixture.theaterSlug}/settings/venue-calendar`)
+    await waitForReactHandler(
+      owner.page.getByLabel('Primary Venue name'),
+      'onChange',
+    )
     await owner.page.getByLabel('Primary Venue name').fill('Milestone Stage')
     await owner.page.getByLabel('Setup buffer (minutes)').fill('30')
     await owner.page.getByLabel('Turnover buffer (minutes)').fill('30')
@@ -147,6 +151,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await expect(producer.page).toHaveURL(
       new RegExp(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}$`),
     )
+    await producer.page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await waitForReactHandler(
       producer.page.getByLabel('Target cast size'),
       'onChange',
@@ -192,6 +197,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await director.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await director.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       director.page.getByLabel('Active Theater Member'),
       'onChange',
@@ -199,14 +205,21 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await director.page
       .getByLabel('Active Theater Member')
       .selectOption(fixture.actors.cast.userId)
-    await director.page.getByRole('button', { name: 'Invite to Cast' }).click()
-    await expect(
-      director.page.getByText(fixture.actors.cast.name).first(),
-    ).toBeVisible()
+    const inviteCastButton = director.page.getByRole('button', {
+      name: 'Invite to Cast',
+    })
+    await waitForReactHandler(inviteCastButton, 'onClick')
+    await Promise.all([
+      director.page.waitForResponse((response) =>
+        response.url().includes('/_serverFn/'),
+      ),
+      inviteCastButton.click(),
+    ])
 
     await cast.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await cast.page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await expect(
       cast.page.getByRole('heading', { name: 'Schedule & Plan' }),
     ).toBeVisible()
@@ -216,6 +229,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       ),
     ).toBeVisible()
     await expect(cast.page.getByLabel('Minimum Viable Cast')).toBeDisabled()
+    await cast.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       cast.page.getByRole('button', { name: 'Accept invitation' }),
       'onClick',

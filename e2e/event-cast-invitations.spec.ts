@@ -43,6 +43,7 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await expect(
       directorPage.page.getByRole('heading', { name: 'Private Cast Event' }),
     ).toBeVisible()
+    await directorPage.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       directorPage.page.getByLabel('Active Theater Member'),
       'onChange',
@@ -70,6 +71,7 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await acceptedPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await acceptedPage.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       acceptedPage.page.getByLabel('Availability for Candidate Slot 1'),
       'onChange',
@@ -123,6 +125,7 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await declinedPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await declinedPage.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       declinedPage.page.getByRole('button', { name: 'Decline invitation' }),
       'onClick',
@@ -136,6 +139,7 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await pendingPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await pendingPage.page.getByRole('link', { name: 'Cast & Team' }).click()
     await expect(
       pendingPage.page.getByRole('heading', { name: 'Candidate Slot 1' }),
     ).toBeVisible()
@@ -162,6 +166,7 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     ).toHaveCount(0)
 
     await acceptedPage.page.reload()
+    await acceptedPage.page.getByRole('link', { name: 'Cast & Team' }).click()
     await expect(
       acceptedPage.page.getByRole('heading', {
         name: 'Collaborative availability matrix',
@@ -191,6 +196,7 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await ownerPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await ownerPage.page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await expect(
       ownerPage.page.getByRole('heading', {
         name: 'Requested staffing needs and resources',

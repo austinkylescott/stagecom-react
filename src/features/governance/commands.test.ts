@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { setTheaterMemberCapability, updateTheaterGovernance } from './commands'
+import {
+  setTheaterMemberCapability,
+  updateEventPolicy,
+  updateTheaterGovernance,
+} from './commands'
 
 import type { GovernanceCommandDependencies } from './commands'
 
@@ -14,6 +18,9 @@ describe('Theater governance commands', () => {
         authorizeOwner: async () => false,
         getOwnerSelfApprovalEnabled: async () => false,
         setMemberCapability: async () => ({ changed: false }),
+        updateEventPolicy: async () => {
+          throw new Error('must not run')
+        },
         updateGovernance: async () => {
           updated = true
           throw new Error('must not run')
@@ -54,6 +61,9 @@ describe('Theater governance commands', () => {
         authorizeOwner: async () => true,
         getOwnerSelfApprovalEnabled: async () => false,
         setMemberCapability: async () => ({ changed: false }),
+        updateEventPolicy: async () => {
+          throw new Error('not used')
+        },
         updateGovernance: async (input) => {
           updates.push(input)
           return {
@@ -122,6 +132,9 @@ describe('Theater governance commands', () => {
           changes.push(input)
           return { changed: true }
         },
+        updateEventPolicy: async () => {
+          throw new Error('not used')
+        },
         updateGovernance: async () => {
           throw new Error('not used')
         },
@@ -146,6 +159,56 @@ describe('Theater governance commands', () => {
         enabled: true,
         theaterId: '10000000-0000-0000-0000-000000000001',
         userId: '20000000-0000-0000-0000-000000000002',
+      },
+    ])
+  })
+
+  it('updates Event Policy without requiring a Primary Venue', async () => {
+    const updates: unknown[] = []
+    const dependencies: GovernanceCommandDependencies = {
+      getCurrentUser: async () => ({ ok: true, data: { id: 'owner-1' } }),
+      persistence: {
+        authorizeManagement: async () => true,
+        authorizeOwner: async () => true,
+        getOwnerSelfApprovalEnabled: async () => false,
+        setMemberCapability: async () => ({ changed: false }),
+        updateEventPolicy: async (input) => {
+          updates.push(input)
+          return {
+            counterofferResponseHours: input.counterofferResponseHours,
+            ownerSelfApprovalEnabled: input.ownerSelfApprovalEnabled,
+            primaryVenueId: 'venue-1',
+            primaryVenueName: '',
+            producerEligibility: input.producerEligibility,
+            setupBufferMinutes: 0,
+            theaterId: input.theaterId,
+            turnoverBufferMinutes: 0,
+          }
+        },
+        updateGovernance: async () => {
+          throw new Error('not used')
+        },
+      },
+    }
+
+    const result = await updateEventPolicy(
+      {
+        counterofferResponseHours: 72,
+        ownerSelfApprovalEnabled: false,
+        producerEligibility: 'all_members',
+        theaterId: '10000000-0000-0000-0000-000000000001',
+      },
+      dependencies,
+    )
+
+    expect(result).toMatchObject({ ok: true })
+    expect(updates).toEqual([
+      {
+        actorUserId: 'owner-1',
+        counterofferResponseHours: 72,
+        ownerSelfApprovalEnabled: false,
+        producerEligibility: 'all_members',
+        theaterId: '10000000-0000-0000-0000-000000000001',
       },
     ])
   })
