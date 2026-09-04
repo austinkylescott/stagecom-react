@@ -343,16 +343,28 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await expect(
       producer.page.getByText('Unpublished public-content revision saved.'),
     ).toBeVisible()
+    await expect(
+      producer.page.getByText(
+        'Publication remains a Theater Operator decision after this snapshot is eligible.',
+      ),
+    ).toBeVisible()
+    await expect(
+      producer.page.getByRole('button', {
+        name: 'Publish exact anonymous snapshot',
+      }),
+    ).toHaveCount(0)
 
     await owner.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
     await waitForReactHandler(
-      owner.page.getByRole('button', { name: 'Publish anonymous snapshot' }),
+      owner.page.getByRole('button', {
+        name: 'Publish exact anonymous snapshot',
+      }),
       'onClick',
     )
     await owner.page
-      .getByRole('button', { name: 'Publish anonymous snapshot' })
+      .getByRole('button', { name: 'Publish exact anonymous snapshot' })
       .click()
     await expect(
       owner.page.getByText('published', { exact: true }),
