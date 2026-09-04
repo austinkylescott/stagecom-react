@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(23);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -106,47 +106,21 @@ set status = 'approved', is_public_listed = true,
 where slug = 'owner-completed-event';
 
 select has_function(
-  'public', 'complete_event', array['uuid', 'uuid', 'uuid', 'timestamp with time zone'],
-  'the authorized completion transition is exposed'
-);
-select has_function(
   'public', 'complete_due_events', array['timestamp with time zone', 'uuid'],
   'completion has a schedulable maintenance entry point'
 );
-
-select throws_ok(
-  format(
-    'select public.complete_event(%L, %L, %L, %L)',
-    (select id from public.shows where slug = 'owner-completed-event'),
-    '76000000-0000-0000-0000-000000000002',
-    '76000000-0000-0000-0005-000000000001',
-    '2026-10-11T01:00:00Z'
-  ),
-  '42501', null,
-  'an ordinary Member cannot complete an Event'
+select is(
+  (select count(*) from cron.job where jobname = 'stagecom-complete-due-events'),
+  1::bigint,
+  'the automatic completion evaluator is scheduled once'
 );
 
-select throws_ok(
-  format(
-    'select public.complete_event(%L, %L, %L, %L)',
-    (select id from public.shows where slug = 'owner-completed-event'),
-    '76000000-0000-0000-0000-000000000001',
-    '76000000-0000-0000-0005-000000000002',
-    '2026-10-11T00:59:59Z'
-  ),
-  '55000', null,
-  'the Event is ineligible before its final Confirmed Slot ends'
-);
-
-select lives_ok(
-  format(
-    'select public.complete_event(%L, %L, %L, %L)',
-    (select id from public.shows where slug = 'owner-completed-event'),
-    '76000000-0000-0000-0000-000000000001',
-    '76000000-0000-0000-0005-000000000003',
-    '2026-10-11T01:00:00Z'
-  ),
-  'the Event completes exactly when its final Confirmed Slot has ended'
+select is(
+  public.complete_due_events(
+    '2026-10-11T01:00:00Z',
+    (select id from public.shows where slug = 'owner-completed-event')
+  ), 1,
+  'the automatic evaluator completes the Event exactly when its final Confirmed Slot has ended'
 );
 
 select results_eq(
@@ -179,8 +153,8 @@ select results_eq(
      from public.activity_events
      where entity_id = (select id from public.shows where slug = 'owner-completed-event')
        and action = 'event.completed' $$,
-  $$ values (1::bigint, '76000000-0000-0000-0000-000000000001'::uuid) $$,
-  'completion emits one factual domain event with the authorized actor'
+  $$ values (1::bigint, null::uuid) $$,
+  'automatic completion emits one factual system event'
 );
 
 select is(
@@ -192,15 +166,12 @@ select is(
   'the completion fact records the canonical final-slot end instant'
 );
 
-select lives_ok(
-  format(
-    'select public.complete_event(%L, %L, %L, %L)',
-    (select id from public.shows where slug = 'owner-completed-event'),
-    '76000000-0000-0000-0000-000000000001',
-    '76000000-0000-0000-0000-000000000001',
-    '2026-10-11T02:00:00Z'
-  ),
-  'repeating completion is safe even with a different command identity'
+select is(
+  public.complete_due_events(
+    '2026-10-11T02:00:00Z',
+    (select id from public.shows where slug = 'owner-completed-event')
+  ), 0,
+  'repeating automatic completion is safe'
 );
 
 select results_eq(
@@ -248,11 +219,17 @@ update public.shows set status = 'approved'
 where slug = 'maintenance-completed-event';
 
 select is(
-  public.complete_due_events('2026-11-01T00:59:59Z', null), 0,
+  public.complete_due_events(
+    '2026-11-01T00:59:59Z',
+    (select id from public.shows where slug = 'maintenance-completed-event')
+  ), 0,
   'maintenance does not complete the Event before the final end instant'
 );
 select is(
-  public.complete_due_events('2026-11-01T01:00:00Z', null), 1,
+  public.complete_due_events(
+    '2026-11-01T01:00:00Z',
+    (select id from public.shows where slug = 'maintenance-completed-event')
+  ), 1,
   'maintenance completes the Event at the final end instant'
 );
 select is(
@@ -261,7 +238,10 @@ select is(
   'maintenance uses the same completion transition'
 );
 select is(
-  public.complete_due_events('2026-11-01T02:00:00Z', null), 0,
+  public.complete_due_events(
+    '2026-11-01T02:00:00Z',
+    (select id from public.shows where slug = 'maintenance-completed-event')
+  ), 0,
   'maintenance completion is repeatable'
 );
 
@@ -271,16 +251,12 @@ select * from public.create_managed_event(
   'No Confirmed Slot Event', 'no-confirmed-slot-event', array[]::uuid[], null
 );
 update public.shows set status = 'approved' where slug = 'no-confirmed-slot-event';
-select throws_ok(
-  format(
-    'select public.complete_event(%L, %L, %L, %L)',
-    (select id from public.shows where slug = 'no-confirmed-slot-event'),
-    '76000000-0000-0000-0000-000000000001',
-    '76000000-0000-0000-0005-000000000004',
-    '2027-01-01T00:00:00Z'
-  ),
-  '55000', null,
-  'an approved Event without a Confirmed Slot is ineligible'
+select is(
+  public.complete_due_events(
+    '2027-01-01T00:00:00Z',
+    (select id from public.shows where slug = 'no-confirmed-slot-event')
+  ), 0,
+  'an approved Event without a Confirmed Slot remains ineligible'
 );
 
 select * from public.create_managed_event(
@@ -289,16 +265,102 @@ select * from public.create_managed_event(
   'Cancelled Event', 'cancelled-event', array[]::uuid[], null
 );
 update public.shows set status = 'cancelled' where slug = 'cancelled-event';
-select throws_ok(
-  format(
-    'select public.complete_event(%L, %L, %L, %L)',
-    (select id from public.shows where slug = 'cancelled-event'),
-    '76000000-0000-0000-0000-000000000001',
-    '76000000-0000-0000-0005-000000000005',
-    '2027-01-01T00:00:00Z'
-  ),
-  '55000', null,
+select is(
+  public.complete_due_events(
+    '2027-01-01T00:00:00Z',
+    (select id from public.shows where slug = 'cancelled-event')
+  ), 0,
   'a cancelled Event cannot be completed'
+);
+
+select * from public.create_managed_event(
+  (select id from public.theaters where slug = 'completion-theater'),
+  '76000000-0000-0000-0000-000000000001',
+  'Automatic Failure Event', 'automatic-failure-event', array[]::uuid[], null
+);
+select * from public.save_event_operational_plan(
+  (select id from public.shows where slug = 'automatic-failure-event'),
+  '76000000-0000-0000-0000-000000000001', 1, 1,
+  jsonb_build_array(jsonb_build_object(
+    'id', '76000000-0000-0000-0001-000000000004', 'type', 'performance',
+    'visibility', 'public', 'position', 0,
+    'confirmedCandidateSlotId', '76000000-0000-0000-0002-000000000004',
+    'candidateSlots', jsonb_build_array(jsonb_build_object(
+      'id', '76000000-0000-0000-0002-000000000004',
+      'startsAt', '2026-12-01T00:00:00Z', 'durationMinutes', 60,
+      'localStartsAt', '2026-11-30T19:00', 'timezoneName', 'America/New_York',
+      'timezoneSource', 'manual', 'utcOffsetMinutes', -300,
+      'locationKind', 'off_site', 'locationName', 'Failure Stage',
+      'offSiteApproved', true, 'position', 0
+    ))
+  )), '[]'::jsonb
+);
+update public.shows set status = 'approved'
+where slug = 'automatic-failure-event';
+
+create function public.raise_automatic_completion_failure()
+returns trigger
+language plpgsql
+as $function$
+begin
+  if new.id = (select id from public.shows where slug = 'automatic-failure-event')
+    and new.lifecycle_status = 'completed'::public.show_lifecycle_status then
+    raise exception 'safe automatic completion test failure';
+  end if;
+  return new;
+end;
+$function$;
+
+create trigger automatic_completion_failure
+before update on public.shows
+for each row execute function public.raise_automatic_completion_failure();
+
+select is(
+  public.complete_due_events(
+    '2026-12-01T01:00:00Z',
+    (select id from public.shows where slug = 'automatic-failure-event')
+  ), 0,
+  'an automatic completion failure leaves the Event safely unchanged'
+);
+select results_eq(
+  $$ select count(*), (array_agg(visibility::text))[1], (array_agg(payload ->> 'errorCode'))[1]
+     from public.activity_events
+     where entity_id = (select id from public.shows where slug = 'automatic-failure-event')
+       and action = 'event.completion.failed' $$,
+  $$ values (1::bigint, 'admin_only'::text, 'P0001'::text) $$,
+  'a safe automatic completion failure records one Operator-visible fact'
+);
+select is(
+  public.complete_due_events(
+    '2026-12-01T01:01:00Z',
+    (select id from public.shows where slug = 'automatic-failure-event')
+  ), 0,
+  'a repeated failed evaluation has no completion effect'
+);
+select is(
+  (select count(*) from public.activity_events
+   where entity_id = (select id from public.shows where slug = 'automatic-failure-event')
+     and action = 'event.completion.failed'),
+  1::bigint,
+  'a repeated failed evaluation does not duplicate the failure fact or alert source'
+);
+
+drop trigger automatic_completion_failure on public.shows;
+drop function public.raise_automatic_completion_failure();
+
+select is(
+  public.complete_due_events(
+    '2026-12-01T01:02:00Z',
+    (select id from public.shows where slug = 'automatic-failure-event')
+  ), 1,
+  'the next automatic evaluation completes the Event after a safe failure is resolved'
+);
+select is(
+  (select count(*) from public.activity_events
+   where entity_id = (select id from public.shows where slug = 'automatic-failure-event')
+     and action = 'event.completed'),
+  1::bigint,
+  'recovery emits one completion fact'
 );
 
 select * from finish();
