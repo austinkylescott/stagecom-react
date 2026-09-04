@@ -156,7 +156,9 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await expect(pendingPage.page.getByText('Declined Member')).toHaveCount(0)
     await expect(pendingPage.page.getByText('Leadership')).toHaveCount(0)
     await expect(
-      pendingPage.page.getByRole('heading', { name: 'Requested resources' }),
+      pendingPage.page.getByRole('heading', {
+        name: 'Requested staffing needs and resources',
+      }),
     ).toHaveCount(0)
 
     await acceptedPage.page.reload()
@@ -190,7 +192,9 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
     await expect(
-      ownerPage.page.getByRole('heading', { name: 'Requested resources' }),
+      ownerPage.page.getByRole('heading', {
+        name: 'Requested staffing needs and resources',
+      }),
     ).toBeVisible()
     await expect(
       ownerPage.page.getByText('Pending Member').first(),

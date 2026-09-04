@@ -674,6 +674,7 @@ export function ManagedEventWorkspace({
         operationalHealth={operationalHealth}
         overview={overview}
       />
+      {proposalPreparation ? <ProposalPreparation.PlanSection /> : null}
       {lifecycleStatus === 'cancelled' ? (
         <section className="mt-5 rounded-lg border border-red-300 bg-red-50 px-6 py-5 text-red-950">
           <h2 className="text-xl font-extrabold">Event cancelled</h2>
@@ -1505,18 +1506,50 @@ export function ManagedEventWorkspace({
           </section>
         </>
       ) : null}
-      {event.show_staff_assignments.length > 0 ? (
+      {event.show_resource_requests.length > 0 ||
+      event.show_staff_assignments.length > 0 ||
+      allowedActions.inviteStaff ? (
         <section
           className="island-shell mt-5 rounded-lg px-6 py-6"
           id="event-staff-assignment"
         >
-          <h2 className="text-2xl font-extrabold">Event staff assignments</h2>
+          <h2 className="text-2xl font-extrabold">
+            Event staff assignments and coverage
+          </h2>
+          {event.show_resource_requests
+            .filter((request) => request.resource_type === 'staff')
+            .map((request) => {
+              const assignments = event.show_staff_assignments.filter(
+                (assignment) => assignment.resource_request_id === request.id,
+              )
+              const acceptedCoverage = assignments.filter(
+                (assignment) => assignment.status === 'accepted',
+              ).length
+
+              return (
+                <div
+                  className="mt-4 rounded-md border border-[var(--line)] bg-[var(--sand)]/40 px-4 py-3"
+                  key={request.id}
+                >
+                  <h3 className="font-extrabold">{request.label}</h3>
+                  <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                    Accepted coverage: {acceptedCoverage} of {request.quantity}{' '}
+                    requested
+                  </p>
+                </div>
+              )
+            })}
           {event.show_staff_assignments.map((assignment) => (
             <div
               className="mt-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
               key={assignment.id}
             >
-              <p className="font-bold">{assignment.responsibility}</p>
+              <p className="font-bold">
+                {activeMembers.find(
+                  (member) => member.userId === assignment.user_id,
+                )?.displayName ?? 'Theater Member'}{' '}
+                · {assignment.responsibility}
+              </p>
               <p className="text-sm capitalize text-[var(--sea-ink-soft)]">
                 {assignment.status}
               </p>
@@ -1550,7 +1583,7 @@ export function ManagedEventWorkspace({
       {allowedActions.inviteStaff ? (
         <section
           className="island-shell mt-5 rounded-lg px-6 py-6"
-          id="event-staff-assignment"
+          id="event-staff-invitation"
         >
           <h2 className="text-2xl font-extrabold">Invite Event staff</h2>
           <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -1791,7 +1824,6 @@ export function ManagedEventWorkspace({
         </section>
       ) : (
         <>
-          <span className="block scroll-mt-6" id="schedule-plan" />
           <section
             className="island-shell mt-5 rounded-lg px-6 py-6"
             id="availability"
@@ -2019,7 +2051,6 @@ export function ManagedEventWorkspace({
           </section>
         </>
       )}
-      {proposalPreparation ? <ProposalPreparation.PlanSection /> : null}
       {overview.sections.some(({ label }) => label === 'History') ? (
         <section
           className="island-shell mt-5 rounded-lg px-6 py-6"
