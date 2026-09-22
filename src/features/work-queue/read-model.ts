@@ -112,19 +112,10 @@ export function createWorkQueueReadModel(
     }
     if (operator) {
       for (const need of event.staffingNeeds) {
-        const assignments = event.assignments.filter(
-          (assignment) => assignment.needId === need.id,
-        )
-        const accepted = assignments.filter(
-          (assignment) =>
-            assignment.status === 'accepted' &&
-            input.activeMemberIds.includes(assignment.userId),
-        ).length
-        const remaining = Math.max(0, need.quantity - accepted)
-        // Existing assignments cannot be re-invited, including declined/revoked ones.
-        const canInvite = input.activeMemberIds.some(
-          (userId) =>
-            !assignments.some((assignment) => assignment.userId === userId),
+        const { remaining, canInvite } = getStaffingNeedState(
+          need,
+          event.assignments,
+          input.activeMemberIds,
         )
         if (remaining && canInvite) {
           items.push({
@@ -288,4 +279,27 @@ function canApproveSnapshot(snapshot: unknown, input: WorkQueueInput) {
     })
   }
   return true
+}
+
+export function getStaffingNeedState(
+  need: { id: string; quantity: number },
+  eventAssignments: WorkQueueInput['events'][number]['assignments'],
+  activeMemberIds: string[],
+) {
+  const assignments = eventAssignments.filter(
+    (assignment) => assignment.needId === need.id,
+  )
+  const accepted = assignments.filter(
+    (assignment) =>
+      assignment.status === 'accepted' &&
+      activeMemberIds.includes(assignment.userId),
+  ).length
+  return {
+    remaining: Math.max(0, need.quantity - accepted),
+    // Existing assignments cannot be re-invited, including declined/revoked ones.
+    canInvite: activeMemberIds.some(
+      (userId) =>
+        !assignments.some((assignment) => assignment.userId === userId),
+    ),
+  }
 }

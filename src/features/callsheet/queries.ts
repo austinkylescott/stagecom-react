@@ -1,3 +1,4 @@
+import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
 import {
   getBearerTokenFromRequest,
   getCurrentUserFromRequest,
@@ -208,6 +209,47 @@ export async function getMyCallsheet() {
     )
   }
 
+  // Explicit Producer relationships authorize these private public-content drafts.
+  const producerContent = producerEventIds.length
+    ? await supabase
+        .from('shows')
+        .select(
+          'id, lifecycle_status, approved_proposal_revision_id, show_public_content_revisions!show_public_content_revisions_show_id_fkey(description, image_url, published_at)',
+        )
+        .in('id', producerEventIds)
+    : { data: [], error: null }
+  if (producerContent.error)
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+  const publicContentCommitments = producerContent.data.flatMap((event) => {
+    const draft = event.show_public_content_revisions.find(
+      (row) => row.published_at === null,
+    )
+    const reason = getProducerContentCommitment({
+      lifecycle: event.lifecycle_status,
+      approvedRevisionId: event.approved_proposal_revision_id,
+      hasPublishedContent: event.show_public_content_revisions.some(
+        (row) => row.published_at !== null,
+      ),
+      publicDraft: draft
+        ? { description: draft.description, imageUrl: draft.image_url }
+        : null,
+    })
+    return reason
+      ? toCommitment({
+          action: 'Prepare public content',
+          actionableAt: null,
+          event: eventById.get(event.id),
+          id: `public-content:${event.id}`,
+          kind: 'public_content',
+          relationship: 'Producer',
+          targetAnchor: '#public-page',
+          theaterById,
+        })
+      : []
+  })
+
   const revisionsById = new Map(
     revisions.map((revision) => [revision.id, revision]),
   )
@@ -346,6 +388,7 @@ export async function getMyCallsheet() {
     availabilityRevisions.map((revision) => [revision.id, revision]),
   )
   const commitments = [
+    ...publicContentCommitments,
     ...adminCommitments,
     ...ownershipTransferCommitments,
     ...castResult.data.flatMap((cast) => {

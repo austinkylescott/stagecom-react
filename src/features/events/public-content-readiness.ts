@@ -38,25 +38,7 @@ export function evaluatePublicReadiness(input: {
       message: 'Operational Approval is required.',
     })
   }
-  if (!input.hasDraft) {
-    blockers.push({
-      code: 'public_content_missing',
-      message: 'Prepare the Event public-content revision.',
-    })
-  } else {
-    if (!input.hasDescription) {
-      blockers.push({
-        code: 'description_missing',
-        message: 'Add a public Event description.',
-      })
-    }
-    if (!input.hasImage) {
-      blockers.push({
-        code: 'image_missing',
-        message: 'Add a public Event image.',
-      })
-    }
-  }
+  blockers.push(...evaluatePublicContentReadiness(input))
   if (!input.hasPublicPerformance) {
     blockers.push({
       code: 'public_performance_missing',
@@ -86,4 +68,55 @@ export function partitionPublicReadinessBlockers(
     producer: blockers.filter(({ code }) => producerCodes.has(code)),
     theaterOperator: blockers.filter(({ code }) => !producerCodes.has(code)),
   }
+}
+
+function evaluatePublicContentReadiness(input: {
+  hasDraft: boolean
+  hasDescription: boolean
+  hasImage: boolean
+}): PublicReadinessBlocker[] {
+  const blockers: PublicReadinessBlocker[] = []
+  if (!input.hasDraft) {
+    blockers.push({
+      code: 'public_content_missing',
+      message: 'Prepare the Event public-content revision.',
+    })
+  } else {
+    if (!input.hasDescription) {
+      blockers.push({
+        code: 'description_missing',
+        message: 'Add a public Event description.',
+      })
+    }
+    if (!input.hasImage) {
+      blockers.push({
+        code: 'image_missing',
+        message: 'Add a public Event image.',
+      })
+    }
+  }
+  return blockers
+}
+
+export function getProducerContentCommitment(event: {
+  lifecycle: string
+  approvedRevisionId: string | null
+  hasPublishedContent: boolean
+  publicDraft: { description: string; imageUrl: string | null } | null
+}): string | null {
+  if (event.lifecycle !== 'approved' || !event.approvedRevisionId) return null
+  if (!event.publicDraft && event.hasPublishedContent) return null
+  const blockers = evaluatePublicContentReadiness({
+    hasDraft: event.publicDraft !== null,
+    hasDescription: Boolean(event.publicDraft?.description.trim()),
+    hasImage: Boolean(event.publicDraft?.imageUrl?.trim()),
+  })
+  if (blockers.some((blocker) => blocker.code === 'public_content_missing'))
+    return 'Producer must prepare the public-content revision.'
+  const missing = blockers.map((blocker) =>
+    blocker.code === 'description_missing'
+      ? 'public description'
+      : 'public image',
+  )
+  return missing.length ? `Producer must add a ${missing.join(' and ')}.` : null
 }
