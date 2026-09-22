@@ -7,6 +7,7 @@ export type CallsheetCommitmentKind =
   | 'counteroffer'
   | 'occurrence_call'
   | 'proposal_edits'
+  | 'public_content'
 
 export type CallsheetCommitmentInput = {
   action: string
@@ -79,6 +80,7 @@ function commitmentPriority(commitment: CallsheetCommitmentInput, now: Date) {
     staff_invitation: 2,
     counteroffer: 2,
     proposal_edits: 3,
+    public_content: 3,
     availability_response: 4,
     occurrence_call: 5,
   }[commitment.kind]

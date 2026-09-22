@@ -1,10 +1,11 @@
+import { createOperationalExceptionsReadModel } from '@/features/operational-exceptions/read-model'
 import { getTheaterAccess } from '@/features/events/queries'
 import { parseReservedRange } from '@/features/theater-calendar/reserved-range'
 import { getMissingPublicationFields } from '@/features/theaters/publication-readiness'
 import { appError, err, ok } from '@/server/errors'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 import { createWorkQueueReadModel } from './read-model'
-import type { z } from 'zod'
+import { z } from 'zod'
 import type { theaterSlugInputSchema } from '@/features/theaters/schemas'
 
 export async function getTheaterWorkQueue(
@@ -30,44 +31,80 @@ export async function getTheaterWorkQueue(
   const isReviewer = capabilities.data.some(
     (row) => row.capability === 'reviewer',
   )
-  // Establish shared-work authority before reading private Event state.
-  if (!operator && !isReviewer) return ok({ items: [], canResolveWork: false })
-  const [events, profile, members, reservations] = await Promise.all([
-    supabase
-      .from('shows')
-      .select(
-        `
+  // Establish leadership before reading private Events for a non-Reviewer Member.
+  const leadership = await supabase
+    .from('show_leadership')
+    .select('show_id')
+    .eq('user_id', actorUserId)
+  if (leadership.error)
+    return err(
+      appError(
+        'external_service_error',
+        'Current Theater work could not be loaded.',
+      ),
+    )
+  const eventIds = leadership.data.map((row) => row.show_id)
+  if (!operator && !isReviewer && !eventIds.length)
+    return ok({ items: [], exceptions: [], canResolveWork: false })
+  const [events, profile, members, reservations, completionFailures] =
+    await Promise.all([
+      supabase
+        .from('shows')
+        .select(
+          `
       id, slug, title, lifecycle_status, approved_proposal_revision_id, operational_health, at_risk_continuation_allowed,
-      show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, submitted_by, snapshot, show_proposal_decisions(id)),
-      show_occurrences(occurrence_type, visibility, confirmed_slot:show_candidate_slots!show_occurrences_confirmed_candidate_slot_id_fkey(starts_at)),
+      show_leadership(user_id, role),
+      show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, submitted_by, snapshot, show_proposal_decisions(id), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, state, response_deadline, show_schedule_reservations(id, status))),
+      show_occurrences(occurrence_type, visibility, confirmed_slot:show_candidate_slots!show_occurrences_confirmed_candidate_slot_id_fkey(starts_at, duration_minutes)),
       show_cancellation_requests(id, resolved_at),
       show_resource_requests(id, resource_type, label, quantity),
       show_staff_assignments(resource_request_id, user_id, status),
       show_public_content_revisions!show_public_content_revisions_show_id_fkey(id, version, description, image_url, published_at)
     `,
-      )
-      .eq('theater_id', theater.id)
-      .eq('event_type', 'show')
-      .not('lifecycle_status', 'in', '(cancelled,completed)'),
-    supabase
-      .from('theaters')
-      .select(
-        'name, slug, tagline, street, city, state_region, postal_code, country, timezone',
-      )
-      .eq('id', theater.id)
-      .single(),
-    supabase
-      .from('theater_memberships')
-      .select('user_id')
-      .eq('theater_id', theater.id)
-      .eq('status', 'active'),
-    supabase
-      .from('show_schedule_reservations')
-      .select('resource_id, reserved_during')
-      .eq('theater_id', theater.id)
-      .eq('status', 'active'),
-  ])
-  if (events.error || profile.error || members.error || reservations.error)
+        )
+        .eq('theater_id', theater.id)
+        .eq('event_type', 'show')
+        .not('lifecycle_status', 'in', '(cancelled,completed)')
+        .or(
+          operator || isReviewer
+            ? 'id.not.is.null'
+            : `id.in.(${eventIds.join(',')})`,
+        ),
+      supabase
+        .from('theaters')
+        .select(
+          'name, slug, tagline, street, city, state_region, postal_code, country, timezone',
+        )
+        .eq('id', theater.id)
+        .single(),
+      supabase
+        .from('theater_memberships')
+        .select('user_id')
+        .eq('theater_id', theater.id)
+        .eq('status', 'active'),
+      operator || isReviewer
+        ? supabase
+            .from('show_schedule_reservations')
+            .select('resource_id, reserved_during')
+            .eq('theater_id', theater.id)
+            .eq('status', 'active')
+        : Promise.resolve({ data: [], error: null }),
+      operator
+        ? supabase
+            .from('activity_events')
+            .select('entity_id, payload')
+            .eq('theater_id', theater.id)
+            .eq('entity_type', 'event')
+            .eq('action', 'event.completion.failed')
+        : Promise.resolve({ data: [], error: null }),
+    ])
+  if (
+    events.error ||
+    profile.error ||
+    members.error ||
+    reservations.error ||
+    completionFailures.error
+  )
     return err(
       appError('external_service_error', 'Work Queue could not be loaded.'),
     )
@@ -83,7 +120,7 @@ export async function getTheaterWorkQueue(
         'Work Queue schedule eligibility could not be loaded.',
       ),
     )
-  const items = createWorkQueueReadModel({
+  const domain = {
     now: new Date().toISOString(),
     viewer: { userId: actorUserId, roles: membership.roles, isReviewer },
     theater: {
@@ -108,7 +145,44 @@ export async function getTheaterWorkQueue(
       const draft = event.show_public_content_revisions.find(
         (revision) => revision.published_at === null,
       )
+      const failure = completionFailureSchema.safeParse(
+        completionFailures.data.find((row) => row.entity_id === event.id)
+          ?.payload,
+      )
+      const slotEnds = event.show_occurrences.flatMap((occurrence) =>
+        occurrence.confirmed_slot
+          ? [
+              Date.parse(occurrence.confirmed_slot.starts_at) +
+                occurrence.confirmed_slot.duration_minutes * 60_000,
+            ]
+          : [],
+      )
       return {
+        completionFailure: failure.success
+          ? {
+              evaluatedAt: failure.data.evaluatedAt,
+              finalSlotEndsAt: failure.data.finalConfirmedSlotEndsAt,
+            }
+          : null,
+        finalConfirmedSlotEndsAt: slotEnds.length
+          ? new Date(Math.max(...slotEnds)).toISOString()
+          : null,
+        leadership: event.show_leadership.map((row) => ({
+          userId: row.user_id,
+          role: row.role,
+        })),
+        hasPublishedContent: event.show_public_content_revisions.some(
+          (row) => row.published_at !== null,
+        ),
+        counteroffers: event.show_proposal_revisions.flatMap((revision) =>
+          revision.show_counteroffers.map((offer) => ({
+            id: offer.id,
+            state: offer.state,
+            deadlineAt: offer.response_deadline,
+            hasActiveHold:
+              offer.show_schedule_reservations?.status === 'active',
+          })),
+        ),
         id: event.id,
         slug: event.slug,
         title: event.title,
@@ -161,6 +235,15 @@ export async function getTheaterWorkQueue(
           : null,
       }
     }),
+  }
+  return ok({
+    items: createWorkQueueReadModel(domain),
+    exceptions: createOperationalExceptionsReadModel(domain),
+    canResolveWork: operator || isReviewer,
   })
-  return ok({ items, canResolveWork: true })
 }
+
+const completionFailureSchema = z.object({
+  evaluatedAt: z.string().datetime({ offset: true }),
+  finalConfirmedSlotEndsAt: z.string().datetime({ offset: true }),
+})

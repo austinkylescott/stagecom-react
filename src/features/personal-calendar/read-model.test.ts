@@ -33,6 +33,7 @@ describe('personal Calendar read model', () => {
 
   it('keeps distinct relationships for the same Event instead of collapsing them', () => {
     const entries = createPersonalCalendarProjection({
+      now: new Date('2026-09-01T12:00:00Z'),
       entries: [
         entry({ id: 'cast', relationship: 'Cast Member' }),
         entry({ id: 'staff', relationship: 'Event staff' }),

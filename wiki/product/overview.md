@@ -145,3 +145,26 @@ A successful milestone journey proves that:
 ## What Is Not In The First Meaningful Milestone?
 
 Native Stagecom ticket sales, recurring Event series, open casting calls, guest cast, multiple modeled rooms or venues, committee review, automated application email/SMS, audience analytics, and automated Producer reliability scores are deferred.
+
+### Watch-only Operational Exceptions (STA-51)
+
+Theater Operations separates resolvable Work Queue decisions from Operational
+Exceptions. Current Operators, Reviewers, and Event leadership can monitor
+Counteroffers and their exclusive temporary holds within 24 hours of expiry.
+Expired or resolved Counteroffers disappear from this projection; Producers keep
+their separate response commitment while a response remains possible.
+
+Approved Events missing a public-content revision, description, or image create
+a Producer commitment on Callsheet and an exception for Operators who are not
+also Producers. A previously published revision with no new draft is not missing
+content. Staffing gaps become exceptions when the viewer cannot invite coverage;
+pending invitations never count as accepted coverage. Requested edits and review
+that requires another Reviewer remain watch-only for viewers without that action.
+
+Exceptions show scope, reason, urgency, and an authorized context link, with no
+manual close or completion control. Notification read/dismissal state has no
+influence. Recorded `event.completion.failed` facts are projected for Operators
+only while the Event remains approved and the current final Confirmed Slot matches
+the failed evaluation and has ended. This projection consumes STA-49's failure
+facts; STA-49's automatic completion changes must also be present in the deployed
+branch.

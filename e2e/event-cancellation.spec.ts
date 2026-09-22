@@ -145,6 +145,105 @@ test('Producer requests cancellation and management preserves a public notice wh
   }
 })
 
+test('Callsheet and Theater Operations separate Producer content from watch-only exceptions', async ({
+  browser,
+}) => {
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const fixture = await createFixture(config!)
+  const ownerContext = await browser.newContext()
+  const producerContext = await browser.newContext()
+  const castContext = await browser.newContext()
+  try {
+    // Event creation also adds its actor as Producer; exercise a pure Operator.
+    const { error: leadershipError } = await fixture.admin
+      .from('show_leadership')
+      .delete()
+      .eq('show_id', fixture.eventId)
+      .eq('user_id', fixture.userIds[0])
+      .eq('role', 'producer')
+    expect(leadershipError).toBeNull()
+
+    const { error } = await fixture.admin
+      .from('show_public_content_revisions')
+      .insert({
+        show_id: fixture.eventId,
+        revision_number: 2,
+        title: 'Cancellation Night',
+        description: '',
+        admission_price_cents: 0,
+        sales_channel: 'no_advance_ticketing',
+        created_by_user_id: fixture.userIds[1],
+        updated_by_user_id: fixture.userIds[1],
+        last_command_id: crypto.randomUUID(),
+      })
+    expect(error).toBeNull()
+    await authenticateContext(ownerContext, fixture, fixture.ownerEmail)
+    const ownerPage = await ownerContext.newPage()
+    await ownerPage.goto('/app')
+    await ownerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    const exceptions = ownerPage.getByRole('region', {
+      name: 'Operational Exceptions',
+    })
+    await expect(
+      exceptions.getByRole('heading', {
+        name: 'Public content awaits Producer',
+      }),
+    ).toBeVisible()
+    await expect(
+      exceptions.getByText(
+        'Producer must add a public description and public image.',
+      ),
+    ).toBeVisible()
+    await expect(exceptions.getByRole('button')).toHaveCount(0)
+    await expect(
+      ownerPage
+        .getByRole('region', { name: 'Work Queue' })
+        .getByRole('link', { name: 'Preview and publish Event' }),
+    ).toHaveCount(0)
+    await exceptions.getByRole('link', { name: /View Event context/ }).click()
+    await expect(
+      ownerPage.getByRole('heading', { name: 'Public Page', exact: true }),
+    ).toBeVisible()
+
+    await authenticateContext(producerContext, fixture, fixture.producerEmail)
+    const producerPage = await producerContext.newPage()
+    await producerPage.goto('/app')
+    await producerPage
+      .getByRole('link', { name: 'Prepare public content' })
+      .click()
+    await expect(
+      producerPage.getByRole('heading', { name: 'Public Page', exact: true }),
+    ).toBeVisible()
+    await expect(
+      producerPage.getByRole('button', { name: 'Publish Event', exact: true }),
+    ).toHaveCount(0)
+
+    await authenticateContext(castContext, fixture, fixture.castEmail)
+    const castPage = await castContext.newPage()
+    await castPage.goto('/app')
+    await expect(
+      castPage.getByRole('link', { name: 'Prepare public content' }),
+    ).toHaveCount(0)
+    await castPage.getByRole('link', { name: 'Enter Theater' }).click()
+    await expect(
+      castPage.getByRole('heading', { name: 'Public content awaits Producer' }),
+    ).toHaveCount(0)
+  } finally {
+    await Promise.all([
+      ownerContext.close(),
+      producerContext.close(),
+      castContext.close(),
+    ])
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
 function getSupabaseConfig() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL ?? testEnv.VITE_SUPABASE_URL
   const anonKey =

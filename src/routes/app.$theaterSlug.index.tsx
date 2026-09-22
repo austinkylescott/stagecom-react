@@ -1,3 +1,4 @@
+import { OperationalExceptions } from '@/features/operational-exceptions/components'
 import { createFileRoute } from '@tanstack/react-router'
 import { WorkQueue } from '@/features/work-queue/components'
 import { getTheaterWorkQueueFn } from '@/features/work-queue/server-functions'
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/app/$theaterSlug/')({
 })
 
 function TheaterWorkPage() {
-  const { items, canResolveWork } = Route.useLoaderData()
+  const { items, exceptions, canResolveWork } = Route.useLoaderData()
   const { theater } = Route.useRouteContext()
   return (
     <main className="page-wrap py-8 sm:py-12">
@@ -36,6 +37,9 @@ function TheaterWorkPage() {
           Choose Events, Calendar, or People to explore your Theater.
         </p>
       )}
+      {canResolveWork || exceptions.length > 0 ? (
+        <OperationalExceptions items={exceptions} />
+      ) : null}
     </main>
   )
 }
