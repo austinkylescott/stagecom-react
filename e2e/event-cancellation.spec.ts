@@ -145,6 +145,90 @@ test('Producer requests cancellation and management preserves a public notice wh
   }
 })
 
+test('Operator can inspect automatic completion history without a manual completion control', async ({
+  browser,
+}) => {
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const fixture = await createFixture(config!)
+  const ownerContext = await browser.newContext()
+  const producerContext = await browser.newContext()
+  try {
+    // The database suite exercises actual failures; this fixture owns their History presentation.
+    const { error: failureError } = await fixture.admin
+      .from('activity_events')
+      .insert({
+        theater_id: fixture.theaterId,
+        entity_type: 'event',
+        entity_id: fixture.eventId,
+        action: 'event.completion.failed',
+        visibility: 'admin_only',
+        payload: {
+          errorMessage: 'The Event changed while completion was evaluated.',
+          evaluatedAt: '2026-11-15T02:01:00Z',
+          finalConfirmedSlotEndsAt: '2026-11-15T02:00:00Z',
+        },
+      })
+    expect(failureError).toBeNull()
+    await authenticateContext(ownerContext, fixture, fixture.ownerEmail)
+    const page = await ownerContext.newPage()
+    await page.goto('/app')
+    await page.getByRole('link', { name: 'Enter Theater' }).click()
+    await page.getByRole('link', { name: 'Events', exact: true }).click()
+    await page.getByRole('link', { name: 'Cancellation Night' }).click()
+    await page.getByRole('link', { name: 'History', exact: true }).click()
+    await expect(
+      page.getByText('Automatic completion failed', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByText(/Automatic completion failed safely: The Event changed/),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Complete Event', exact: true }),
+    ).toHaveCount(0)
+
+    await authenticateContext(producerContext, fixture, fixture.producerEmail)
+    const producerPage = await producerContext.newPage()
+    await producerPage.goto('/app')
+    await producerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    await producerPage
+      .getByRole('link', { name: 'Events', exact: true })
+      .click()
+    await producerPage.getByRole('link', { name: 'Cancellation Night' }).click()
+    await producerPage
+      .getByRole('link', { name: 'History', exact: true })
+      .click()
+    await expect(
+      producerPage.getByText('Automatic completion failed', { exact: true }),
+    ).toHaveCount(0)
+
+    const { data: completed, error: completionError } = await fixture.admin.rpc(
+      'complete_due_events',
+      {
+        p_now: '2026-11-15T02:02:00Z',
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(completionError).toBeNull()
+    expect(completed).toBe(1)
+    await page.reload()
+    await expect(
+      page.getByText('Event completed', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Complete Event', exact: true }),
+    ).toHaveCount(0)
+  } finally {
+    await Promise.all([ownerContext.close(), producerContext.close()])
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
 function getSupabaseConfig() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL ?? testEnv.VITE_SUPABASE_URL
   const anonKey =
