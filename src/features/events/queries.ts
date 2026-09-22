@@ -90,34 +90,6 @@ export async function getEventCreationOptions(
   })
 }
 
-export async function listManagedEvents(
-  input: z.infer<typeof theaterEventsInputSchema>,
-) {
-  const access = await getTheaterAccess(input.theaterSlug)
-
-  if (!access.ok) {
-    return access
-  }
-
-  const supabase = createSupabaseServiceRoleClient()
-  const { data, error } = await supabase
-    .from('shows')
-    .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name))',
-    )
-    .eq('theater_id', access.data.theater.id)
-    .eq('event_type', 'show')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    return err(
-      appError('external_service_error', 'Events could not be loaded.'),
-    )
-  }
-
-  return ok({ events: data, theater: access.data.theater })
-}
-
 export async function getManagedEventWorkspace(
   input: z.infer<typeof eventWorkspaceInputSchema>,
 ) {

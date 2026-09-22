@@ -295,64 +295,6 @@ export function PublishedEventPage({
   )
 }
 
-export function ManagedEventsPage({
-  events,
-  theaterSlug,
-}: {
-  events: Array<{
-    id: string
-    lifecycle_status: EventLifecycle
-    operational_health: EventHealth
-    publication_status: EventPublication
-    slug: string
-    title: string
-  }>
-  theaterSlug: string
-}) {
-  return (
-    <main className="page-wrap py-8 sm:py-12">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
-            Events
-          </p>
-          <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
-            Event operations
-          </h1>
-        </div>
-        <a
-          className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-          href={`/app/${theaterSlug}/events/new`}
-        >
-          Create Event
-        </a>
-      </div>
-      <div className="mt-6 grid gap-4">
-        {events.map((event) => (
-          <a
-            className="island-shell rounded-lg px-5 py-5 no-underline"
-            href={`/app/${theaterSlug}/events/${event.slug}`}
-            key={event.id}
-          >
-            <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
-              {event.title}
-            </h2>
-            <p className="mt-2 text-sm font-semibold text-[var(--sea-ink-soft)]">
-              Lifecycle: {event.lifecycle_status} · Publication:{' '}
-              {event.publication_status} · Health: {event.operational_health}
-            </p>
-          </a>
-        ))}
-        {events.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-[var(--line)] px-5 py-7">
-            No managed Events yet.
-          </p>
-        ) : null}
-      </div>
-    </main>
-  )
-}
-
 export function ManagedEventWorkspace({
   activeMembers,
   actorUserId,

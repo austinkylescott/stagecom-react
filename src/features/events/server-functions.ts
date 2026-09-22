@@ -23,11 +23,8 @@ import {
   withdrawFromEventCast,
   seedDeniedProposalReplacement,
 } from './commands'
-import {
-  getEventCreationOptions,
-  getManagedEventWorkspace,
-  listManagedEvents,
-} from './queries'
+import { getEventCreationOptions, getManagedEventWorkspace } from './queries'
+import { getEventPortfolio } from './event-portfolio/query'
 import { getProposalPreparation } from './proposal-preparation/query'
 import { getEventPublicContentReadiness } from './public-content-queries'
 import { getPublishedEventBySlug } from './public-queries'
@@ -83,7 +80,7 @@ export const getEventCreationOptionsFn = createServerFn({ method: 'GET' })
 
 export const listManagedEventsFn = createServerFn({ method: 'GET' })
   .validator(theaterEventsInputSchema)
-  .handler(async ({ data }) => listManagedEvents(data))
+  .handler(async ({ data }) => getEventPortfolio(data))
 
 export const getManagedEventWorkspaceFn = createServerFn({ method: 'GET' })
   .validator(eventWorkspaceInputSchema)
