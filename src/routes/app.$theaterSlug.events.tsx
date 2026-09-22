@@ -5,7 +5,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 
-import { ManagedEventsPage } from '@/features/events/components'
+import { EventPortfolioPage } from '@/features/events/event-portfolio/components'
 import { listManagedEventsFn } from '@/features/events/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/events')({
@@ -26,7 +26,7 @@ export const Route = createFileRoute('/app/$theaterSlug/events')({
 
 function TheaterEventsPage() {
   const { theaterSlug } = Route.useParams()
-  const { events } = Route.useLoaderData()
+  const { portfolio, canCreate, theater } = Route.useLoaderData()
   const activeRouteId = useRouterState({
     select: (state) => state.matches.at(-1)?.routeId,
   })
@@ -35,5 +35,12 @@ function TheaterEventsPage() {
     return <Outlet />
   }
 
-  return <ManagedEventsPage events={events} theaterSlug={theaterSlug} />
+  return (
+    <EventPortfolioPage
+      portfolio={portfolio}
+      theaterSlug={theaterSlug}
+      timezone={theater.timezone ?? 'UTC'}
+      canCreate={canCreate}
+    />
+  )
 }

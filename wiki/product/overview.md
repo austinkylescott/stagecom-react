@@ -97,6 +97,28 @@ Native disclosure controls preserve keyboard access to additional work. Loading,
 empty sections, and retry/Callsheet recovery keep unavailable data distinct from
 an empty queue.
 
+### Event portfolio (STA-53)
+
+Events is a filterable list with separate Lifecycle, Proposal decision,
+Publication, and Operational health labels. Operators can filter by confirmed
+date, leader, each state, and next action, then sort by those dimensions. The
+saved views are deterministic: Needs Attention contains Events with a current
+viewer-authorized action; Upcoming contains nonterminal Events with a future
+confirmed date; Draft/Review contains draft or in-review Events; Published
+contains Events whose Publication state is published, including completed or
+cancelled records. Views and filters may be combined.
+
+Each summary links to Event Overview and to the exact section for its next
+action. Operator decisions reuse Work Queue eligibility, and personal actions
+reuse Callsheet commitments. At Risk decisions rank first; urgent personal
+responses follow before routine decisions and Publication. Date filters include
+confirmed and proposed Candidate Slot dates in the Theater time zone; Upcoming
+requires a future confirmed date. Candidate dates are labeled proposed.
+Cast and staff participants receive only a limited Event summary from this
+list. Unrelated published Events available to ordinary Members link to their
+public page with no private Proposal, health, leadership, or scheduling detail.
+Unrelated private Events are excluded from the Member query.
+
 Authorized Event collaborators enter a stable Event Overview and select one
 authorized workspace section at a time rather than navigating a legacy
 single-scroll composition. The Overview keeps lifecycle, Proposal
