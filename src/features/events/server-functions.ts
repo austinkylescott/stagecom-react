@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 
 import {
   cancelEvent,
-  completeEvent,
   createManagedEvent,
   inviteEventCastMember,
   inviteEventStaffMember,
@@ -34,7 +33,6 @@ import { getEventPublicContentReadiness } from './public-content-queries'
 import { getPublishedEventBySlug } from './public-queries'
 import {
   cancelEventInputSchema,
-  completeEventInputSchema,
   createManagedEventInputSchema,
   eventWorkspaceInputSchema,
   inviteEventCastMemberInputSchema,
@@ -66,10 +64,6 @@ export const requestEventCancellationFn = createServerFn({ method: 'POST' })
 export const cancelEventFn = createServerFn({ method: 'POST' })
   .validator(cancelEventInputSchema)
   .handler(async ({ data }) => cancelEvent(data))
-
-export const completeEventFn = createServerFn({ method: 'POST' })
-  .validator(completeEventInputSchema)
-  .handler(async ({ data }) => completeEvent(data))
 
 export const withdrawFromEventCastFn = createServerFn({ method: 'POST' })
   .validator(withdrawFromEventCastInputSchema)

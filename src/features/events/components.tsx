@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 
 import {
   cancelEventFn,
-  completeEventFn,
   createManagedEventFn,
   inviteEventCastMemberFn,
   inviteEventStaffMemberFn,
@@ -371,7 +370,6 @@ export function ManagedEventWorkspace({
   allowedActions: {
     assignOccurrenceCalls: boolean
     cancelEvent: boolean
-    completeEvent: boolean
     editOperationalPlan: boolean
     inviteCast: boolean
     inviteStaff: boolean
@@ -639,8 +637,6 @@ export function ManagedEventWorkspace({
   const [cancellationRequests, setCancellationRequests] = useState(
     event.show_cancellation_requests,
   )
-  const [completionError, setCompletionError] = useState<string | null>(null)
-  const [isCompleting, setIsCompleting] = useState(false)
   const [proposalRevisions, setProposalRevisions] = useState(
     event.show_proposal_revisions,
   )
@@ -959,46 +955,6 @@ export function ManagedEventWorkspace({
             </div>
           ) : null}
         </section>
-      ) : null}
-      {activeSection === 'overview' &&
-      allowedActions.completeEvent &&
-      lifecycleStatus !== 'completed' ? (
-        <div className="island-shell mt-5 rounded-lg px-6 py-5">
-          <h2 className="text-xl font-extrabold">Final Confirmed Slot ended</h2>
-          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-            Complete this Event while preserving its Publication, Operational
-            Approval, health, cast, and decision history.
-          </p>
-          <button
-            className="mt-4 rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
-            disabled={isCompleting}
-            onClick={async () => {
-              setCompletionError(null)
-              setIsCompleting(true)
-              try {
-                const result = await completeEventFn({
-                  data: {
-                    commandId: crypto.randomUUID(),
-                    eventId: event.id,
-                  },
-                })
-                if (!result.ok) {
-                  setCompletionError(result.error.message)
-                  return
-                }
-                setLifecycleStatus(result.data.lifecycleStatus)
-              } finally {
-                setIsCompleting(false)
-              }
-            }}
-            type="button"
-          >
-            {isCompleting ? 'Completing…' : 'Complete Event'}
-          </button>
-          {completionError ? (
-            <p className="mt-3 font-semibold text-red-800">{completionError}</p>
-          ) : null}
-        </div>
       ) : null}
       {activeSection === 'public-page' && publicContent && publicDraft ? (
         <section

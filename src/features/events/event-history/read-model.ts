@@ -17,6 +17,7 @@ type EventHistoryInput = {
 const actionLabels: Record<string, string> = {
   'event.cancelled': 'Event cancelled',
   'event.cancellation.requested': 'Cancellation requested',
+  'event.completion.failed': 'Automatic completion failed',
   'event.completed': 'Event completed',
   'event.proposal_counteroffer.accepted': 'Proposal counteroffer accepted',
   'event.proposal_counteroffer.declined': 'Proposal counteroffer declined',
@@ -89,9 +90,25 @@ function historyDetail(payload: Json) {
   }
 
   const reason = payload.reason
-  return typeof reason === 'string' && reason.trim()
-    ? `Reason: ${reason}`
-    : null
+  if (typeof reason === 'string' && reason.trim()) return `Reason: ${reason}`
+
+  const errorMessage = payload.errorMessage
+  if (typeof errorMessage !== 'string' || !errorMessage.trim()) return null
+
+  const finalConfirmedSlotEndsAt = payload.finalConfirmedSlotEndsAt
+  const evaluatedAt = payload.evaluatedAt
+  const completionContext = [
+    typeof finalConfirmedSlotEndsAt === 'string'
+      ? `Final Confirmed Slot ended: ${finalConfirmedSlotEndsAt}.`
+      : null,
+    typeof evaluatedAt === 'string' ? `Evaluated: ${evaluatedAt}.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  return `Automatic completion failed safely: ${errorMessage}${
+    completionContext ? ` ${completionContext}` : ''
+  }`
 }
 
 function humanizeAction(action: string) {

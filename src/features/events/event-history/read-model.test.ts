@@ -52,4 +52,36 @@ describe('Event History read model', () => {
       }),
     ])
   })
+
+  it('shows a safe automatic-completion failure only to Theater Operators', () => {
+    const history = createEventHistoryReadModel({
+      actorUserId: 'operator',
+      canViewAdminActivity: true,
+      events: [
+        {
+          action: 'event.completion.failed',
+          actorDisplayName: null,
+          actorUserId: null,
+          createdAt: '2026-10-11T01:01:00.000Z',
+          id: 'completion-failure',
+          payload: {
+            errorMessage: 'The Event changed while completion was evaluated.',
+            evaluatedAt: '2026-10-11T01:01:00.000Z',
+            finalConfirmedSlotEndsAt: '2026-10-11T01:00:00.000Z',
+          },
+          visibility: 'admin_only',
+        },
+      ],
+    })
+
+    expect(history.entries).toEqual([
+      expect.objectContaining({
+        action: 'Automatic completion failed',
+        actor: 'Stagecom system',
+        detail:
+          'Automatic completion failed safely: The Event changed while completion was evaluated. Final Confirmed Slot ended: 2026-10-11T01:00:00.000Z. Evaluated: 2026-10-11T01:01:00.000Z.',
+        id: 'completion-failure',
+      }),
+    ])
+  })
 })
