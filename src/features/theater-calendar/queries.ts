@@ -1,3 +1,4 @@
+import { parseReservedRange } from './reserved-range'
 import {
   getBearerTokenFromRequest,
   getCurrentUserFromRequest,
@@ -242,10 +243,4 @@ export async function getTheaterCalendar(
       slug: theater.slug,
     },
   })
-}
-
-function parseReservedRange(value: unknown) {
-  if (typeof value !== 'string') return null
-  const match = value.match(/^\[["']?([^,"']+)["']?,["']?([^\)"']+)["']?\)$/)
-  return match ? { endsAt: match[2], startsAt: match[1] } : null
 }
