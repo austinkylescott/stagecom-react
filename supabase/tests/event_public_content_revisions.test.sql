@@ -348,11 +348,9 @@ select is(
 
 reset role;
 
-select * from public.complete_event(
-  (select id from public.shows where slug = 'versioned-public-event'),
-  '74000000-0000-0000-0000-000000000001',
-  '74000000-0000-0000-0000-000000000026',
-  '2026-10-11T01:00:00Z'
+select public.complete_due_events(
+  '2026-10-11T01:00:00Z',
+  (select id from public.shows where slug = 'versioned-public-event')
 );
 
 set local role anon;
