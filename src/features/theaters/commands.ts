@@ -4,6 +4,7 @@ import { appError, err, ok, toAppError } from '@/server/errors'
 import { createSupabaseTheaterPersistence } from './persistence'
 import { canManageTheater } from './permissions'
 import { slugifyTheaterName } from './slug'
+import { getMissingPublicationFields } from './publication-readiness'
 
 import type { z } from 'zod'
 import type { AppResult } from '@/server/errors'
@@ -245,30 +246,4 @@ export async function setDefaultTheater(
       appError('external_service_error', 'Default Theater could not be saved.'),
     )
   }
-}
-
-function getMissingPublicationFields(theater: {
-  city?: string
-  country?: string
-  name: string
-  postalCode?: string
-  slug: string
-  stateRegion?: string
-  street?: string
-  tagline?: string
-  timezone?: string
-}) {
-  const fields: Array<[string, string | undefined]> = [
-    ['name', theater.name],
-    ['slug', theater.slug],
-    ['tagline', theater.tagline],
-    ['street', theater.street],
-    ['city', theater.city],
-    ['stateRegion', theater.stateRegion],
-    ['postalCode', theater.postalCode],
-    ['country', theater.country],
-    ['timezone', theater.timezone],
-  ]
-
-  return fields.filter(([, value]) => !value?.trim()).map(([field]) => field)
 }

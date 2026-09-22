@@ -69,7 +69,15 @@ test('Producer requests cancellation and management preserves a public notice wh
 
     await authenticateContext(ownerContext, fixture, fixture.ownerEmail)
     const ownerPage = await ownerContext.newPage()
-    await ownerPage.goto(fixture.workspacePath)
+    await ownerPage.goto('/app')
+    await ownerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    const queue = ownerPage.getByRole('region', { name: 'Work Queue' })
+    await expect(
+      queue.getByText('Producer requested cancellation'),
+    ).toBeVisible()
+    await queue
+      .getByRole('link', { name: 'Decide cancellation request' })
+      .click()
     await expect(
       ownerPage.getByText(
         'The Producer recommends cancellation after a venue closure.',
@@ -87,6 +95,12 @@ test('Producer requests cancellation and management preserves a public notice wh
     await expect(
       ownerPage.getByText('cancelled', { exact: true }).first(),
     ).toBeVisible()
+    await ownerPage
+      .getByRole('link', { name: 'Theater Operations', exact: true })
+      .click()
+    await expect(
+      ownerPage.getByRole('link', { name: 'Decide cancellation request' }),
+    ).toHaveCount(0)
 
     await expect
       .poll(async () => {

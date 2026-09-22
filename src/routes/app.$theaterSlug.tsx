@@ -1,7 +1,6 @@
-import { Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 
 import { TheaterNav } from '@/components/stage/app-nav'
-import { RoutePlaceholder } from '@/components/stage/route-placeholder'
 import { getTheaterMembershipFn } from '@/features/memberships/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug')({
@@ -22,27 +21,6 @@ export const Route = createFileRoute('/app/$theaterSlug')({
 function TheaterWorkspaceLayout() {
   const { theaterSlug } = Route.useParams()
   const { membership, theater } = Route.useRouteContext()
-  const activeRouteId = useRouterState({
-    select: (state) => state.matches.at(-1)?.routeId,
-  })
-
-  if (activeRouteId === Route.id) {
-    return (
-      <>
-        <TheaterNav
-          roles={membership.roles}
-          theaterName={theater.name}
-          theaterSlug={theaterSlug}
-        />
-        <RoutePlaceholder
-          eyebrow="Theater workspace"
-          title="Theater Operations"
-          description="Theater work and schedule context live here. Choose an available destination to continue."
-          details={[['Theater', theaterSlug]]}
-        />
-      </>
-    )
-  }
 
   return (
     <>

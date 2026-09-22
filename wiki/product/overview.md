@@ -49,6 +49,27 @@ relationship, and relevant timing, and provides an anchored path to the
 relevant Event action. Theater selection remains below personal commitments;
 shared Theater work is not yet part of this surface.
 
+The Theater landing page now presents a Work Queue derived from current domain
+state. Operators see unresolved At Risk and cancellation decisions, eligible
+Theater and Event Publication snapshots, and required staffing needs with an
+eligible Member still available to invite. Narrow Reviewers see eligible
+Proposal decisions. Self-authored review stays excluded unless the configured
+Owner override is executable, including the submitted snapshot's buffered venue
+conflicts. Pending invitations do not count as staffing coverage; a need with
+nobody left to invite is watch-only rather than a false Operator action.
+
+Every item states the Theater, Event when applicable, relationship, and priority
+reason and links to its domain workspace. Projection refreshes when entering the
+page; domain commands recheck current authorization and state. There is no manual
+close, assignment, or priority, and Notification read/dismissal state is not read.
+Ordering places overdue decisions and At Risk work first, then actual deadlines
+within 24 hours, ordinary decisions, and Publication readiness; deadlines and
+stable domain identity break ties. The current Operator decision records have no
+explicit deadlines, so their deadlines remain unset. Occurrence starts never
+manufacture expiry, and expiring Producer Counteroffers remain personal work.
+The full Operations cockpit and cross-Theater Callsheet aggregation remain
+separate follow-up slices.
+
 Authorized Event collaborators enter a stable Event Overview and select one
 authorized workspace section at a time rather than navigating a legacy
 single-scroll composition. The Overview keeps lifecycle, Proposal
