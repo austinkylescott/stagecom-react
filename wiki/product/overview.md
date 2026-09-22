@@ -165,6 +165,6 @@ Exceptions show scope, reason, urgency, and an authorized context link, with no
 manual close or completion control. Notification read/dismissal state has no
 influence. Recorded `event.completion.failed` facts are projected for Operators
 only while the Event remains approved and the current final Confirmed Slot matches
-the failed evaluation and has ended. This projection consumes STA-49's failure
-facts; STA-49's automatic completion changes must also be present in the deployed
-branch.
+the failed evaluation and has ended. STA-49 supplies the automatic evaluator and its failure facts. A later successful
+evaluation clears the exception while retaining the failure and completion facts
+in Operator-visible Event History.

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
@@ -327,6 +328,128 @@ test('Operator can inspect automatic completion history without a manual complet
     )
   }
 })
+
+test('safe completion failure stays watch-only until automatic recovery clears it', async ({
+  browser,
+}) => {
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const endpoint = new URL(config!.supabaseUrl)
+  test.skip(
+    !['localhost', '127.0.0.1'].includes(endpoint.hostname) ||
+      endpoint.port !== '54321',
+    'Fault injection is restricted to the default local Supabase instance.',
+  )
+  const fixture = await createFixture(config!)
+  const ownerContext = await browser.newContext()
+  const producerContext = await browser.newContext()
+  // A unique trigger affects only this fixture; the real evaluator still owns failure recording.
+  const faultName = `sta51_failure_${fixture.eventId.replaceAll('-', '')}`
+  let faultInstalled = false
+  const removeFault = () => {
+    localCompletionSql(
+      `drop trigger if exists ${faultName} on public.shows; drop function if exists private.${faultName}();`,
+    )
+    faultInstalled = false
+  }
+  try {
+    localCompletionSql(`
+      begin;
+      create function private.${faultName}() returns trigger language plpgsql as $fault$
+      begin raise exception 'STA-51 safe completion verification'; end; $fault$;
+      create trigger ${faultName} before update on public.shows for each row
+        when (new.id = '${fixture.eventId}'::uuid and new.lifecycle_status = 'completed')
+        execute function private.${faultName}();
+      update public.show_candidate_slots set starts_at = now() - interval '2 hours'
+        where id in (select confirmed_candidate_slot_id from public.show_occurrences where show_id = '${fixture.eventId}'::uuid);
+      commit;
+    `)
+    faultInstalled = true
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await fixture.admin.rpc('complete_due_events', {
+        p_now: new Date().toISOString(),
+        p_show_id: fixture.eventId,
+      })
+      expect(result.error).toBeNull()
+      expect(result.data).toBe(0)
+    }
+    await authenticateContext(ownerContext, fixture, fixture.ownerEmail)
+    const page = await ownerContext.newPage()
+    await page.goto('/app')
+    await page.getByRole('link', { name: 'Enter Theater' }).click()
+    const exceptions = page.getByRole('region', {
+      name: 'Operational Exceptions',
+    })
+    await expect(
+      exceptions.getByRole('heading', { name: 'Automatic completion failed' }),
+    ).toHaveCount(1)
+    await expect(
+      exceptions.getByText(
+        /Final Confirmed Slot has ended; completion remains unresolved/,
+      ),
+    ).toBeVisible()
+    await expect(exceptions.getByRole('button')).toHaveCount(0)
+    await expect(
+      page.getByRole('region', { name: 'Work Queue' }).getByText(/complet/i),
+    ).toHaveCount(0)
+    await exceptions.getByRole('link', { name: /View Event context/ }).click()
+    await expect(
+      page.getByText(
+        /Automatic completion failed safely: STA-51 safe completion verification/,
+      ),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Complete Event', exact: true }),
+    ).toHaveCount(0)
+
+    await authenticateContext(producerContext, fixture, fixture.producerEmail)
+    const producerPage = await producerContext.newPage()
+    await producerPage.goto('/app')
+    await producerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    await expect(
+      producerPage.getByText('Automatic completion failed', { exact: true }),
+    ).toHaveCount(0)
+
+    removeFault()
+    const recovered = await fixture.admin.rpc('complete_due_events', {
+      p_now: new Date().toISOString(),
+      p_show_id: fixture.eventId,
+    })
+    expect(recovered.error).toBeNull()
+    await page.reload()
+    await expect(
+      page.getByText('Event completed', { exact: true }),
+    ).toBeVisible()
+    await page
+      .getByRole('link', { name: 'Theater Operations', exact: true })
+      .click()
+    await expect(
+      page.getByRole('heading', { name: 'Automatic completion failed' }),
+    ).toHaveCount(0)
+  } finally {
+    if (faultInstalled) removeFault()
+    await Promise.allSettled([ownerContext.close(), producerContext.close()])
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
+function localCompletionSql(sql: string) {
+  execFileSync(
+    'psql',
+    [
+      '-X',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '--dbname=postgresql://postgres:postgres@127.0.0.1:54322/postgres',
+    ],
+    { input: sql, stdio: ['pipe', 'pipe', 'pipe'], timeout: 10_000 },
+  )
+}
 
 function getSupabaseConfig() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL ?? testEnv.VITE_SUPABASE_URL
