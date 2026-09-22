@@ -1,14 +1,8 @@
 import { parseReservedRange } from './reserved-range'
-import {
-  getBearerTokenFromRequest,
-  getCurrentUserFromRequest,
-} from '@/server/auth/session'
+import { getTheaterAccess } from '@/features/events/queries'
 import { canManageTheater } from '@/features/theaters/permissions'
 import { appError, err, ok } from '@/server/errors'
-import {
-  createSupabaseAnonClient,
-  createSupabaseServiceRoleClient,
-} from '@/server/supabase/client'
+import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 import { createSupabaseScheduleBlockPersistence } from '@/features/schedule-blocks/persistence'
 import { createTheaterCalendarProjection } from './read-model'
 
@@ -18,32 +12,12 @@ import type { theaterCalendarInputSchema } from './schemas'
 
 export async function getTheaterCalendar(
   input: z.infer<typeof theaterCalendarInputSchema>,
+  { includeScheduleBlocks = true }: { includeScheduleBlocks?: boolean } = {},
 ) {
-  const currentUser = await getCurrentUserFromRequest()
-  if (!currentUser.ok) return currentUser
-  const token = getBearerTokenFromRequest()
-  if (!token) return err(appError('unauthenticated', 'Sign in is required.'))
-
-  const userClient = createSupabaseAnonClient(token)
-  const { data: membership, error: membershipError } = await userClient
-    .from('theater_memberships')
-    .select(
-      'roles, theaters!inner(id, name, primary_venue_id, primary_venue_name, slug)',
-    )
-    .eq('user_id', currentUser.data.id)
-    .eq('status', 'active')
-    .eq('theaters.slug', input.theaterSlug)
-    .maybeSingle()
-  if (membershipError)
-    return err(
-      appError(
-        'external_service_error',
-        'Theater Calendar could not be loaded.',
-      ),
-    )
-  if (!membership) return err(appError('not_found', 'Theater was not found.'))
-
-  const theater = membership.theaters
+  const access = await getTheaterAccess(input.theaterSlug)
+  if (!access.ok) return access
+  const { theater, membership, actorUserId } = access.data
+  // Member access is established before reading private venue configuration.
   const service = createSupabaseServiceRoleClient()
   const { data: reservations, error: reservationError } = await service
     .from('show_schedule_reservations')
@@ -92,14 +66,14 @@ export async function getTheaterCalendar(
           .from('show_leadership')
           .select('show_id')
           .in('show_id', eventIds)
-          .eq('user_id', currentUser.data.id)
+          .eq('user_id', actorUserId)
       : Promise.resolve({ data: [], error: null }),
     eventIds.length
       ? service
           .from('show_cast')
           .select('show_id')
           .in('show_id', eventIds)
-          .eq('user_id', currentUser.data.id)
+          .eq('user_id', actorUserId)
           .eq('status', 'accepted')
       : Promise.resolve({ data: [], error: null }),
     eventIds.length
@@ -107,7 +81,7 @@ export async function getTheaterCalendar(
           .from('show_staff_assignments')
           .select('show_id')
           .in('show_id', eventIds)
-          .eq('user_id', currentUser.data.id)
+          .eq('user_id', actorUserId)
           .eq('status', 'accepted')
       : Promise.resolve({ data: [], error: null }),
     eventIds.length
@@ -115,7 +89,7 @@ export async function getTheaterCalendar(
           .from('show_roles')
           .select('show_id')
           .in('show_id', eventIds)
-          .eq('user_id', currentUser.data.id)
+          .eq('user_id', actorUserId)
       : Promise.resolve({ data: [], error: null }),
     occurrenceIds.length
       ? service
@@ -219,11 +193,12 @@ export async function getTheaterCalendar(
   }
 
   const canManage = canManageTheater(membership.roles)
-  const scheduleBlocks = canManage
-    ? await createSupabaseScheduleBlockPersistence().list({
-        theaterSlug: input.theaterSlug,
-      })
-    : null
+  const scheduleBlocks =
+    canManage && includeScheduleBlocks
+      ? await createSupabaseScheduleBlockPersistence().list({
+          theaterSlug: input.theaterSlug,
+        })
+      : null
   return ok({
     canManage,
     entries: createTheaterCalendarProjection({

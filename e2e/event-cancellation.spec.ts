@@ -76,9 +76,35 @@ test('Producer requests cancellation and management preserves a public notice wh
     await expect(
       queue.getByText('Producer requested cancellation'),
     ).toBeVisible()
-    await queue
-      .getByRole('link', { name: 'Decide cancellation request' })
-      .click()
+    await expect(ownerPage.locator('main h2')).toHaveText([
+      'Work Queue',
+      'Urgent Operational Exceptions',
+      'Upcoming Theater Calendar',
+      'Event pipeline',
+      'Recent activity',
+    ])
+    const decision = queue.getByRole('link', {
+      name: 'Decide cancellation request',
+    })
+    await expect(decision).toBeInViewport()
+    await ownerPage.screenshot({
+      path: test.info().outputPath('operations-desktop.png'),
+      fullPage: true,
+    })
+    await ownerPage.setViewportSize({ width: 390, height: 844 })
+    await expect(decision).toBeInViewport()
+    await expect
+      .poll(() =>
+        ownerPage.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true)
+    await ownerPage.screenshot({
+      path: test.info().outputPath('operations-mobile.png'),
+      fullPage: true,
+    })
+    await decision.click()
     await expect(
       ownerPage.getByText(
         'The Producer recommends cancellation after a venue closure.',
@@ -156,6 +182,18 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
   const producerContext = await browser.newContext()
   const castContext = await browser.newContext()
   try {
+    const blockStart = new Date(Date.now() + 24 * 60 * 60_000).toISOString()
+    const blockEnd = new Date(Date.now() + 25 * 60 * 60_000).toISOString()
+    const block = await fixture.admin.rpc('create_schedule_block', {
+      p_actor_user_id: fixture.userIds[0],
+      p_theater_id: fixture.theaterId,
+      p_command_id: crypto.randomUUID(),
+      p_starts_at: blockStart,
+      p_ends_at: blockEnd,
+      p_private_label: 'Lighting maintenance',
+      p_private_notes: 'Fixture-only private notes',
+    })
+    expect(block.error).toBeNull()
     // Event creation also adds its actor as Producer; exercise a pure Operator.
     const { error: leadershipError } = await fixture.admin
       .from('show_leadership')
@@ -183,8 +221,34 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
     const ownerPage = await ownerContext.newPage()
     await ownerPage.goto('/app')
     await ownerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    await expect(
+      ownerPage.getByRole('region', { name: 'Event pipeline' }),
+    ).toContainText('1 Event')
+    await expect(
+      ownerPage.getByRole('region', { name: 'Upcoming Theater Calendar' }),
+    ).toContainText('Lighting maintenance')
+    await expect(ownerPage.getByText('Fixture-only private notes')).toHaveCount(
+      0,
+    )
+    await ownerPage.getByRole('link', { name: 'Open Theater Calendar' }).click()
+    await expect(
+      ownerPage.getByRole('heading', { name: 'Theater Calendar', exact: true }),
+    ).toBeVisible()
+    await ownerPage
+      .getByRole('link', { name: 'Theater Operations', exact: true })
+      .click()
+    await expect(
+      ownerPage
+        .getByRole('region', { name: 'Recent activity' })
+        .getByRole('listitem')
+        .first(),
+    ).toBeVisible()
+    // The disclosure must be operable without a pointer.
+    await ownerPage
+      .getByText('Other conditions to monitor (1)', { exact: true })
+      .press('Enter')
     const exceptions = ownerPage.getByRole('region', {
-      name: 'Operational Exceptions',
+      name: 'Other conditions to monitor',
     })
     await expect(
       exceptions.getByRole('heading', {
@@ -230,6 +294,43 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
     await expect(
       castPage.getByRole('heading', { name: 'Public content awaits Producer' }),
     ).toHaveCount(0)
+    await expect(
+      castPage.getByRole('region', { name: 'Event pipeline' }),
+    ).toHaveCount(0)
+    await expect(
+      castPage.getByRole('region', { name: 'Recent activity' }),
+    ).toHaveCount(0)
+    // Seed accepted Admin authority, then verify the same ordinary cockpit.
+    const grant = await fixture.admin
+      .from('theater_memberships')
+      .update({ roles: ['member', 'admin'] })
+      .eq('theater_id', fixture.theaterId)
+      .eq('user_id', fixture.userIds[2])
+    expect(grant.error).toBeNull()
+    await castPage.reload()
+    await expect(
+      castPage.getByRole('region', { name: 'Event pipeline' }),
+    ).toContainText('1 Event')
+    await expect(
+      castPage.getByRole('region', { name: 'Upcoming Theater Calendar' }),
+    ).toContainText('Lighting maintenance')
+    await castPage
+      .getByText('Other conditions to monitor (1)', { exact: true })
+      .press('Enter')
+    await expect(
+      castPage.getByRole('heading', { name: 'Public content awaits Producer' }),
+    ).toBeVisible()
+    const revoke = await fixture.admin
+      .from('theater_memberships')
+      .update({ roles: ['member'] })
+      .eq('theater_id', fixture.theaterId)
+      .eq('user_id', fixture.userIds[2])
+    expect(revoke.error).toBeNull()
+    await castPage.reload()
+    await expect(
+      castPage.getByRole('region', { name: 'Event pipeline' }),
+    ).toHaveCount(0)
+    await expect(castPage.getByText('Lighting maintenance')).toHaveCount(0)
   } finally {
     await Promise.all([
       ownerContext.close(),

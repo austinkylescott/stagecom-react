@@ -53,9 +53,10 @@ The Theater landing page now presents a Work Queue derived from current domain
 state. Operators see unresolved At Risk and cancellation decisions, eligible
 Theater and Event Publication snapshots, and required staffing needs with an
 eligible Member still available to invite. Narrow Reviewers see eligible
-Proposal decisions. Self-authored review stays excluded unless the configured
-Owner override is executable, including the submitted snapshot's buffered venue
-conflicts. Pending invitations do not count as staffing coverage; a need with
+Proposal decisions. The shared queue projection can identify an executable
+Owner override, including the submitted snapshot's buffered venue conflicts,
+but the Operations cockpit excludes that sovereignty action. Self-authored
+review and the audited override remain in Event Review. Pending invitations do not count as staffing coverage; a need with
 nobody left to invite is watch-only rather than a false Operator action.
 
 Every item states the Theater, Event when applicable, relationship, and priority
@@ -67,8 +68,34 @@ within 24 hours, ordinary decisions, and Publication readiness; deadlines and
 stable domain identity break ties. The current Operator decision records have no
 explicit deadlines, so their deadlines remain unset. Occurrence starts never
 manufacture expiry, and expiring Producer Counteroffers remain personal work.
-The full Operations cockpit and cross-Theater Callsheet aggregation remain
-separate follow-up slices.
+Cross-Theater Callsheet aggregation of shared work remains a separate follow-up.
+
+### Theater Operations cockpit (STA-52)
+
+Owners and Admins receive the same ordinary cockpit: Work Queue, urgent
+Operational Exceptions, upcoming Theater Calendar, Event pipeline, then recent
+factual activity. The first three decisions retain the queue's deterministic
+priority and visible reasons; additional decisions and watch-only conditions
+expand in place. No Owner-only action or personal invitation appears in this
+ordinary queue.
+
+The next seven days summarize Primary Venue reservations, including ongoing
+occupancy and setup/turnover buffers, with the first five intervals and the full
+count. The authorized Theater Calendar owns details and Schedule Block controls.
+Pipeline counts show lifecycle separately from upcoming/underway commitments,
+Publication, and At Risk health; these latter counts overlap and exclude completed
+and cancelled Events. Event management stays in Events.
+
+Recent activity shows the latest six member-visible or Operator-visible facts
+with actor and time, linking Event facts to History. Self-only records and raw
+activity payloads are excluded. A dedicated authorized read model supplies the
+cockpit; ordinary Members and narrow Reviewers retain their relationship-scoped
+landing without receiving the Theater-wide pipeline or activity.
+
+The desktop cockpit uses two columns in reading order and stacks on phones.
+Native disclosure controls preserve keyboard access to additional work. Loading,
+empty sections, and retry/Callsheet recovery keep unavailable data distinct from
+an empty queue.
 
 Authorized Event collaborators enter a stable Event Overview and select one
 authorized workspace section at a time rather than navigating a legacy
