@@ -92,7 +92,10 @@ export async function getEventPortfolio(
         { theaterSlug: theater.slug },
         { includeExceptions: false },
       ),
-      getEventCommitments({ actorUserId, theaters: [theater] }),
+      getEventCommitments({
+        accessToken: access.data.bearerToken,
+        scope: { kind: 'theater', theaterSlug: theater.slug },
+      }),
     ])
   if (privateEvents.error || publicEvents.error)
     return err(
