@@ -46,5 +46,48 @@ describe('public Theater discovery', () => {
     ).toBe('/theater/north-star/moonlight')
     expect(screen.getByText('Cancelled Event')).toBeTruthy()
     expect(screen.getByText('Admission closed · $18.00')).toBeTruthy()
+    expect(
+      screen.getByText('Sep 24, 2026, 7:00 PM · Primary Venue'),
+    ).toBeTruthy()
+  })
+
+  it('shows a published Event poster when its public snapshot has one', () => {
+    const { container } = render(
+      <PublicTheaterPage
+        mode="published"
+        theater={{
+          name: 'North Star Theater',
+          slug: 'north-star',
+          tagline: 'Live theater',
+          location: {
+            street: '1 Main St',
+            city: 'New York',
+            stateRegion: 'NY',
+            postalCode: '10001',
+            country: 'US',
+          },
+          socialLinks: [],
+          upcomingEvents: [
+            {
+              title: 'Moonlight',
+              startsAt: '2026-09-24T23:00:00Z',
+              localStartsAt: '2026-09-24T19:00:00',
+              timezoneName: 'America/New_York',
+              locationName: 'Primary Venue',
+              imageUrl: 'https://example.com/moonlight.jpg',
+              admissionSummary: 'Free admission',
+              cancelled: false,
+              href: '/theater/north-star/moonlight',
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(container.querySelector('article img')?.getAttribute('src')).toBe(
+      'https://example.com/moonlight.jpg',
+    )
+    expect(screen.getByText('Free admission')).toBeTruthy()
+    expect(screen.getByText('Upcoming Event')).toBeTruthy()
   })
 })

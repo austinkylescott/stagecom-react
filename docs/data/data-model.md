@@ -152,6 +152,11 @@ Risk continuation in one transaction before changing Publication state,
 writing `event.published`, and projecting deduplicated notifications.
 `get_published_event` is the anonymous-safe allowlisted read model and returns
 no result for an unpublished Event or an Event under an unpublished Theater.
+`get_published_theater_events` separately returns only public Event-card fields
+from published content and public Performance snapshots. It orders cards by
+their next Performance, preferring a future start over a Performance already in
+progress. A cancelled published Event remains listed while its final public
+Performance is in progress and leaves the list when that Performance ends.
 
 `show_availability_responses` stores one versioned available, unavailable, or
 uncertain fact per invited Member and Candidate Slot. It retains the responding

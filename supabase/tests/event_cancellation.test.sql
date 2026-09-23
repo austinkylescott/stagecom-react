@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(30);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -428,6 +428,17 @@ set starts_at = now() + interval '7 days',
     local_starts_at = (now() + interval '7 days') at time zone 'America/New_York'
 where revision_id = '78000000-0000-0000-0003-000000000002';
 
+insert into public.show_public_occurrence_snapshots (
+  revision_id, occurrence_id, starts_at, duration_minutes, local_starts_at,
+  timezone_name, utc_offset_minutes, location_name, position
+) values (
+  '78000000-0000-0000-0003-000000000002',
+  '78000000-0000-0000-0001-000000000001',
+  now() - interval '30 minutes', 90,
+  (now() - interval '30 minutes') at time zone 'America/New_York',
+  'America/New_York', -240, 'Earlier Public Stage', 1
+);
+
 set local role anon;
 
 select results_eq(
@@ -436,6 +447,22 @@ select results_eq(
   $$ values ('published-cancellation-event'::text,
      'Published Cancellation Event'::text, 'cancelled'::text) $$,
   'anonymous Theater listing includes the upcoming cancelled published Event only'
+);
+
+select is(
+  (select location_name from public.get_published_theater_events('cancellation-theater')),
+  'Cancellation Theater',
+  'the next future Performance is shown ahead of a Performance in progress'
+);
+
+select is(
+  (select array_agg(key order by key) from jsonb_object_keys(
+    (select to_jsonb(card) from public.get_published_theater_events('cancellation-theater') card)
+  ) as key),
+  array['admission_price_cents', 'event_slug', 'image_url', 'lifecycle_status',
+    'local_starts_at', 'location_name', 'sales_channel', 'starts_at',
+    'timezone_name', 'title']::text[],
+  'anonymous cards contain only the explicit public allowlist'
 );
 
 select is(
@@ -453,10 +480,41 @@ select is(
 
 reset role;
 
+update public.theaters set status = 'draft'
+where slug = 'cancellation-theater';
+
+set local role anon;
+
+select is(
+  (select count(*) from public.get_published_theater_events('cancellation-theater')),
+  0::bigint,
+  'an unpublished Theater exposes no Event cards'
+);
+
+reset role;
+
+update public.theaters set status = 'published'
+where slug = 'cancellation-theater';
+
 update public.show_public_occurrence_snapshots
 set starts_at = now() - interval '7 days',
     local_starts_at = (now() - interval '7 days') at time zone 'America/New_York'
-where revision_id = '78000000-0000-0000-0003-000000000002';
+where occurrence_id = '78000000-0000-0000-0001-000000000002';
+
+set local role anon;
+
+select is(
+  (select location_name from public.get_published_theater_events('cancellation-theater')),
+  'Earlier Public Stage',
+  'a cancelled Event remains listed while its final Performance is in progress'
+);
+
+reset role;
+
+update public.show_public_occurrence_snapshots
+set starts_at = now() - interval '7 days',
+    local_starts_at = (now() - interval '7 days') at time zone 'America/New_York'
+where occurrence_id = '78000000-0000-0000-0001-000000000001';
 
 set local role anon;
 
