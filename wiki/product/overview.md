@@ -46,10 +46,11 @@ management, and the change is recorded in Theater history with its actor and
 time.
 Each record keeps its Event relationship separate, states its Theater, Event,
 relationship, and relevant timing, and provides an anchored path to the
-relevant Event action. Theater selection remains below personal commitments.
-Theater needs attention is a separate cross-Theater list of current Work Queue
-items the person can resolve as an Owner, Admin, or eligible Reviewer. Reading
-or dismissing a Notification cannot remove these shared decisions.
+relevant Event action. Theater selection remains below personal commitments;
+the separate Theater needs attention section now combines currently resolvable
+Work Queue decisions across active Theaters. It labels each decision with its
+Theater, Event, relationship, urgency reason, and exact action, including when
+the same Event also carries a personal commitment.
 
 The Theater landing page now presents a Work Queue derived from current domain
 state. Operators see unresolved At Risk and cancellation decisions, eligible
@@ -70,9 +71,9 @@ within 24 hours, ordinary decisions, and Publication readiness; deadlines and
 stable domain identity break ties. The current Operator decision records have no
 explicit deadlines, so their deadlines remain unset. Occurrence starts never
 manufacture expiry, and expiring Producer Counteroffers remain personal work.
-The same Event can appear in both Callsheet lists when the person has distinct
-personal and shared actions; those records remain separate and retain their
-relationship labels.
+Callsheet builds that cross-Theater section from active membership and each
+Theater's authorized Work Queue read. Personal Notification state is not part
+of the projection, so reading or dismissing an alert cannot remove shared work.
 
 ### Theater Operations cockpit (STA-52)
 

@@ -17,11 +17,11 @@ export type CallsheetTheater = {
 
 export function CallsheetPage({
   commitments,
-  sharedWork = [],
+  sharedWork,
   theaters,
 }: {
   commitments: CallsheetCommitment[]
-  sharedWork?: WorkQueueItem[]
+  sharedWork: WorkQueueItem[]
   theaters: CallsheetTheater[]
 }) {
   return (
@@ -75,37 +75,48 @@ export function CallsheetPage({
         aria-labelledby="theater-needs-attention"
         className="mt-10 border-t border-[var(--line)] pt-8"
       >
-        <h2
-          id="theater-needs-attention"
-          className="text-2xl font-extrabold text-[var(--sea-ink)]"
-        >
-          Theater needs attention
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            className="text-2xl font-extrabold text-[var(--sea-ink)]"
+            id="theater-needs-attention"
+          >
+            Theater needs attention
+          </h2>
+          <p className="text-sm font-semibold text-[var(--sea-ink-soft)]">
+            {sharedWork.length === 1
+              ? '1 decision'
+              : `${sharedWork.length} decisions`}
+          </p>
+        </div>
         <p className="mt-2 text-[var(--sea-ink-soft)]">
-          Shared decisions you can resolve with your current Theater authority.
+          Shared Work Queue decisions you can resolve with your current
+          relationships.
         </p>
         {sharedWork.length ? (
           <ol className="mt-4 grid gap-3">
             {sharedWork.map((item) => (
               <li
-                className="island-shell rounded-lg px-5 py-5"
+                className="island-shell min-w-0 rounded-lg px-5 py-5"
                 key={`${item.theaterName}:${item.id}`}
               >
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
-                  {item.theaterName} · {item.relationship}
+                <p className="flex flex-wrap gap-x-2 text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+                  <span>{item.theaterName}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{item.relationship}</span>
                 </p>
-                {item.eventTitle ? (
-                  <p className="mt-2 font-semibold">{item.eventTitle}</p>
-                ) : null}
+                <h3 className="mt-2 break-words text-xl font-extrabold text-[var(--sea-ink)]">
+                  {item.eventTitle ?? 'Theater publication'}
+                </h3>
+                <p className="mt-2 break-words text-sm text-[var(--sea-ink-soft)]">
+                  <span className="font-bold">Urgency:</span>{' '}
+                  {item.priorityReason}
+                </p>
                 <a
-                  className="mt-2 inline-block font-bold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+                  className="mt-4 inline-flex w-full justify-center rounded-md bg-[var(--sea-ink)] px-4 py-3 text-center text-sm font-extrabold text-white no-underline focus-visible:outline-2 focus-visible:outline-offset-4 sm:w-auto"
                   href={item.href}
                 >
                   {item.label}
                 </a>
-                <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-                  {item.priorityReason}
-                </p>
               </li>
             ))}
           </ol>
