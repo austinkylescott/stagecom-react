@@ -1,5 +1,7 @@
-import { appError, err, notImplemented, ok, toAppError } from '@/server/errors'
+import { appError, err, ok, toAppError } from '@/server/errors'
+import { createSupabaseAnonClient } from '@/server/supabase/client'
 
+import type { Database } from '@/server/db/database.types'
 import { createSupabaseTheaterPersistence } from './persistence'
 import { toPublicTheaterView } from './queries'
 
@@ -49,7 +51,51 @@ export async function getPublishedTheaterBySlug(
 }
 
 export async function getPublishedTheaterEvents(
-  _input: z.infer<typeof publishedTheaterEventsInputSchema>,
+  input: z.infer<typeof publishedTheaterEventsInputSchema>,
+  dependencies: PublicTheaterEventsDependencies = {
+    listPublishedEvents: async (theaterSlug) => {
+      const { data, error } = await createSupabaseAnonClient().rpc(
+        'get_published_theater_events',
+        { p_theater_slug: theaterSlug },
+      )
+      if (error) throw error
+      return data
+    },
+  },
 ) {
-  return err(notImplemented('getPublishedTheaterEvents'))
+  try {
+    const rows = await dependencies.listPublishedEvents(input.theaterSlug)
+    return ok({
+      events: rows.map((row) => ({
+        title: row.title,
+        imageUrl: row.image_url,
+        startsAt: row.starts_at,
+        localStartsAt: row.local_starts_at,
+        timezoneName: row.timezone_name,
+        locationName: row.location_name,
+        admissionSummary: `${row.sales_channel === 'no_advance_ticketing' ? 'No advance ticketing · ' : ''}${row.admission_price_cents === 0 ? 'Free admission' : `$${(row.admission_price_cents / 100).toFixed(2)}`}`,
+        cancelled: row.lifecycle_status === 'cancelled',
+        href: `/theater/${input.theaterSlug}/${row.event_slug}`,
+      })),
+    })
+  } catch (error) {
+    const failure = toAppError(error)
+    return err(
+      failure.code === 'internal_error'
+        ? appError(
+            'external_service_error',
+            'Upcoming Events could not be loaded.',
+          )
+        : failure,
+    )
+  }
+}
+
+type PublishedTheaterEventRow =
+  Database['public']['Functions']['get_published_theater_events']['Returns'][number]
+
+export type PublicTheaterEventsDependencies = {
+  listPublishedEvents: (
+    theaterSlug: string,
+  ) => Promise<PublishedTheaterEventRow[]>
 }

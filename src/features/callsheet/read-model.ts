@@ -1,3 +1,7 @@
+import { orderWorkQueueItems } from '@/features/work-queue/read-model'
+
+import type { WorkQueueItem } from '@/features/work-queue/read-model'
+
 export type CallsheetCommitmentKind =
   | 'admin_invitation'
   | 'ownership_transfer'
@@ -28,12 +32,15 @@ export type CallsheetCommitment = CallsheetCommitmentInput & {
 
 export function createCallsheetReadModel({
   commitments,
+  sharedWork = [],
   now = new Date(),
 }: {
   commitments: CallsheetCommitmentInput[]
+  sharedWork?: WorkQueueItem[]
   now?: Date
 }) {
   return {
+    sharedWork: orderWorkQueueItems(sharedWork, now.toISOString()),
     commitments: commitments
       .map((commitment) => ({
         ...commitment,

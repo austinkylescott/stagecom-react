@@ -100,6 +100,11 @@ Revision. The Event retains independent lifecycle, Publication, and operational
 health fields; publishing an explicitly allowed At Risk Event does not erase
 its At Risk condition. `get_published_event` is the anonymous allowlist and
 returns no row unless both the Theater and Event are published.
+`get_published_theater_events` is a separate anonymous allowlist for upcoming
+published Event cards on a published Theater. It reads the next public
+Performance from the published snapshot, retains a cancelled Event through its
+final scheduled Performance, and returns no private plan, Candidate Slot,
+health, or logistics fields.
 
 `show_cancellation_requests` preserves a Producer's recommendation separately
 from final authority. A request does not change lifecycle. Cancellation stores
@@ -121,8 +126,9 @@ per-Occurrence Calls are executable. Participation does not write or imply
 Candidate Slot availability, and Availability Responses do not accept Event
 participation. Responses and Calls use optimistic versions plus durable command
 identities so stale edits conflict and retries do not duplicate activity facts.
-Pending invitees receive their own invitation, response form, and accepted Cast
-names without the collaborative matrix or Calls. Accepted Cast Members receive
+Pending Cast invitees receive their own invitation, inviter and role, an Event
+summary, and a response form without Candidate Slots, Calls, accepted-Cast
+details, or unrelated private Event state. Accepted Cast Members receive
 the collaborative roster, availability matrix, and Calls; Event leaders,
 Reviewers, and Owner/Admin receive the operational view. Only the active
 Director assigns required, optional, or not-called expectations to accepted

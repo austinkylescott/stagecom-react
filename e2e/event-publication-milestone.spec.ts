@@ -13,9 +13,11 @@ type Fixture = {
   actors: {
     cast: Actor
     director: Actor
+    member: Actor
     owner: Actor
     producer: Actor
     reviewer: Actor
+    staff: Actor
   }
   admin: SupabaseClient<Database>
   anonKey: string
@@ -28,7 +30,7 @@ type Fixture = {
 test('seeded Members take one Event from Theater creation through anonymous admission', async ({
   browser,
 }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(300_000)
   const config = getSupabaseConfig()
   test.skip(!config, 'Local Supabase credentials are required.')
   const fixture = await createFixture(config!)
@@ -40,6 +42,8 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     const director = await actorPage(browser, fixture, fixture.actors.director)
     const cast = await actorPage(browser, fixture, fixture.actors.cast)
     const reviewer = await actorPage(browser, fixture, fixture.actors.reviewer)
+    const staff = await actorPage(browser, fixture, fixture.actors.staff)
+    const member = await actorPage(browser, fixture, fixture.actors.member)
     const anonymous = await browser.newContext()
     contexts.push(
       owner.context,
@@ -47,6 +51,8 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       director.context,
       cast.context,
       reviewer.context,
+      staff.context,
+      member.context,
       anonymous,
     )
 
@@ -78,19 +84,19 @@ test('seeded Members take one Event from Theater creation through anonymous admi
 
     await owner.page.goto(`/app/${fixture.theaterSlug}/members`)
     await owner.page.waitForTimeout(500)
-    await owner.page.getByLabel('Maximum uses (optional)').fill('4')
+    await owner.page.getByLabel('Maximum uses (optional)').fill('6')
     await owner.page.getByRole('button', { name: 'Create Join Link' }).click()
     const shareUrl = await owner.page
       .getByLabel('Shareable Reusable Join Link')
       .inputValue()
     const joinToken = new URL(shareUrl).pathname.split('/').at(-1)!
 
-    for (const member of [producer, director, cast, reviewer]) {
-      await member.page.goto(`/join-link/${joinToken}`)
-      await member.page.waitForTimeout(500)
-      await member.page.getByRole('button', { name: 'Join Theater' }).click()
+    for (const joiner of [producer, director, cast, reviewer, staff, member]) {
+      await joiner.page.goto(`/join-link/${joinToken}`)
+      await joiner.page.waitForTimeout(500)
+      await joiner.page.getByRole('button', { name: 'Join Theater' }).click()
       await expect(
-        member.page.getByRole('heading', {
+        joiner.page.getByRole('heading', {
           name: 'You joined Milestone Theater',
         }),
       ).toBeVisible()
@@ -190,9 +196,72 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await performance.getByLabel('Local date and time').fill('2026-10-10T19:30')
     await performance.getByLabel('Duration (minutes)').fill('90')
     await producer.page
+      .getByRole('button', { name: 'Add requested resource' })
+      .click()
+    await producer.page.getByLabel('Resource 1 type').selectOption('staff')
+    await producer.page.getByLabel('Requested resource').fill('Front of house')
+    await producer.page.getByLabel('Quantity').fill('1')
+    await producer.page
       .getByRole('button', { name: 'Save operational plan' })
       .click()
     await expect(producer.page.getByText('Plan saved.')).toBeVisible()
+
+    await owner.page.goto('/app/callsheet')
+    await owner.page.getByRole('link', { name: 'Enter Theater' }).click()
+    await expect(owner.page).toHaveURL(
+      new RegExp(`/app/${fixture.theaterSlug}$`),
+    )
+    await owner.page.getByRole('link', { name: 'Events', exact: true }).click()
+    await expect(owner.page).toHaveURL(
+      new RegExp(`/app/${fixture.theaterSlug}/events$`),
+    )
+    await owner.page
+      .getByRole('link', { name: 'Milestone Event', exact: true })
+      .click()
+    await owner.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await waitForReactHandler(
+      owner.page.getByLabel('Staffing need'),
+      'onChange',
+    )
+    await owner.page.getByLabel('Staffing need').selectOption({ index: 1 })
+    await owner.page
+      .getByLabel('Active Theater Member')
+      .selectOption(fixture.actors.staff.userId)
+    await owner.page.getByRole('button', { name: 'Invite staff' }).click()
+    await expect(
+      owner.page.getByText(`${fixture.actors.staff.name} · Front of house`),
+    ).toBeVisible()
+
+    await staff.page.goto('/app/callsheet')
+    await expect(
+      staff.page.getByRole('button', { name: 'Accept staff assignment' }),
+    ).toBeVisible()
+    await staff.page.getByRole('link', { name: 'Notifications' }).click()
+    await expect(
+      staff.page.getByRole('heading', { name: 'Notifications' }),
+    ).toBeVisible()
+    await waitForReactHandler(
+      staff.page.getByRole('button', { name: 'Dismiss' }).first(),
+      'onClick',
+    )
+    await staff.page.getByRole('button', { name: 'Dismiss' }).first().click()
+    await expect(
+      staff.page.getByRole('heading', { name: 'Dismissed Notifications' }),
+    ).toBeVisible()
+    await staff.page.getByRole('link', { name: 'Callsheet' }).click()
+    await expect(
+      staff.page.getByRole('button', { name: 'Accept staff assignment' }),
+    ).toBeVisible()
+    await waitForReactHandler(
+      staff.page.getByRole('button', { name: 'Accept staff assignment' }),
+      'onClick',
+    )
+    await staff.page
+      .getByRole('button', { name: 'Accept staff assignment' })
+      .click()
+    await expect(
+      staff.page.getByText('Event staff assignment accepted.'),
+    ).toBeVisible()
 
     await director.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
@@ -215,21 +284,27 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       ),
       inviteCastButton.click(),
     ])
+    await expect(
+      director.page
+        .locator('#cast-participation')
+        .getByText(fixture.actors.cast.name),
+    ).toBeVisible()
 
-    await cast.page.goto(
-      `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
-    )
-    await cast.page.getByRole('link', { name: 'Schedule & Plan' }).click()
+    await cast.page.setViewportSize({ width: 390, height: 844 })
+    await cast.page.goto('/app/callsheet')
+    await expect
+      .poll(() =>
+        cast.page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true)
+    await cast.page.getByRole('link', { name: 'Respond to invitation' }).click()
     await expect(
-      cast.page.getByRole('heading', { name: 'Schedule & Plan' }),
-    ).toBeVisible()
-    await expect(
-      cast.page.getByText(
-        'You can inspect this Event plan, but only an eligible Producer can edit it.',
-      ),
-    ).toBeVisible()
-    await expect(cast.page.getByLabel('Minimum Viable Cast')).toBeDisabled()
+      cast.page.getByRole('link', { name: 'Schedule & Plan' }),
+    ).toHaveCount(0)
     await cast.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await expect(cast.page.getByText('Candidate Slot 1')).toHaveCount(0)
     await waitForReactHandler(
       cast.page.getByRole('button', { name: 'Accept invitation' }),
       'onClick',
@@ -243,6 +318,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .selectOption('available')
 
     await director.page.reload()
+    await director.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       director.page.getByLabel(
         `Call for ${fixture.actors.cast.name}, Occurrence 1`,
@@ -257,6 +333,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .selectOption('required')
 
     await producer.page.reload()
+    await producer.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       producer.page.getByRole('button', { name: 'Save Proposed Cast' }),
       'onClick',
@@ -268,14 +345,21 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .getByRole('button', { name: 'Save Proposed Cast' })
       .click()
     await expect(producer.page.getByText('Proposed Cast saved.')).toBeVisible()
+    await producer.page
+      .getByRole('link', { name: 'Review', exact: true })
+      .click()
     const recommendations = producer.page.getByRole('radio')
     await expect(recommendations).toHaveCount(2)
     await recommendations.nth(0).check()
     await recommendations.nth(1).check()
+    await producer.page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await producer.page
       .getByRole('button', { name: 'Save operational plan' })
       .click()
     await expect(producer.page.getByText('Plan saved.')).toBeVisible()
+    await producer.page
+      .getByRole('link', { name: 'Review', exact: true })
+      .click()
     await producer.page
       .getByRole('button', { name: 'Submit Proposal Revision' })
       .click()
@@ -286,6 +370,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await reviewer.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
+    await reviewer.page
+      .getByRole('link', { name: 'Review', exact: true })
+      .click()
     await waitForReactHandler(
       reviewer.page.getByLabel('Offered local date and time'),
       'onChange',
@@ -305,6 +392,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toBeVisible()
 
     await cast.page.reload()
+    await cast.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       cast.page.getByLabel('Availability for Candidate Slot 3'),
       'onChange',
@@ -314,24 +402,38 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .selectOption('available')
 
     await producer.page.reload()
+    await producer.page
+      .getByRole('link', { name: 'Review', exact: true })
+      .click()
     await waitForReactHandler(
       producer.page.getByRole('button', { name: 'accept Counteroffer' }),
       'onClick',
     )
+    await Promise.all([
+      producer.page.waitForEvent('load'),
+      producer.page
+        .getByRole('button', { name: 'accept Counteroffer' })
+        .click(),
+    ])
     await producer.page
-      .getByRole('button', { name: 'accept Counteroffer' })
+      .getByRole('link', { name: 'Review', exact: true })
       .click()
-    await expect(producer.page.getByText('Revision 2 · pending')).toBeVisible()
+    await expect(producer.page.getByText('Proposal Revision 2')).toBeVisible()
 
     await reviewer.page.reload()
+    await reviewer.page
+      .getByRole('link', { name: 'Review', exact: true })
+      .click()
     await waitForReactHandler(reviewer.page.getByLabel('Decision'), 'onChange')
     await reviewer.page.getByLabel('Decision').selectOption('approve')
     await reviewer.page.getByRole('button', { name: 'Record approve' }).click()
     await expect(
-      reviewer.page.getByText('approved', { exact: true }).first(),
+      reviewer.page.getByText(/Current decision: approved/i),
     ).toBeVisible()
 
     await producer.page.reload()
+    await producer.page.getByRole('link', { name: 'Public Page' }).click()
+    await expect(producer.page.getByLabel('Public title')).toBeVisible()
     await waitForReactHandler(
       producer.page.getByLabel('Public title'),
       'onChange',
@@ -368,9 +470,13 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       }),
     ).toHaveCount(0)
 
-    await owner.page.goto(
-      `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
-    )
+    await owner.page.goto('/app/callsheet')
+    await expect(
+      owner.page.getByRole('heading', { name: 'Theater needs attention' }),
+    ).toBeVisible()
+    await owner.page
+      .getByRole('link', { name: 'Preview and publish Event' })
+      .click()
     await waitForReactHandler(
       owner.page.getByRole('button', {
         name: 'Publish exact anonymous snapshot',
@@ -385,9 +491,13 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toBeVisible()
 
     const anonymousPage = await anonymous.newPage()
-    await anonymousPage.goto(
-      `/theater/${fixture.theaterSlug}/${fixture.eventSlug}`,
-    )
+    await anonymousPage.goto(`/theater/${fixture.theaterSlug}`)
+    await expect(
+      anonymousPage.getByRole('heading', { name: 'Upcoming programming' }),
+    ).toBeVisible()
+    await anonymousPage
+      .getByRole('link', { name: 'Milestone Event Live' })
+      .click()
     await expect(
       anonymousPage.getByRole('heading', { name: 'Milestone Event Live' }),
     ).toBeVisible()
@@ -400,6 +510,147 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toHaveAttribute('href', 'https://tickets.example/milestone-event')
     await expect(anonymousPage.getByText('Proposal Revision')).toHaveCount(0)
     await expect(anonymousPage.getByText('Availability')).toHaveCount(0)
+
+    await owner.page.goto('/app/callsheet')
+    await owner.page.getByRole('link', { name: 'Enter Theater' }).click()
+    await owner.page.getByRole('link', { name: 'Calendar' }).last().click()
+    await waitForReactHandler(
+      owner.page.getByLabel('Private label'),
+      'onChange',
+    )
+    await owner.page.getByLabel('Private label').fill('Private maintenance')
+    await owner.page.getByLabel('Start').fill('2026-10-12T12:00')
+    await owner.page.getByLabel('End', { exact: true }).fill('2026-10-12T14:00')
+    await owner.page.getByRole('button', { name: 'Reserve time' }).click()
+    await expect(owner.page.getByText('Schedule Block created.')).toBeVisible()
+
+    await member.page.goto('/app/callsheet')
+    await member.page.getByRole('link', { name: 'Enter Theater' }).click()
+    await member.page.getByRole('link', { name: 'People' }).click()
+    await expect(
+      member.page.getByRole('heading', { name: 'Directory' }),
+    ).toBeVisible()
+    await expect(member.page.getByText(fixture.actors.owner.name)).toBeVisible()
+    await expect(
+      member.page.getByRole('link', { name: 'Settings' }),
+    ).toHaveCount(0)
+    await expect(
+      member.page.getByRole('heading', { name: 'Access & Roles' }),
+    ).toHaveCount(0)
+    await member.page.getByRole('link', { name: 'Calendar' }).last().click()
+    await expect(
+      member.page.getByRole('heading', { name: 'Theater Calendar' }),
+    ).toBeVisible()
+    await waitForReactHandler(
+      member.page.getByRole('button', { name: 'List' }),
+      'onClick',
+    )
+    await member.page.getByRole('button', { name: 'List' }).click()
+    await expect(
+      member.page.getByText('Primary Venue unavailable').first(),
+    ).toBeVisible()
+    await expect(member.page.getByText('Private maintenance')).toHaveCount(0)
+    await member.page.getByRole('button', { name: 'Month' }).click()
+
+    await owner.page.goto('/app/callsheet')
+    await owner.page.getByRole('link', { name: 'Enter Theater' }).click()
+    await owner.page.getByRole('link', { name: 'People' }).click()
+    const reviewerAccess = owner.page
+      .locator('section')
+      .filter({
+        has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
+      })
+      .locator('article')
+      .filter({ hasText: fixture.actors.reviewer.name })
+    await waitForReactHandler(
+      reviewerAccess.getByRole('button', { name: 'Offer Admin authority' }),
+      'onClick',
+    )
+    await reviewerAccess
+      .getByRole('button', { name: 'Offer Admin authority' })
+      .click()
+    await expect(
+      owner.page.getByText('Admin authority was offered', { exact: false }),
+    ).toBeVisible()
+    await reviewer.page.goto('/app/callsheet')
+    await waitForReactHandler(
+      reviewer.page.getByRole('button', { name: 'Accept Admin authority' }),
+      'onClick',
+    )
+    await reviewer.page
+      .getByRole('button', { name: 'Accept Admin authority' })
+      .click()
+    await expect(
+      reviewer.page.getByText('Admin authority accepted.'),
+    ).toBeVisible()
+    await reviewer.page.reload()
+    await reviewer.page.getByRole('link', { name: 'Enter Theater' }).click()
+    await expect(
+      reviewer.page.getByRole('link', { name: 'Settings' }),
+    ).toBeVisible()
+
+    await owner.page.reload()
+    const acceptedReviewerAccess = owner.page
+      .locator('section')
+      .filter({
+        has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
+      })
+      .locator('article')
+      .filter({ hasText: fixture.actors.reviewer.name })
+    await waitForReactHandler(
+      acceptedReviewerAccess.getByRole('button', {
+        name: 'Remove Admin authority',
+      }),
+      'onClick',
+    )
+    await acceptedReviewerAccess
+      .getByRole('button', { name: 'Remove Admin authority' })
+      .click()
+    await expect(
+      owner.page.getByText(
+        `Admin authority was removed from ${fixture.actors.reviewer.name}. They remain an active Theater Member.`,
+      ),
+    ).toBeVisible()
+    await reviewer.page.reload()
+    await expect(
+      reviewer.page.getByRole('link', { name: 'Settings' }),
+    ).toHaveCount(0)
+
+    await owner.page.getByRole('link', { name: 'Settings' }).click()
+    await owner.page.getByRole('link', { name: 'Ownership & Security' }).click()
+    await waitForReactHandler(
+      owner.page.getByLabel('Proposed successor'),
+      'onChange',
+    )
+    await owner.page
+      .getByLabel('Proposed successor')
+      .selectOption(fixture.actors.reviewer.userId)
+    await owner.page
+      .getByRole('button', { name: 'Propose ownership transfer' })
+      .click()
+    await expect(
+      owner.page.getByText('Ownership transfer proposed.', { exact: false }),
+    ).toBeVisible()
+    await reviewer.page.goto('/app/callsheet')
+    await waitForReactHandler(
+      reviewer.page.getByRole('button', { name: 'Accept Theater ownership' }),
+      'onClick',
+    )
+    await reviewer.page
+      .getByRole('button', { name: 'Accept Theater ownership' })
+      .click()
+    await expect(
+      reviewer.page.getByText('Theater ownership transfer accepted.'),
+    ).toBeVisible()
+    await reviewer.page.reload()
+    await reviewer.page.getByRole('link', { name: 'Enter Theater' }).click()
+    await expect(
+      reviewer.page.getByRole('link', { name: 'Settings' }),
+    ).toBeVisible()
+    await owner.page.reload()
+    await expect(
+      owner.page.getByRole('link', { name: 'Ownership & Security' }),
+    ).toHaveCount(0)
 
     const { data: state } = await fixture.admin
       .from('shows')
@@ -473,6 +724,8 @@ async function createFixture(
         ['director', 'Milestone Director'],
         ['cast', 'Milestone Cast'],
         ['reviewer', 'Milestone Reviewer'],
+        ['staff', 'Milestone Staff'],
+        ['member', 'Milestone Member'],
       ].map(async ([key, name]) => {
         const email = `milestone-${key}-${suffix}@example.com`
         const { data, error } = await admin.auth.admin.createUser({

@@ -5,6 +5,7 @@ import { respondToTheaterOwnershipTransferFn } from '@/features/ownership-transf
 import { respondToEventStaffInvitationFn } from '@/features/events/server-functions'
 
 import type { CallsheetCommitment } from './read-model'
+import type { WorkQueueItem } from '@/features/work-queue/read-model'
 
 export type CallsheetTheater = {
   id: string
@@ -16,9 +17,11 @@ export type CallsheetTheater = {
 
 export function CallsheetPage({
   commitments,
+  sharedWork = [],
   theaters,
 }: {
   commitments: CallsheetCommitment[]
+  sharedWork?: WorkQueueItem[]
   theaters: CallsheetTheater[]
 }) {
   return (
@@ -31,7 +34,7 @@ export function CallsheetPage({
           Callsheet
         </h1>
         <p className="mt-3 text-[var(--sea-ink-soft)]">
-          Your current Event commitments across every active Theater.
+          Your commitments and shared work across every active Theater.
         </p>
       </header>
 
@@ -65,6 +68,51 @@ export function CallsheetPage({
               you.
             </p>
           </div>
+        )}
+      </section>
+
+      <section
+        aria-labelledby="theater-needs-attention"
+        className="mt-10 border-t border-[var(--line)] pt-8"
+      >
+        <h2
+          id="theater-needs-attention"
+          className="text-2xl font-extrabold text-[var(--sea-ink)]"
+        >
+          Theater needs attention
+        </h2>
+        <p className="mt-2 text-[var(--sea-ink-soft)]">
+          Shared decisions you can resolve with your current Theater authority.
+        </p>
+        {sharedWork.length ? (
+          <ol className="mt-4 grid gap-3">
+            {sharedWork.map((item) => (
+              <li
+                className="island-shell rounded-lg px-5 py-5"
+                key={`${item.theaterName}:${item.id}`}
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+                  {item.theaterName} · {item.relationship}
+                </p>
+                {item.eventTitle ? (
+                  <p className="mt-2 font-semibold">{item.eventTitle}</p>
+                ) : null}
+                <a
+                  className="mt-2 inline-block font-bold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+                  href={item.href}
+                >
+                  {item.label}
+                </a>
+                <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                  {item.priorityReason}
+                </p>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="mt-4 rounded-lg border border-dashed border-[var(--line)] px-5 py-6 text-[var(--sea-ink-soft)]">
+            No shared decisions are ready for you right now.
+          </p>
         )}
       </section>
 

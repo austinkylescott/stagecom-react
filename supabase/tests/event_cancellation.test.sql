@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(26);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -422,6 +422,51 @@ select is(
   null,
   'an unpublished cancelled Event remains unavailable anonymously'
 );
+
+update public.show_public_occurrence_snapshots
+set starts_at = now() + interval '7 days',
+    local_starts_at = (now() + interval '7 days') at time zone 'America/New_York'
+where revision_id = '78000000-0000-0000-0003-000000000002';
+
+set local role anon;
+
+select results_eq(
+  $$ select event_slug, title, lifecycle_status::text
+     from public.get_published_theater_events('cancellation-theater') $$,
+  $$ values ('published-cancellation-event'::text,
+     'Published Cancellation Event'::text, 'cancelled'::text) $$,
+  'anonymous Theater listing includes the upcoming cancelled published Event only'
+);
+
+select is(
+  (select count(*) from public.get_published_theater_events('missing-theater')),
+  0::bigint,
+  'unknown Theaters disclose no Event cards'
+);
+
+select is(
+  (select count(*) from public.get_published_theater_events('cancellation-theater')
+    where event_slug = 'cancellation-event'),
+  0::bigint,
+  'unpublished Events are absent from anonymous discovery'
+);
+
+reset role;
+
+update public.show_public_occurrence_snapshots
+set starts_at = now() - interval '7 days',
+    local_starts_at = (now() - interval '7 days') at time zone 'America/New_York'
+where revision_id = '78000000-0000-0000-0003-000000000002';
+
+set local role anon;
+
+select is(
+  (select count(*) from public.get_published_theater_events('cancellation-theater')),
+  0::bigint,
+  'a cancelled Event leaves public discovery after its final Performance ends'
+);
+
+reset role;
 
 select * from finish();
 rollback;

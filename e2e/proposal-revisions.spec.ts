@@ -39,10 +39,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
 
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
-    await page.getByRole('link', { name: 'Review' }).click()
-    await expect(
-      page.getByRole('heading', { name: 'Proposal Revision' }),
-    ).toBeVisible()
+    await page.getByRole('link', { name: 'Cast & Team' }).click()
     const acceptedCastCheckbox = page.getByLabel('Accepted Cast', {
       exact: true,
     })
@@ -60,6 +57,11 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       })
       .toBe(1)
 
+    await page.getByRole('link', { name: 'Review', exact: true }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Proposal Revision' }),
+    ).toBeVisible()
+
     await expect(
       page.getByText('Rank 1: Community Hall · Viable'),
     ).toBeVisible()
@@ -75,9 +77,11 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     ).toBeVisible()
     await page.getByRole('radio').first().check()
 
+    await page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await page.getByRole('button', { name: 'Save operational plan' }).click()
     await expect(page.getByText('Plan saved.')).toBeVisible()
 
+    await page.getByRole('link', { name: 'Review', exact: true }).click()
     await page.getByRole('button', { name: 'Submit Proposal Revision' }).click()
     await expect(
       page.getByText('Proposal Revision 1 submitted for review.'),
@@ -121,7 +125,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     const snapshot = page.getByText('Immutable submitted snapshot')
     await snapshot.click()
     await expect(page.getByText('Minimum viable Cast')).toBeVisible()
-    await expect(page.getByText('Community Hall')).toBeVisible()
+    await expect(page.getByText('Community Hall').first()).toBeVisible()
     await page.getByText('Exact immutable record').click()
     await expect(
       page.getByText('timezoneSource', { exact: false }),
@@ -138,12 +142,11 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       .getByRole('button', { name: 'Approve with Owner override' })
       .click()
 
-    await expect(
-      page.getByText('approved', { exact: true }).first(),
-    ).toBeVisible()
+    await expect(page.getByText('Current decision: approved')).toBeVisible()
     await expect(
       page.getByText('Owner override', { exact: false }),
     ).toBeVisible()
+    await page.getByRole('link', { name: 'Overview', exact: true }).click()
     await expect(page.getByText('unpublished', { exact: true })).toBeVisible()
 
     const [approvedEvent, decision, overrideActivity] = await Promise.all([
@@ -179,12 +182,12 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       { action: 'event.proposal_revision.owner_override_approved' },
     ])
 
-    await expect(
-      page.getByText('Publish the Theater before publishing this Event.'),
-    ).toBeVisible()
     await page.getByRole('link', { name: 'Public Page', exact: true }).click()
     await expect(
       page.getByRole('heading', { name: 'Public Page' }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('Publish the Theater before publishing this Event.'),
     ).toBeVisible()
     await expect(page.getByText('Producer work needed')).toBeVisible()
     await expect(
@@ -276,6 +279,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       name: 'Publish exact anonymous snapshot',
     })
     await expect(publishButton).toHaveCount(0)
+    await page.getByRole('link', { name: 'Overview', exact: true }).click()
     await waitForReactHandler(
       page.getByLabel('At Risk management reason'),
       'onChange',
@@ -290,7 +294,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       ),
     ).toBeVisible()
     await page.reload()
-    await page.waitForTimeout(500)
+    await page.getByRole('link', { name: 'Public Page', exact: true }).click()
     await expect(
       page.getByRole('button', { name: 'Publish exact anonymous snapshot' }),
     ).toBeEnabled()
@@ -302,6 +306,7 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       .getByRole('button', { name: 'Publish exact anonymous snapshot' })
       .click()
     await expect(page.getByText('published', { exact: true })).toBeVisible()
+    await page.getByRole('link', { name: 'Public Page', exact: true }).click()
 
     const anonymousPage = await context.browser()!.newPage()
     await anonymousPage.goto(
@@ -444,6 +449,7 @@ test('Reviewer Counteroffer holds the Primary Venue until explicit viable accept
     })
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
+    await page.getByRole('link', { name: 'Review', exact: true }).click()
     await page
       .getByLabel('Offered local date and time')
       .fill('2026-10-12T19:30')
@@ -483,6 +489,7 @@ test('Reviewer Counteroffer holds the Primary Venue until explicit viable accept
     })
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
+    await page.getByRole('link', { name: 'Cast & Team' }).click()
     await page
       .getByLabel('Availability for Candidate Slot 3')
       .selectOption('available')
@@ -507,7 +514,7 @@ test('Reviewer Counteroffer holds the Primary Venue until explicit viable accept
     })
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
-    await page.getByRole('link', { name: 'Review' }).click()
+    await page.getByRole('link', { name: 'Review', exact: true }).click()
     await page.getByRole('button', { name: 'accept Counteroffer' }).click()
     await expect(
       page.getByRole('heading', { name: 'Proposal Revision 2' }),
@@ -661,6 +668,7 @@ test('published approved Event becomes At Risk after Cast withdrawal without dis
       supabaseUrl: fixture.supabaseUrl,
     })
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
+    await page.getByRole('link', { name: 'Cast & Team' }).click()
     const withdrawButton = page.getByRole('button', {
       name: 'Withdraw from Event',
     })
@@ -700,6 +708,7 @@ test('published approved Event becomes At Risk after Cast withdrawal without dis
       operational_health_version: 2,
       publication_status: 'published',
     })
+    await page.getByRole('link', { name: 'Overview', exact: true }).click()
     await expect(page.getByText('Event is At Risk')).toBeVisible()
 
     const anonymousPage = await context.browser()!.newPage()
@@ -916,9 +925,7 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
     await memberPage.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await expect(
-      memberPage.getByText('Accepted Cast · producer', { exact: true }),
-    ).toBeVisible()
+    await expect(memberPage.getByText(/Accepted Cast · producer/)).toBeVisible()
 
     await authenticateContext({
       anonKey: fixture.anonKey,
@@ -975,16 +982,20 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
       ownerPage.getByText('published', { exact: true }),
     ).toBeVisible()
     await expect(ownerPage.getByText('at_risk', { exact: true })).toBeVisible()
-    await expect(ownerPage.getByText('Accepted Cast · producer')).toHaveCount(0)
+    await expect(ownerPage.getByText(/Accepted Cast · producer/)).toHaveCount(0)
+    await ownerPage.getByRole('link', { name: 'Cast & Team' }).click()
     await expect(
       ownerPage
         .getByRole('heading', { name: 'Cast participation' })
         .locator('..')
         .getByText('removed', { exact: true }),
     ).toBeVisible()
-    await expect(ownerPage.getByText('Revision 1 ·')).toBeVisible()
+    await ownerPage.getByRole('link', { name: 'Review', exact: true }).click()
     await expect(
-      ownerPage.getByText('approved', { exact: true }).last(),
+      ownerPage.getByRole('heading', { name: 'Proposal Revision 1' }),
+    ).toBeVisible()
+    await expect(
+      ownerPage.getByText('Current decision: approved'),
     ).toBeVisible()
 
     const anonymousPage = await anonymousContext.newPage()
