@@ -1,10 +1,10 @@
 import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
 import { getStaffingNeedState } from './read-model'
-import type { WorkQueueInput } from './read-model'
+import type { TheaterWorkSnapshot } from './read-model'
 
-export type OperationalExceptionsInput = Omit<WorkQueueInput, 'events'> & {
+export type OperationalExceptionsInput = Omit<TheaterWorkSnapshot, 'events'> & {
   events: Array<
-    WorkQueueInput['events'][number] & {
+    TheaterWorkSnapshot['events'][number] & {
       leadership: Array<{ userId: string; role: string }>
       hasPublishedContent: boolean
       completionFailure?: {

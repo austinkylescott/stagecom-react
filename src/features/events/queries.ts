@@ -1,6 +1,7 @@
 import {
   getBearerTokenFromRequest,
   getCurrentUserFromRequest,
+  getCurrentUserFromToken,
 } from '@/server/auth/session'
 import { appError, err, ok } from '@/server/errors'
 import {
@@ -619,14 +620,20 @@ export async function getManagedEventWorkspace(
   })
 }
 
-export async function getTheaterAccess(theaterSlug: string) {
-  const currentUser = await getCurrentUserFromRequest()
+export async function getTheaterAccess(
+  theaterSlug: string,
+  accessToken?: string,
+) {
+  const currentUser =
+    accessToken === undefined
+      ? await getCurrentUserFromRequest()
+      : await getCurrentUserFromToken(accessToken)
 
   if (!currentUser.ok) {
     return currentUser
   }
 
-  const token = getBearerTokenFromRequest()
+  const token = accessToken ?? getBearerTokenFromRequest()
 
   if (!token) {
     return err(appError('unauthenticated', 'Sign in is required.'))

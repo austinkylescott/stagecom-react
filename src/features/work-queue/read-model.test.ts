@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createWorkQueueReadModel, orderWorkQueueItems } from './read-model'
-import type { WorkQueueInput } from './read-model'
+import type { TheaterWorkSnapshot } from './read-model'
 
-function input(): WorkQueueInput {
+function input(): TheaterWorkSnapshot {
   return {
     now: '2026-09-22T12:00:00Z',
     setupBufferMinutes: 15,
@@ -25,7 +25,7 @@ function input(): WorkQueueInput {
         title: 'Opening Night',
         lifecycle: 'in_review',
         approvedRevisionId: null,
-        health: 'healthy',
+        health: 'on_track',
         continuationAllowed: false,
         occurrences: [],
         cancellationRequests: [],
@@ -48,21 +48,23 @@ function input(): WorkQueueInput {
 }
 
 describe('Work Queue', () => {
-  it.each(['counteroffered', 'changes_requested', 'denied', 'approved'])(
-    'excludes %s Proposals and personal alert state',
-    (state) => {
-      const domain = input()
-      domain.events[0].revisions[0].state = state
-      expect(createWorkQueueReadModel(domain)).toEqual([])
-      domain.events[0].revisions[0].state = 'pending'
-      const before = createWorkQueueReadModel(domain)
-      const dismissed = {
-        ...domain,
-        notifications: [{ read: true, dismissed: true }],
-      }
-      expect(createWorkQueueReadModel(dismissed)).toEqual(before)
-    },
-  )
+  it.each([
+    'counteroffered',
+    'changes_requested',
+    'denied',
+    'approved',
+  ] as const)('excludes %s Proposals and personal alert state', (state) => {
+    const domain = input()
+    domain.events[0].revisions[0].state = state
+    expect(createWorkQueueReadModel(domain)).toEqual([])
+    domain.events[0].revisions[0].state = 'pending'
+    const before = createWorkQueueReadModel(domain)
+    const dismissed = {
+      ...domain,
+      notifications: [{ read: true, dismissed: true }],
+    }
+    expect(createWorkQueueReadModel(dismissed)).toEqual(before)
+  })
 
   it.each(['cancelled', 'completed'])(
     'excludes every kind of Event work for %s Events',
@@ -117,13 +119,14 @@ describe('Work Queue', () => {
     event.occurrences = [
       { startsAt: '2026-10-01T12:00:00Z', publicPerformance: true },
     ]
-    for (const change of [
+    const changes: Array<Partial<TheaterWorkSnapshot['events'][number]>> = [
       { approvedRevisionId: null },
       { lifecycle: 'draft' },
       { occurrences: [] },
       { health: 'at_risk' },
       { publicDraft: { ...event.publicDraft, description: ' ' } },
-    ]) {
+    ]
+    for (const change of changes) {
       const blocked = { ...state, events: [{ ...event, ...change }] }
       expect(
         createWorkQueueReadModel(blocked).some((item) =>

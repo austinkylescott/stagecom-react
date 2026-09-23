@@ -90,7 +90,7 @@ export async function getEventPortfolio(
             .eq('publication_status', 'published'),
       getTheaterWorkQueue(
         { theaterSlug: theater.slug },
-        { includeExceptions: false },
+        { accessToken: access.data.bearerToken, mode: 'decisions' },
       ),
       getEventCommitments({
         accessToken: access.data.bearerToken,

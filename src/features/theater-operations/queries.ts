@@ -15,7 +15,10 @@ export async function getTheaterOperations(
   const access = await getTheaterAccess(input.theaterSlug)
   if (!access.ok) return access
   const { theater, membership, actorUserId } = access.data
-  const work = await getTheaterWorkQueue(input)
+  const work = await getTheaterWorkQueue(input, {
+    accessToken: access.data.bearerToken,
+    mode: 'decisions_and_exceptions',
+  })
   if (!work.ok) return work
 
   // Preserve the relationship-scoped landing for Members and Reviewers. Never
