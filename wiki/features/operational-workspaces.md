@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: production surfaces implemented; milestone verification in progress
+Implementation status: implemented; automated journey verified for the paths below
 
 The STA-25 workspace now has a personal Callsheet and Calendar, a Theater
 Operations cockpit and authorized Theater Calendar, People and Settings
@@ -37,11 +37,18 @@ pending invitation presentation. Local database tests check the anonymous
 public-discovery allowlist, cancellation and end-of-listing boundary, and
 invitee-only staff response authorization.
 
-These checks demonstrate working paths, but the STA-56 acceptance seam remains
-partial: it does not yet exercise every persona and alternate outcome from
-visible starting surfaces in one journey. The validation record documents one
-internal prototype walkthrough and no uncoached Theater Operator sessions;
-there is no measured 30-second discovery claim yet.
+The merged [STA-25 verification PR](https://github.com/austinkylescott/stagecom-react/pull/49)
+records a passing seeded browser journey, focused scenarios, 168 unit and
+integration tests, local database checks, type checking, and a production
+build. The [seeded journey](../../e2e/event-publication-milestone.spec.ts)
+and [focused browser scenarios](../../e2e/) are the reviewable test sources;
+the PR holds their run results. The browser journey proves that the covered people can find those
+actions through visible navigation in the tested states. STA-56 is marked Done
+in Linear, but no separate complete-journey artifact is linked there. PR #49
+explicitly records missing full-persona and alternate-outcome coverage, so its
+results do not prove every STA-56 scenario. The validation record contains one
+internal prototype walkthrough and no uncoached Theater Operator sessions; no
+measured 30-second discovery or human usability graduation is claimed.
 
 Multiple modeled resources, recurrence, external calendar synchronization,
 manual tasks, and a public past-Events archive remain outside the milestone.

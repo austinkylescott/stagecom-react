@@ -247,6 +247,14 @@ attention list.
 
 ## Generated Types
 
+The operational workspace adds accepted Admin and ownership-transfer
+transitions, Primary Venue Schedule Blocks, and response-based Event Staff
+Assignments. Its Work Queue and Operational Exceptions are read projections of
+domain state, while Notification read/dismissal is recipient-owned attention
+state. The [current data synthesis](../../wiki/data/data-model.md) and
+[permissions model](../../wiki/data/permissions-model.md) document these
+records and disclosure boundaries without duplicating migration details.
+
 Regenerate committed database types after applying local migrations:
 
 ```bash

@@ -2,9 +2,29 @@
 
 Documentation status: active
 
-Implementation status: partially implemented
+Implementation status: mixed; operational records implemented, remaining target model noted below
 
 The rebuild keeps the existing Supabase schema as its executable baseline and adds forward migrations. Product requirements that are not in migrations are described as target model, not current schema.
+
+## Operational Workspace Records
+
+Theater membership has one active Owner, with Admin authority offered through
+pending Admin Invitations and applied only on acceptance. Ownership transfer
+keeps the incumbent Owner until the invited successor accepts; the accepted
+transaction establishes one new Owner and the former Owner's selected Admin or
+Member role. These changes emit factual Theater history.
+
+Schedule Blocks reserve the Primary Venue independently of Events. They share
+the buffered non-overlap rule with Confirmed Slots and active exclusive holds;
+Candidate Slots alone do not occupy the venue. Event Staff Assignments carry a
+named Member, responsibility, invitation response, and selected Occurrence
+Calls. Pending assignments do not count as accepted staffing coverage.
+
+Callsheet, Theater Operations, Calendar occupancy, Event Overview, and public
+discovery are authorized read projections over these records and existing
+domain state. The Work Queue contains resolvable shared decisions; Operational
+Exceptions are watch-only; recipient-owned Notification attention state is
+independent. See the [permissions model](permissions-model.md) for disclosure.
 
 ## Current Executable Baseline
 
@@ -171,4 +191,5 @@ draft, and require a new Proposal Revision.
 ## Generated Types
 
 The generated TypeScript schema lives at `src/server/db/database.types.ts`.
-Regenerate it from the authoritative remote schema with `npm run db:types`.
+Regenerate it from the local schema with `npm run db:types:local` after local
+migrations; use `npm run db:types:check:local` to verify the committed file.

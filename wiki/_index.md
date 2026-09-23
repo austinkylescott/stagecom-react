@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: partially implemented
+Implementation status: operational-workspaces capability implemented; evidence scoped by feature
 
 This wiki is the canonical current handbook for Stagecom. It explains the product through the questions readers bring and links to testable specs where more detail is required. Use `CONTEXT.md` for canonical vocabulary and `docs/rebuild/` only for historical planning context.
 
@@ -22,6 +22,7 @@ Every wiki page declares one of these implementation states:
 - Membership and governance: `wiki/product/membership-and-governance.md`
 - Foundation slice: `wiki/features/first-slice.md`
 - First meaningful milestone: `wiki/features/event-publication-milestone.md`
+- Operational-workspaces milestone and verification: `wiki/features/operational-workspaces.md`
 - Event lifecycle: `wiki/workflows/event-lifecycle.md`
 - Casting and availability: `wiki/workflows/casting-and-availability.md`
 - Review, scheduling, and publication: `wiki/workflows/review-scheduling-and-publication.md`
