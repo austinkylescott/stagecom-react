@@ -407,6 +407,10 @@ test('seeded Members take one Event from Theater creation through anonymous admi
 
     await producer.page.reload()
     await producer.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await expect(producer.page).toHaveURL(/#cast-team$/)
+    await expect(
+      producer.page.getByRole('button', { name: 'Save Proposed Cast' }),
+    ).toBeVisible({ timeout: 15_000 })
     await waitForReactHandler(
       producer.page.getByRole('button', { name: 'Save Proposed Cast' }),
       'onClick',
@@ -808,7 +812,13 @@ function getSupabaseConfig() {
 
 async function openTheaterEventsFromCallsheet(page: Page, fixture: Fixture) {
   await page.goto('/app/callsheet')
-  await page.getByRole('link', { name: 'Enter Theater' }).click()
+  const enterTheater = page.getByRole('link', { name: 'Enter Theater' })
+  await expect(enterTheater).toHaveAttribute(
+    'href',
+    `/app/${fixture.theaterSlug}`,
+  )
+  await waitForReactProps(enterTheater)
+  await enterTheater.click()
   await expect(page).toHaveURL(new RegExp(`/app/${fixture.theaterSlug}$`))
   await page.getByRole('link', { name: 'Events', exact: true }).click()
   await expect(page).toHaveURL(
@@ -900,17 +910,39 @@ async function actorPage(browser: Browser, fixture: Fixture, actor: Actor) {
 
 async function waitForReactHandler(locator: Locator, handlerName: string) {
   await expect
-    .poll(() =>
-      locator.evaluate(
-        (element, name) =>
-          Object.keys(element).some((key) => {
-            if (!key.startsWith('__reactProps$')) return false
-            const props = Reflect.get(element, key) as
-              Record<string, unknown> | undefined
-            return typeof props?.[name] === 'function'
-          }),
-        handlerName,
-      ),
+    .poll(
+      () =>
+        locator.evaluate(
+          (element, name) =>
+            Object.keys(element).some((key) => {
+              if (!key.startsWith('__reactProps$')) return false
+              const props = Reflect.get(element, key) as
+                Record<string, unknown> | undefined
+              return typeof props?.[name] === 'function'
+            }),
+          handlerName,
+        ),
+      { timeout: 15_000 },
     )
     .toBe(true)
+}
+
+async function waitForReactProps(locator: Locator) {
+  await expect
+    .poll(
+      () =>
+        locator.evaluate((element) =>
+          Object.keys(element).some((key) => key.startsWith('__reactProps$')),
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true)
+  await locator
+    .page()
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    )
 }
