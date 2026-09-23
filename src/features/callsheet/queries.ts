@@ -1,66 +1,24 @@
 import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
-import { getTheaterWorkQueue } from '@/features/work-queue/queries'
-import {
-  getBearerTokenFromRequest,
-  getCurrentUserFromRequest,
-} from '@/server/auth/session'
 import { appError, err, ok } from '@/server/errors'
-import {
-  createSupabaseAnonClient,
-  createSupabaseServiceRoleClient,
-} from '@/server/supabase/client'
+import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 
 import { createCallsheetReadModel } from './read-model'
+import { getMySharedTheaterWork } from './shared-work'
 
 export async function getMyCallsheet() {
-  const currentUser = await getCurrentUserFromRequest()
-  if (!currentUser.ok) return currentUser
-
-  const token = getBearerTokenFromRequest()
-  if (!token) return err(appError('unauthenticated', 'Sign in is required.'))
-
-  const userSupabase = createSupabaseAnonClient(token)
-  const { data: memberships, error: membershipError } = await userSupabase
-    .from('theater_memberships')
-    .select('is_home, theater_id, theaters!inner(name, slug, status)')
-    .eq('user_id', currentUser.data.id)
-    .eq('status', 'active')
-
-  if (membershipError) {
-    return err(
-      appError('external_service_error', 'Callsheet could not be loaded.'),
-    )
-  }
-
-  const theaters = memberships.map((membership) => ({
-    id: membership.theater_id,
-    isDefault: membership.is_home,
-    name: membership.theaters.name,
-    slug: membership.theaters.slug,
-    status: membership.theaters.status,
-  }))
+  const sharedResult = await getMySharedTheaterWork()
+  if (!sharedResult.ok) return sharedResult
+  const { actorUserId, theaters, sharedWork } = sharedResult.data
   const theaterById = new Map(theaters.map((theater) => [theater.id, theater]))
 
   if (theaters.length === 0)
-    return ok({ commitments: [], sharedWork: [], theaters })
-
-  // Each Theater projection rechecks current membership and action eligibility.
-  const sharedResults = await Promise.all(
-    theaters.map((theater) =>
-      getTheaterWorkQueue({ theaterSlug: theater.slug }),
-    ),
-  )
-  const failedSharedRead = sharedResults.find((result) => !result.ok)
-  if (failedSharedRead) return failedSharedRead
-  const sharedWork = sharedResults.flatMap((result) =>
-    result.ok ? result.data.items : [],
-  )
+    return ok({ commitments: [], sharedWork, theaters })
 
   const supabase = createSupabaseServiceRoleClient()
   const { data: adminInvitations, error: adminInvitationError } = await supabase
     .from('admin_invitations')
     .select('id, theater_id')
-    .eq('member_user_id', currentUser.data.id)
+    .eq('member_user_id', actorUserId)
     .eq('status', 'pending')
     .in(
       'theater_id',
@@ -95,7 +53,7 @@ export async function getMyCallsheet() {
     await supabase
       .from('theater_ownership_transfers')
       .select('id, theater_id')
-      .eq('member_user_id', currentUser.data.id)
+      .eq('member_user_id', actorUserId)
       .eq('status', 'pending')
       .in(
         'theater_id',
@@ -169,30 +127,30 @@ export async function getMyCallsheet() {
       .from('show_staff_assignments')
       .select('id, show_id, responsibility, status')
       .in('show_id', eventIds)
-      .eq('user_id', currentUser.data.id)
+      .eq('user_id', actorUserId)
       .in('status', ['pending', 'accepted']),
     supabase
       .from('show_cast')
       .select('show_id, status, source')
       .in('show_id', eventIds)
-      .eq('user_id', currentUser.data.id),
+      .eq('user_id', actorUserId),
     supabase
       .from('show_leadership')
       .select('show_id')
       .in('show_id', eventIds)
-      .eq('user_id', currentUser.data.id)
+      .eq('user_id', actorUserId)
       .eq('role', 'producer'),
     supabase
       .from('show_availability_requests')
       .select('candidate_slot_id, counteroffer_id')
-      .eq('user_id', currentUser.data.id)
+      .eq('user_id', actorUserId)
       .is('responded_at', null)
       .is('closed_at', null),
     supabase
       .from('show_occurrence_calls')
       .select('call, occurrence_id, show_id')
       .in('show_id', eventIds)
-      .eq('user_id', currentUser.data.id)
+      .eq('user_id', actorUserId)
       .neq('call', 'not_called'),
   ])
 

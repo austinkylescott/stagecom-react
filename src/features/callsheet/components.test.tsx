@@ -8,31 +8,31 @@ import { CallsheetPage } from './components'
 afterEach(cleanup)
 
 describe('CallsheetPage', () => {
-  it('shows cross-Theater shared decisions with urgency apart from a personal action', () => {
+  it('keeps a personal invitation and shared decision for the same Event in separate phone-ready sections', () => {
     render(
       <CallsheetPage
         commitments={[
           {
             action: 'Respond to invitation',
             actionableAt: null,
-            event: { slug: 'event-a', title: 'Event A' },
-            id: 'personal-a',
+            event: { slug: 'opening-night', title: 'Opening Night' },
+            id: 'cast-invitation:opening-night',
             kind: 'cast_invitation',
             relationship: 'Cast invitee',
             targetAnchor: '#cast-participation',
-            theater: { slug: 'first', title: 'First Theater' },
+            theater: { slug: 'main-stage', title: 'Main Stage' },
           },
         ]}
         sharedWork={[
           {
-            id: 'risk:b',
-            kind: 'risk',
-            label: 'Manage At Risk Event',
+            id: 'cancellation:opening-night',
+            kind: 'cancellation',
+            label: 'Decide cancellation request',
             relationship: 'Theater Operator',
-            priorityReason: 'At Risk · management decision required',
-            href: '/app/second/events/event-b#operational-health',
-            theaterName: 'Second Theater',
-            eventTitle: 'Event B',
+            priorityReason: 'Producer requested cancellation',
+            href: '/app/main-stage/events/opening-night#overview',
+            theaterName: 'Main Stage',
+            eventTitle: 'Opening Night',
             deadlineAt: null,
           },
         ]}
@@ -40,21 +40,23 @@ describe('CallsheetPage', () => {
       />,
     )
 
-    expect(
-      screen.getByRole('heading', { name: 'Your commitments' }),
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('heading', { name: 'Theater needs attention' }),
-    ).toBeTruthy()
+    const personal = screen.getByRole('region', { name: 'Your commitments' })
+    const shared = screen.getByRole('region', {
+      name: 'Theater needs attention',
+    })
+    expect(personal.textContent).toContain('Opening Night')
+    expect(personal.textContent).toContain('Respond to invitation')
+    expect(shared.textContent).toContain('Opening Night')
+    expect(shared.textContent).toContain('Main Stage')
+    expect(shared.textContent).toContain('Theater Operator')
+    expect(shared.textContent).toContain('Producer requested cancellation')
     expect(
       screen
-        .getByRole('link', { name: 'Manage At Risk Event' })
+        .getByRole('link', { name: 'Decide cancellation request' })
         .getAttribute('href'),
-    ).toBe('/app/second/events/event-b#operational-health')
-    expect(
-      screen.getByText(/At Risk · management decision required/),
-    ).toBeTruthy()
+    ).toBe('/app/main-stage/events/opening-night#overview')
   })
+
   it('separates actionable commitments from Theater selection and exposes each action', () => {
     render(
       <CallsheetPage
@@ -70,6 +72,7 @@ describe('CallsheetPage', () => {
             theater: { slug: 'north-star', title: 'North Star Theater' },
           },
         ]}
+        sharedWork={[]}
         theaters={[
           {
             id: 'theater-1',
@@ -95,7 +98,7 @@ describe('CallsheetPage', () => {
   })
 
   it('provides an honest empty state without hiding Theater selection', () => {
-    render(<CallsheetPage commitments={[]} theaters={[]} />)
+    render(<CallsheetPage commitments={[]} sharedWork={[]} theaters={[]} />)
 
     expect(
       screen.getByText('Nothing needs your response right now.'),
