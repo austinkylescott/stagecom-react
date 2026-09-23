@@ -1,4 +1,4 @@
-import type { OperationalException } from './read-model'
+import type { OperationalException } from '@/features/work-queue/operational-exceptions'
 
 export function OperationalExceptions({
   items,

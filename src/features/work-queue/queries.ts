@@ -1,10 +1,10 @@
-import { createOperationalExceptionsReadModel } from '@/features/operational-exceptions/read-model'
 import { getTheaterAccess } from '@/features/events/queries'
 import { parseReservedRange } from '@/features/theater-calendar/reserved-range'
 import { getMissingPublicationFields } from '@/features/theaters/publication-readiness'
 import { appError, err, ok } from '@/server/errors'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 import { createWorkQueueReadModel } from './read-model'
+import { createOperationalExceptionsReadModel } from './operational-exceptions'
 import { z } from 'zod'
 import type { theaterSlugInputSchema } from '@/features/theaters/schemas'
 
@@ -237,10 +237,14 @@ export async function getTheaterWorkQueue(
       }
     }),
   }
+  const items = createWorkQueueReadModel(domain)
   return ok({
-    items: createWorkQueueReadModel(domain),
+    items,
     exceptions: includeExceptions
-      ? createOperationalExceptionsReadModel(domain)
+      ? createOperationalExceptionsReadModel(
+          domain,
+          new Set(items.map((item) => item.id)),
+        )
       : [],
     canResolveWork: operator || isReviewer,
   })
