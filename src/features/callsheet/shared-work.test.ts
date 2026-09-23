@@ -19,7 +19,8 @@ vi.mock('@/server/supabase/client', () => ({
   }),
 }))
 vi.mock('@/features/work-queue/queries', () => ({
-  getTheaterWorkQueue: (input: unknown) => getTheaterWorkQueue(input),
+  getTheaterWorkQueue: (input: unknown, options: unknown) =>
+    getTheaterWorkQueue(input, options),
 }))
 
 beforeEach(() => {
@@ -87,8 +88,14 @@ describe('cross-Theater shared work', () => {
     expect(membershipQuery.eq).toHaveBeenCalledWith('user_id', 'operator')
     expect(membershipQuery.eq).toHaveBeenCalledWith('status', 'active')
     expect(getTheaterWorkQueue).toHaveBeenCalledTimes(2)
-    expect(getTheaterWorkQueue).toHaveBeenCalledWith({ theaterSlug: 'a' })
-    expect(getTheaterWorkQueue).toHaveBeenCalledWith({ theaterSlug: 'b' })
+    expect(getTheaterWorkQueue).toHaveBeenCalledWith(
+      { theaterSlug: 'a' },
+      { includeExceptions: false },
+    )
+    expect(getTheaterWorkQueue).toHaveBeenCalledWith(
+      { theaterSlug: 'b' },
+      { includeExceptions: false },
+    )
   })
 
   it('does not return shared work for a person with no active Theater membership', async () => {

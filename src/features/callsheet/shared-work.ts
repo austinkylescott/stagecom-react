@@ -42,7 +42,10 @@ export async function getMySharedTheaterWork() {
 
   const sharedResults = await Promise.all(
     theaters.map((theater) =>
-      getTheaterWorkQueue({ theaterSlug: theater.slug }),
+      getTheaterWorkQueue(
+        { theaterSlug: theater.slug },
+        { includeExceptions: false },
+      ),
     ),
   )
   const failedRead = sharedResults.find((result) => !result.ok)

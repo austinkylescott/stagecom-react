@@ -10,6 +10,7 @@ import type { theaterSlugInputSchema } from '@/features/theaters/schemas'
 
 export async function getTheaterWorkQueue(
   input: z.infer<typeof theaterSlugInputSchema>,
+  { includeExceptions = true }: { includeExceptions?: boolean } = {},
 ) {
   const access = await getTheaterAccess(input.theaterSlug)
   if (!access.ok) return access
@@ -89,7 +90,7 @@ export async function getTheaterWorkQueue(
             .eq('theater_id', theater.id)
             .eq('status', 'active')
         : Promise.resolve({ data: [], error: null }),
-      operator
+      operator && includeExceptions
         ? supabase
             .from('activity_events')
             .select('entity_id, payload')
@@ -238,7 +239,9 @@ export async function getTheaterWorkQueue(
   }
   return ok({
     items: createWorkQueueReadModel(domain),
-    exceptions: createOperationalExceptionsReadModel(domain),
+    exceptions: includeExceptions
+      ? createOperationalExceptionsReadModel(domain)
+      : [],
     canResolveWork: operator || isReviewer,
   })
 }
