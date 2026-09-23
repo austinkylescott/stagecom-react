@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: mixed; operational records implemented, remaining target model noted below
+Implementation status: partially implemented
 
 The rebuild keeps the existing Supabase schema as its executable baseline and adds forward migrations. Product requirements that are not in migrations are described as target model, not current schema.
 

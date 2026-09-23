@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: implemented; automated journey verified for the paths below
+Implementation status: partially implemented
 
 The STA-25 workspace now has a personal Callsheet and Calendar, a Theater
 Operations cockpit and authorized Theater Calendar, People and Settings

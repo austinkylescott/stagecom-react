@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: implemented for the described operational access paths
+Implementation status: partially implemented
 
 Stagecom permissions are contextual. Authority belongs to a Theater or Event relationship rather than to a global user type.
 

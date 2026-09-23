@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: implemented for the described operational paths
+Implementation status: partially implemented
 
 Stagecom is a theater-ops-first SaaS product for improv theaters, comedy theaters, indie venues, and community arts spaces.
 
@@ -10,7 +10,7 @@ The foundation slice helps a theater operator create, preview, and publish a cre
 
 ## Operational Workspaces Contract
 
-Implementation status: implemented for the described operational paths
+Implementation status: partially implemented
 
 The operational workspace is a personal-first, role-aware operating experience.
 Every authenticated person starts at Callsheet, where their personal

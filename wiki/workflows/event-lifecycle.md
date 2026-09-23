@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: implemented for the described performance Event lifecycle
+Implementation status: partially implemented
 
 ## What Is An Event?
 

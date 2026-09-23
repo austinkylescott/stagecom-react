@@ -2,7 +2,7 @@
 
 Documentation status: active
 
-Implementation status: implemented for the described governance paths
+Implementation status: partially implemented
 
 ## How Is Theater Operator Authority Delegated?
 

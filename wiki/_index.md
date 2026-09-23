@@ -2,7 +2,10 @@
 
 Documentation status: active
 
-Implementation status: operational-workspaces capability implemented; evidence scoped by feature
+Implementation status: partially implemented
+
+The operational-workspaces capability is implemented for the verified paths;
+each feature page describes its evidence and remaining limits.
 
 This wiki is the canonical current handbook for Stagecom. It explains the product through the questions readers bring and links to testable specs where more detail is required. Use `CONTEXT.md` for canonical vocabulary and `docs/rebuild/` only for historical planning context.
 
