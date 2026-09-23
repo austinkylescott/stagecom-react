@@ -2922,6 +2922,10 @@ function EventOverview({
           <div>
             <dl className="grid content-start gap-3 text-sm">
               <div>
+                <dt className="font-bold">Theater</dt>
+                <dd>{overview.invitation.theaterName}</dd>
+              </div>
+              <div>
                 <dt className="font-bold">Invited by</dt>
                 <dd>{overview.invitation.inviterName}</dd>
               </div>
@@ -2932,6 +2936,10 @@ function EventOverview({
               <div>
                 <dt className="font-bold">Invitation status</dt>
                 <dd>{overview.invitation.status}</dd>
+              </div>
+              <div>
+                <dt className="font-bold">Planned participation</dt>
+                <dd>{overview.invitation.planSummary}</dd>
               </div>
             </dl>
             <p className="mt-3 text-sm text-[var(--sea-ink-soft)]">

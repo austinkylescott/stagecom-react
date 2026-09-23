@@ -24,8 +24,13 @@ Performance. Anonymous cards carry only the public presentation fields.
 
 The seeded browser journey starts the Cast response, staff response, and
 Owner's shared Publication decision from Callsheet, then starts anonymous
-discovery from the public Theater page. It checks pending Cast disclosure,
-Notification dismissal without losing the staff commitment, phone-width Cast
+discovery from the public Theater page. Producer, Director, and Reviewer now
+enter Event work through the visible Theater and Event navigation. A distinct
+Admin session handles staffing. A multi-role Reviewer with a pending Cast
+invitation sees separate personal and shared actions for the same Event. The
+journey checks pending Cast disclosure and a coarse plan summary for deciding
+on the invitation. It also covers Notification dismissal without losing the
+staff commitment, phone-width Cast
 response, Member Calendar redaction, Admin acceptance and removal, and accepted
 ownership transfer. Focused read-model tests cover shared-work ordering and
 pending invitation presentation. Local database tests check the anonymous

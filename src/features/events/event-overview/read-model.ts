@@ -21,6 +21,11 @@ type OverviewInput = {
   event: {
     cast: Array<{ status: string }>
     hasHistory: boolean
+    invitationPlan?: {
+      performanceCount: number
+      rehearsalCount: number
+      theaterName: string
+    }
     lifecycleStatus: string
     leadership: Array<{ displayName: string; role: string }>
     minimumViableCast: number | null
@@ -208,11 +213,15 @@ export function createEventOverviewReadModel(input: OverviewInput) {
     invitation: invitationOnly
       ? {
           inviterName: input.actor.inviterName ?? 'A Theater collaborator',
+          planSummary: input.event.invitationPlan
+            ? summarizeInvitationPlan(input.event.invitationPlan)
+            : 'No Occurrences have been planned yet. Ask the inviter about timing before responding.',
           role:
             input.actor.invitationKind === 'staff'
               ? 'Event staff invitee'
               : 'Cast invitee',
           status: 'pending',
+          theaterName: input.event.invitationPlan?.theaterName ?? '',
         }
       : null,
     primaryAction: actions.at(0) ?? null,
@@ -251,4 +260,25 @@ export function createEventOverviewReadModel(input: OverviewInput) {
           : null,
     },
   }
+}
+
+function summarizeInvitationPlan({
+  performanceCount,
+  rehearsalCount,
+}: {
+  performanceCount: number
+  rehearsalCount: number
+}) {
+  const total = rehearsalCount + performanceCount
+  if (total === 0)
+    return 'No Occurrences have been planned yet. Ask the inviter about timing before responding.'
+  const parts = [
+    rehearsalCount > 0
+      ? `${rehearsalCount} planned Rehearsal${rehearsalCount === 1 ? '' : 's'}`
+      : null,
+    performanceCount > 0
+      ? `${performanceCount} planned Performance${performanceCount === 1 ? '' : 's'}`
+      : null,
+  ].filter(Boolean)
+  return `${parts.join(' and ')}. Exact dates and Calls are shared after acceptance.`
 }

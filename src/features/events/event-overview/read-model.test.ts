@@ -12,7 +12,15 @@ describe('Event Overview read model', () => {
         roles: [],
         inviterName: 'Director Person',
       },
-      event: { ...event({ castStatus: 'pending' }), view: 'pending_invitee' },
+      event: {
+        ...event({ castStatus: 'pending' }),
+        invitationPlan: {
+          performanceCount: 1,
+          rehearsalCount: 1,
+          theaterName: 'Milestone Theater',
+        },
+        view: 'pending_invitee',
+      },
     })
 
     expect(model.sections.map(({ label }) => label)).toEqual([
@@ -23,6 +31,11 @@ describe('Event Overview read model', () => {
     expect(model.summary.inviter).toBe('Director Person')
     expect(model.summary.nextOccurrence).toBeNull()
     expect(model.summary.participation).toEqual({ accepted: 0, pending: 0 })
+    expect(model.invitation).toMatchObject({
+      planSummary:
+        '1 planned Rehearsal and 1 planned Performance. Exact dates and Calls are shared after acceptance.',
+      theaterName: 'Milestone Theater',
+    })
   })
 
   it('labels a pending staff invitation without exposing Cast work', () => {
@@ -39,8 +52,11 @@ describe('Event Overview read model', () => {
 
     expect(model.invitation).toEqual({
       inviterName: 'Theater Admin',
+      planSummary:
+        'No Occurrences have been planned yet. Ask the inviter about timing before responding.',
       role: 'Event staff invitee',
       status: 'pending',
+      theaterName: '',
     })
     expect(model.relationships).toEqual(['Event staff invitee'])
     expect(model.primaryAction?.relationship).toBe('Event staff invitee')

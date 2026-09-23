@@ -428,6 +428,18 @@ export async function getManagedEventWorkspace(
     },
     event: {
       cast: visibleCast.map(({ status }) => ({ status })),
+      invitationPlan:
+        view === 'pending_invitee'
+          ? {
+              performanceCount: managedEvent.show_occurrences.filter(
+                (occurrence) => occurrence.occurrence_type === 'performance',
+              ).length,
+              rehearsalCount: managedEvent.show_occurrences.filter(
+                (occurrence) => occurrence.occurrence_type === 'rehearsal',
+              ).length,
+              theaterName: access.data.theater.name,
+            }
+          : undefined,
       lifecycleStatus: managedEvent.lifecycle_status,
       leadership: managedEvent.show_leadership.map(({ profiles, role }) => ({
         displayName: profiles.display_name,
