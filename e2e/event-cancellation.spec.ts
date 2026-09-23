@@ -243,6 +243,9 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
         .getByRole('listitem')
         .first(),
     ).toBeVisible()
+    await waitForReactProps(
+      ownerPage.getByText('Other conditions to monitor (1)', { exact: true }),
+    )
     // The disclosure must be operable without a pointer.
     await ownerPage
       .getByText('Other conditions to monitor (1)', { exact: true })
@@ -837,6 +840,16 @@ async function waitForReactHandler(locator: Locator, handlerName: string) {
             return typeof props?.[name] === 'function'
           }),
         handlerName,
+      ),
+    )
+    .toBe(true)
+}
+
+async function waitForReactProps(locator: Locator) {
+  await expect
+    .poll(() =>
+      locator.evaluate((element) =>
+        Object.keys(element).some((key) => key.startsWith('__reactProps$')),
       ),
     )
     .toBe(true)

@@ -455,6 +455,16 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toBeVisible()
     await expect(personalWork.getByText('Milestone Event')).toBeVisible()
     await expect(sharedWork.getByText('Milestone Event')).toBeVisible()
+    await personalWork
+      .getByRole('link', { name: 'Respond to invitation' })
+      .click()
+    await expect(multiRole.page).toHaveURL(/#cast-participation$/)
+    await multiRole.page.goto('/app/callsheet')
+    await multiRole.page
+      .getByRole('region', { name: 'Theater needs attention' })
+      .getByRole('link', { name: /Review Proposal Revision 1/ })
+      .click()
+    await expect(multiRole.page).toHaveURL(/#proposal-revision-/)
 
     await openEventFromCallsheet(reviewer.page, fixture)
     await reviewer.page

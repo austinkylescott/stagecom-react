@@ -294,7 +294,12 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
       ),
     ).toBeVisible()
     await page.reload()
+    await waitForReactHandler(
+      page.getByRole('button', { name: 'Allow continuation' }),
+      'onClick',
+    )
     await page.getByRole('link', { name: 'Public Page', exact: true }).click()
+    await expect(page).toHaveURL(/#public-page$/)
     await expect(
       page.getByRole('button', { name: 'Publish exact anonymous snapshot' }),
     ).toBeEnabled()
