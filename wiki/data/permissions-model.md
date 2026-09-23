@@ -26,7 +26,7 @@ requires current active membership and an Owner/Admin command.
 
 - Producer: manages proposal details, logistics, public presentation, and submission.
 - Director: manages cast invitations and Occurrence participation.
-- staff assignment: one-off Event role assigned by Owner/Admin.
+- Event Staff Assignment: an invited Event responsibility that counts toward coverage after the Member accepts.
 - Cast Member: explicit, accepted Event participation only.
 - Reviewer: Owner/Admin by default or a Member with an explicit review capability.
 
@@ -52,6 +52,23 @@ receive distinct private Event read models.
 ## Authorization Boundary
 
 All mutations and private reads go through app-owned server functions/commands. Service-role Supabase clients are allowed only in server code after explicit app-level authorization.
+
+Theater Operators can inspect operational Calendar detail and manage Schedule
+Blocks. An involved person sees only relationship-authorized Event and
+Occurrence detail; an uninvolved active Member sees time and resource as
+opaque occupancy, with no private Event title, Schedule Block label, notes,
+creator, or unauthorized link. Personal Calendar includes only the person's
+own accepted commitments and Calls. A pending Event Staff Assignment gives its
+recipient a response path but no accepted staff access; after acceptance,
+access remains scoped to the Event summary, responsibility, assigned
+Occurrences, Calls, and necessary logistics unless another relationship grants
+more. Pending Cast disclosure is limited as described below.
+
+People exposes active display names and Owner/Admin badges to Members.
+Invitations, capabilities, Former Members, and access history require Theater
+Operator authority. Ordinary Settings are Operator-owned; Ownership &
+Security is Owner-only. Admin revocation removes authority for later private
+reads and mutations.
 
 ## Public Read Boundary
 

@@ -227,8 +227,9 @@ Theater policy instead of treating a historical leadership row as permanent
 authority.
 
 Private Event reads now select an explicit disclosure view. Pending invitees
-receive the Event summary, Candidate Slots, their own invitation, and accepted
-Cast names; accepted Cast Members receive the collaborative roster; Event
+receive an Event summary, their own invitation with inviter and role, and
+accept/decline actions, without Candidate Slots, Calls, or accepted-Cast
+details. Accepted Cast Members receive the collaborative roster; Event
 leaders, Reviewers, and Owner/Admin receive the operational view. Database RLS
 also prevents a pending invitee from selecting other pending or declined Cast
 rows.
@@ -246,6 +247,14 @@ historical Notifications but are excluded from the recipient's active
 attention list.
 
 ## Generated Types
+
+The operational workspace adds accepted Admin and ownership-transfer
+transitions, Primary Venue Schedule Blocks, and response-based Event Staff
+Assignments. Its Work Queue and Operational Exceptions are read projections of
+domain state, while Notification read/dismissal is recipient-owned attention
+state. The [current data synthesis](../../wiki/data/data-model.md) and
+[permissions model](../../wiki/data/permissions-model.md) document these
+records and disclosure boundaries without duplicating migration details.
 
 Regenerate committed database types after applying local migrations:
 

@@ -12,7 +12,7 @@ The foundation slice helps a theater operator create, preview, and publish a cre
 
 Implementation status: partially implemented
 
-The next product frontier is a personal-first, role-aware operating experience.
+The operational workspace is a personal-first, role-aware operating experience.
 Every authenticated person starts at Callsheet, where their personal
 commitments remain separate from shared Theater decisions they can resolve.
 Entering a Theater is explicit; Theater Operations presents the Operator Work
@@ -148,9 +148,9 @@ Directory projection.
 
 This contract retains the existing public playbill and calm authenticated
 direction. A focused visual-design pass and uncoached Operator validation are
-follow-ups. Internal validation plus the published reconciliation opens the
-first implementation frontier; neither follow-up is evidence for weakening
-navigation, action priority, disclosure, or responsive requirements. See the [operational-workspaces
+follow-ups. The merged automated journey verifies discovery through visible
+navigation for its tested roles and states; it does not measure 30-second
+discovery or replace uncoached Operator research. See the [operational-workspaces
 specification](../../docs/specs/operational-workspaces.md), [actor/state
 matrix](../../docs/design/operational-actor-state-matrix.md), and
 [validation record](../design/operational-workspaces-validation.md).
@@ -191,7 +191,7 @@ A successful milestone journey proves that:
 - Producer: an Event-level proposal, logistics, and public-presentation role.
 - Director: an Event-level casting and artistic-participation role.
 - Cast: explicit, accepted Event participation by a Theater Member.
-- Staff assignment: event-specific operational staffing.
+- Event Staff Assignment: a named invitation that counts toward coverage only after acceptance.
 
 ## Product Rules
 
@@ -205,7 +205,7 @@ A successful milestone journey proves that:
 
 ## What Is Not In The First Meaningful Milestone?
 
-Native Stagecom ticket sales, recurring Event series, open casting calls, guest cast, multiple modeled rooms or venues, committee review, automated application email/SMS, audience analytics, and automated Producer reliability scores are deferred.
+Native Stagecom ticket sales, recurring Event series or Schedule Blocks, open casting calls, guest cast, multiple modeled rooms or venues beyond the Primary Venue, external calendar sync or export, manual Operator tasks, a public past-Events archive, committee review, automated application email/SMS, audience analytics, and automated Producer reliability scores are deferred.
 
 ### Watch-only Operational Exceptions (STA-51)
 

@@ -32,15 +32,15 @@ An accepted invitation means willingness to participate; it does not mean uncond
 
 ## What Can Invitees And Cast See?
 
-- A pending invitee sees the Event summary, Candidate Slots, their own response form, and confirmed cast names.
-- A pending invitee does not see pending or declined invitees, Occurrence calls, or other Members' availability.
+- A pending invitee sees their invitation status, inviter, role, enough Event summary to decide, and accept/decline actions from Callsheet and Cast & Team.
+- A pending invitee does not see Candidate Slots, Occurrence Calls, accepted-Cast information, other invitees, or other Members' availability before acceptance.
 - An accepted Cast Member sees the collaborative roster, roster statuses, per-Occurrence calls, and the cast availability matrix.
 - Producers, Directors, and Reviewers see the information needed to evaluate the full plan.
 - Public visitors see only confirmed Cast Members who permit public credit for that Event.
 
 Each accepted Cast Member has a per-Event public-credit setting initialized from their profile preference.
 
-The executable read model enforces the first three private disclosure levels.
+The executable read model enforces these private disclosure levels.
 Per-Event public credit is implemented through versioned public content.
 
 ## How Is Participation Assigned?

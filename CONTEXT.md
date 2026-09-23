@@ -32,7 +32,7 @@ An Owner or Admin acting with Theater-wide operational responsibility.
 _Avoid_: Manager, when referring collectively to Owners and Admins
 
 **Callsheet**:
-A person's cross-Theater view of current commitments, relevant Events, decisions, and schedule.
+A person's cross-Theater view of current personal commitments, authorized shared Work Queue decisions, relevant Events, and upcoming schedule.
 _Avoid_: Theater Callsheet
 
 **Theater Operations**:
@@ -56,7 +56,7 @@ An Event collaborator responsible for its proposal, logistics, public presentati
 An Event collaborator responsible for casting and artistic participation across the Event's Occurrences.
 
 **Event Staff Assignment**:
-A Theater Member's accepted operational responsibility for an Event, initiated by a Theater Operator. The assignment may carry Calls for selected Occurrences.
+A named operational responsibility offered to an active Theater Member for an Event by a Theater Operator. Only acceptance counts toward staffing coverage; an accepted assignment may carry Calls for selected Occurrences.
 _Avoid_: Resource request
 
 **Cast Member**:

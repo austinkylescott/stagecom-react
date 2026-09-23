@@ -2,6 +2,15 @@
 
 Status: accepted and published to Linear as STA-25; reconciled by STA-29 on 2026-08-19
 
+Implementation evidence: [operational-workspaces synthesis](../../wiki/features/operational-workspaces.md)
+links the merged [STA-25 verification PR](https://github.com/austinkylescott/stagecom-react/pull/49)
+and its passing automated checks. Those checks prove navigation and disclosure
+for the tested paths; PR #49 records remaining STA-56 scenario gaps. STA-56 is
+marked Done without a separate linked verification artifact. The uncoached
+Operator sessions required for human discoverability graduation remain open
+research. This specification preserves its original problem statement and
+decisions as the implementation contract.
+
 ## Problem Statement
 
 Stagecom has an acceptance-proven domain path from Theater creation through Event Publication, but the product does not yet make that path understandable or discoverable. The primary customer is a Theater Operator, yet the Theater landing page is a placeholder, the personal Callsheet is primarily a Theater picker, navigation exposes the same destinations to every Member, and management work is buried inside long Event pages. Existing acceptance tests prove commands and authorization by navigating directly to routes; they do not prove that a person can identify what needs attention or find the correct action.

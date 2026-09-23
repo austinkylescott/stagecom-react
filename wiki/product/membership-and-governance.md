@@ -4,6 +4,24 @@ Documentation status: active
 
 Implementation status: partially implemented
 
+## How Is Theater Operator Authority Delegated?
+
+Each Theater has one active Owner. Owner and Admin are separate relationships
+that both grant Theater Operator authority. In People, either may offer an
+Admin Invitation to an active Member; only acceptance grants Admin authority.
+Decline leaves membership unchanged. An Owner may remove any Admin, and an
+Admin may remove a peer or themself. The Owner cannot be removed through Admin
+management. Every grant and removal is recorded in Theater history and
+revocation affects later private reads and commands.
+
+Only the Owner may propose an ownership transfer to an active Member. The
+current Owner retains authority until the recipient accepts. Acceptance
+atomically installs the new Owner and leaves the former Owner as the selected
+Admin or Member, defaulting to Admin. Ownership & Security in Settings exposes
+these Owner-only decisions; ordinary Theater configuration remains available
+to Admins. The [single-Owner decision](../../docs/adr/0001-single-transferable-theater-owner.md)
+records the durable rule.
+
 ## Who Can Belong To A Theater?
 
 A person may hold active membership in multiple Theaters and choose a default Theater for navigation. All Producers, Directors, Reviewers, and Cast Members must be active members of the relevant Theater in the first meaningful milestone.

@@ -2,8 +2,16 @@
 
 Documentation status: active
 
-Implementation status: Proposal submission, review decisions, exclusive
-Counteroffer reservations, and anonymous-safe Event Publication implemented
+Implementation status: partially implemented
+
+Proposal submission, review decisions, exclusive Counteroffer reservations,
+and anonymous-safe Event Publication are implemented. Theater Operations
+exposes eligible Proposal review, At Risk, cancellation, Publication, and
+staffing decisions in the Work Queue. A blocked or expiring condition without a
+decision for that viewer appears as an Operational Exception. The Event
+workspace keeps Review, Schedule & Plan, Public Page, and History as separate
+authorized sections. Notification read or dismissal never changes a shared
+decision. See the [operational-workspaces evidence](../features/operational-workspaces.md).
 
 ## What Does Management Review?
 

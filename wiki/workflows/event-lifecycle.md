@@ -122,4 +122,6 @@ retain their anonymous published snapshot.
 
 Explicit domain events record membership and Event-role changes, cast invitations and responses, availability changes, submissions and decisions, counteroffers and expirations, schedule and publication changes, risk transitions, and cancellation. The record states facts and actors; it does not assign reputation judgments.
 
-See `docs/product/event-publication-milestone.md` for the accepted milestone boundary. Detailed implementation specs have not yet been written.
+See `docs/product/event-publication-milestone.md` for the original capability
+boundary and [operational workspaces](../features/operational-workspaces.md)
+for the current navigation and acceptance evidence.
