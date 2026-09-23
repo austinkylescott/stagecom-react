@@ -58,7 +58,7 @@ export function EventPortfolioPage({
     view: 'all',
     sort: 'date-asc',
   })
-  const events = filterEventPortfolio(portfolio.events, filters)
+  const events = filterEventPortfolio(portfolio.events, filters, timezone)
   const leaders = [
     ...new Map(
       portfolio.events
@@ -222,7 +222,7 @@ export function EventPortfolioPage({
                     </p>
                     <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
                       {event.dates.length} confirmed ·{' '}
-                      {event.candidateDates?.length ?? 0} proposed dates
+                      {event.candidateDates.length} proposed dates
                     </p>
                   </>
                 )}

@@ -23,7 +23,7 @@ async function waitForReactHandler(locator: Locator, handlerName: string) {
     .toBe(true)
 }
 
-test('Operator filters the Event portfolio on desktop and phone', async ({
+test('Operator filters and Member sees a scoped Event Portfolio', async ({
   context,
   page,
 }) => {
@@ -204,6 +204,23 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
       public_credit_enabled: false,
     })
     expect(otherCastError).toBeNull()
+    const { error: publicEventError } = await admin.rpc(
+      'create_managed_event',
+      {
+        p_actor_user_id: owner.user!.id,
+        p_producer_user_ids: [],
+        p_slug: 'public-event',
+        p_theater_id: theaterId,
+        p_title: 'Draft Event',
+      },
+    )
+    expect(publicEventError).toBeNull()
+    const { error: publishError } = await admin
+      .from('shows')
+      .update({ publication_status: 'published' })
+      .eq('theater_id', theaterId)
+      .eq('slug', 'public-event')
+    expect(publishError).toBeNull()
     const { data: memberSession, error: memberSignInError } =
       await auth.auth.signInWithPassword({ email: memberEmail, password })
     expect(memberSignInError).toBeNull()
@@ -221,7 +238,7 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
     await page.goto(`/app/${slug}/events`)
     const inviteeSummary = page
       .locator('article')
-      .filter({ hasText: 'Draft Event' })
+      .filter({ has: page.getByRole('link', { name: 'Open Overview' }) })
     await expect(inviteeSummary).toBeVisible()
     await expect(inviteeSummary.getByText('Proposal decision')).toHaveCount(0)
     await expect(inviteeSummary.getByText('Operational health')).toHaveCount(0)
@@ -229,7 +246,17 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
     await expect(
       inviteeSummary.getByRole('link', { name: 'Respond to invitation' }),
     ).toHaveAttribute('href', /#cast-participation$/)
-    await expect(page.getByText('1 of 1 Events')).toBeVisible()
+    const publicSummary = page
+      .locator('article')
+      .filter({ has: page.getByRole('link', { name: 'Open public Event' }) })
+    await expect(publicSummary).toBeVisible()
+    await expect(publicSummary.getByText('Proposal decision')).toHaveCount(0)
+    await expect(publicSummary.getByText('Operational health')).toHaveCount(0)
+    await expect(publicSummary.getByText('Leadership:')).toHaveCount(0)
+    await expect(
+      publicSummary.getByRole('link', { name: 'Respond to invitation' }),
+    ).toHaveCount(0)
+    await expect(page.getByText('2 of 2 Events')).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Other Event' }),
     ).toHaveCount(0)
