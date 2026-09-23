@@ -1,8 +1,8 @@
 import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
 import { describe, expect, it } from 'vitest'
-import { createOperationalExceptionsReadModel } from './read-model'
-import type { OperationalExceptionsInput } from './read-model'
-import { createWorkQueueReadModel } from '@/features/work-queue/read-model'
+import { createOperationalExceptionsReadModel as classifyOperationalExceptions } from './operational-exceptions'
+import type { OperationalExceptionsInput } from './operational-exceptions'
+import { createWorkQueueReadModel } from './read-model'
 
 function input(): OperationalExceptionsInput {
   return {
@@ -48,6 +48,16 @@ function input(): OperationalExceptionsInput {
       },
     ],
   }
+}
+
+function createOperationalExceptionsReadModel(
+  state: OperationalExceptionsInput,
+) {
+  const workItems = createWorkQueueReadModel(state)
+  return classifyOperationalExceptions(
+    state,
+    new Set(workItems.map((item) => item.id)),
+  )
 }
 
 describe('Operational Exceptions', () => {

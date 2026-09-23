@@ -410,6 +410,95 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
   }
 })
 
+test('Theater work is an Exception for its author and a decision for another Reviewer', async ({
+  context,
+  page,
+}) => {
+  test.setTimeout(90_000)
+  const config = getSupabaseConfig()
+  test.skip(!config, 'Supabase credentials are required.')
+  const fixture = await createFixture(config!)
+
+  try {
+    const { error: policyError } = await fixture.admin
+      .from('theaters')
+      .update({ owner_self_approval_enabled: false })
+      .eq('id', fixture.theaterId)
+    expect(policyError).toBeNull()
+    const { error: proposedCastError } = await fixture.admin.rpc(
+      'save_event_proposed_cast',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_cast_user_ids: [fixture.acceptedUserId],
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(proposedCastError).toBeNull()
+    const { error: confirmedSlotError } = await fixture.admin
+      .from('show_occurrences')
+      .update({ confirmed_candidate_slot_id: fixture.viableSlotId })
+      .eq('id', fixture.occurrenceId)
+    expect(confirmedSlotError).toBeNull()
+    const { error: submissionError } = await fixture.admin.rpc(
+      'submit_event_proposal_revision',
+      {
+        p_actor_user_id: fixture.ownerUserId,
+        p_command_id: crypto.randomUUID(),
+        p_show_id: fixture.eventId,
+      },
+    )
+    expect(submissionError).toBeNull()
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.ownerEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}`)
+    await page.getByText('Other conditions to monitor (1)').click()
+    await expect(
+      page.getByText(
+        'Another eligible Reviewer must decide this Proposal Revision.',
+      ),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Review Proposal Revision 1' }),
+    ).toHaveCount(0)
+
+    await authenticateContext({
+      anonKey: fixture.anonKey,
+      context,
+      email: fixture.reviewerEmail,
+      password: fixture.password,
+      supabaseUrl: fixture.supabaseUrl,
+    })
+    await page.goto(`/app/${fixture.theaterSlug}`)
+    await expect(
+      page.getByRole('link', { name: 'Review Proposal Revision 1' }),
+    ).toBeVisible()
+    await expect(
+      page.getByText(
+        'Another eligible Reviewer must decide this Proposal Revision.',
+      ),
+    ).toHaveCount(0)
+
+    await page.goto(`/app/${fixture.theaterSlug}/events`)
+    await expect(
+      page.getByRole('link', { name: 'Review Proposal Revision 1' }),
+    ).toBeVisible()
+  } finally {
+    await fixture.admin.from('theaters').delete().eq('id', fixture.theaterId)
+    await Promise.all(
+      fixture.userIds.map((userId) =>
+        fixture.admin.auth.admin.deleteUser(userId),
+      ),
+    )
+  }
+})
+
 test('Reviewer Counteroffer holds the Primary Venue until explicit viable acceptance', async ({
   context,
   page,

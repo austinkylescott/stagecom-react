@@ -40,10 +40,10 @@ The Theater-wide view of current decisions, exceptions, Event work, and schedule
 _Avoid_: Theater Callsheet
 
 **Work Queue**:
-The shared set of unresolved, actionable Theater decisions derived from current Theater and Event state. It is distinct from personal Notifications and watch-only Operational Exceptions.
+The shared set of unresolved, actionable Theater decisions derived from current Theater and Event state and presented to a viewer according to their authority to resolve them. It is distinct from personal Notifications and watch-only Operational Exceptions.
 
 **Operational Exception**:
-A time-sensitive or potentially risky Theater condition that warrants attention but does not currently require a Theater Operator decision.
+A time-sensitive or potentially risky Theater condition that warrants attention but is not currently a decision the viewer can resolve. The same condition may be Work Queue for one viewer and an Operational Exception for another.
 _Avoid_: Work Queue item
 
 **Notification**:

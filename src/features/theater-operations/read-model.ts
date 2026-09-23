@@ -1,6 +1,6 @@
 import type { Database } from '@/server/db/database.types'
 import type { TheaterCalendarEntry } from '@/features/theater-calendar/read-model'
-import type { OperationalException } from '@/features/operational-exceptions/read-model'
+import type { OperationalException } from '@/features/work-queue/operational-exceptions'
 import type { WorkQueueItem } from '@/features/work-queue/read-model'
 
 export type TheaterOperationsInput = {

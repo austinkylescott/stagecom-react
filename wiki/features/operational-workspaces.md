@@ -10,7 +10,9 @@ sections, and the six-section Event workspace. Callsheet separates personal
 commitments from shared Theater decisions. The shared list projects only
 current Work Queue actions that the viewer can resolve across active Theater
 memberships; Notification read or dismissal does not change it. Operational
-Exceptions remain watch-only.
+Exceptions remain watch-only for the viewer. A pending Proposal Revision, for
+example, can be a Work Queue decision for an eligible Reviewer and an
+Operational Exception for its author.
 
 Owner and Admin authority, pending Admin Invitations, accepted ownership
 transfer, Schedule Blocks, and accepted Event Staff Assignments are explicit

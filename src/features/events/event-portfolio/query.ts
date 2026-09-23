@@ -1,6 +1,5 @@
 import { getMyCallsheet } from '@/features/callsheet/queries'
 import { getTheaterAccess } from '@/features/events/queries'
-import { getTheaterWorkQueue } from '@/features/work-queue/queries'
 import { appError, err, ok } from '@/server/errors'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 import { createEventPortfolioReadModel } from './read-model'
@@ -74,7 +73,7 @@ export async function getEventPortfolio(
     .eq('event_type', 'show')
   if (!operator && !reviewer) privateQuery = privateQuery.in('id', leaderIds)
 
-  const [privateEvents, publicEvents, work, callsheet] = await Promise.all([
+  const [privateEvents, publicEvents, callsheet] = await Promise.all([
     !operator && !reviewer && !leaderIds.length
       ? Promise.resolve({ data: [], error: null })
       : privateQuery,
@@ -86,7 +85,6 @@ export async function getEventPortfolio(
           .eq('theater_id', theater.id)
           .eq('event_type', 'show')
           .eq('publication_status', 'published'),
-    getTheaterWorkQueue(input),
     getMyCallsheet(),
   ])
   if (privateEvents.error || publicEvents.error)
@@ -96,7 +94,6 @@ export async function getEventPortfolio(
         'Event portfolio could not be loaded.',
       ),
     )
-  if (!work.ok) return work
   if (!callsheet.ok) return callsheet
 
   const privateIds = new Set(privateEvents.data.map((event) => event.id))
@@ -127,12 +124,14 @@ export async function getEventPortfolio(
   )
 
   const actions = [
-    ...work.data.items.map((item) => ({
-      label: item.label,
-      href: item.href,
-      kind: item.kind,
-      relationship: item.relationship,
-    })),
+    ...callsheet.data.sharedWork
+      .filter((item) => item.href.startsWith(`/app/${theater.slug}/`))
+      .map((item) => ({
+        label: item.label,
+        href: item.href,
+        kind: item.kind,
+        relationship: item.relationship,
+      })),
     ...callsheet.data.commitments
       .filter((item) => item.theater.slug === theater.slug && item.event.slug)
       .map((item) => ({

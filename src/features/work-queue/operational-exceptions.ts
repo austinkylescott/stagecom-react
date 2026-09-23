@@ -1,9 +1,6 @@
 import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
-import {
-  createWorkQueueReadModel,
-  getStaffingNeedState,
-} from '@/features/work-queue/read-model'
-import type { WorkQueueInput } from '@/features/work-queue/read-model'
+import { getStaffingNeedState } from './read-model'
+import type { WorkQueueInput } from './read-model'
 
 export type OperationalExceptionsInput = Omit<WorkQueueInput, 'events'> & {
   events: Array<
@@ -40,11 +37,9 @@ export type OperationalException = {
 
 export function createOperationalExceptionsReadModel(
   input: OperationalExceptionsInput,
+  actionableWorkIds: ReadonlySet<string>,
 ): OperationalException[] {
   const items: OperationalException[] = []
-  const workIds = new Set(
-    createWorkQueueReadModel(input).map((item) => item.id),
-  )
   const operator = input.viewer.roles.some(
     (role) => role === 'owner' || role === 'admin',
   )
@@ -107,7 +102,7 @@ export function createOperationalExceptionsReadModel(
       const reason =
         revision.state === 'pending' &&
         !revision.hasDecision &&
-        !workIds.has(`proposal:${revision.id}`)
+        !actionableWorkIds.has(`proposal:${revision.id}`)
           ? 'Another eligible Reviewer must decide this Proposal Revision.'
           : revision.state === 'changes_requested' && !producer
             ? 'Producer must submit the requested Proposal edits.'
