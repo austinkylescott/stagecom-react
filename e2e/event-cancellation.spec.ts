@@ -243,6 +243,9 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
         .getByRole('listitem')
         .first(),
     ).toBeVisible()
+    await waitForReactProps(
+      ownerPage.getByText('Other conditions to monitor (1)', { exact: true }),
+    )
     // The disclosure must be operable without a pointer.
     await ownerPage
       .getByText('Other conditions to monitor (1)', { exact: true })
@@ -267,6 +270,7 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
         .getByRole('link', { name: 'Preview and publish Event' }),
     ).toHaveCount(0)
     await exceptions.getByRole('link', { name: /View Event context/ }).click()
+    await expect(ownerPage).toHaveURL(/#public-page$/)
     await expect(
       ownerPage.getByRole('heading', { name: 'Public Page', exact: true }),
     ).toBeVisible()
@@ -290,7 +294,13 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
     await expect(
       castPage.getByRole('link', { name: 'Prepare public content' }),
     ).toHaveCount(0)
-    await castPage.getByRole('link', { name: 'Enter Theater' }).click()
+    const theaterLink = castPage.getByRole('link', { name: 'Enter Theater' })
+    const theaterUrl = new URL(
+      (await theaterLink.getAttribute('href'))!,
+      castPage.url(),
+    )
+    await theaterLink.click()
+    await expect(castPage).toHaveURL(theaterUrl.href)
     await expect(
       castPage.getByRole('heading', { name: 'Public content awaits Producer' }),
     ).toHaveCount(0)
@@ -830,6 +840,16 @@ async function waitForReactHandler(locator: Locator, handlerName: string) {
             return typeof props?.[name] === 'function'
           }),
         handlerName,
+      ),
+    )
+    .toBe(true)
+}
+
+async function waitForReactProps(locator: Locator) {
+  await expect
+    .poll(() =>
+      locator.evaluate((element) =>
+        Object.keys(element).some((key) => key.startsWith('__reactProps$')),
       ),
     )
     .toBe(true)

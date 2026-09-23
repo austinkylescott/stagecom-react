@@ -1326,8 +1326,9 @@ export function ManagedEventWorkspace({
               </p>
             </section>
           ) : null}
-          {view !== 'accepted_staff' ||
-          allowedActions.respondToInvitation ||
+          {(view !== 'accepted_staff' &&
+            (view !== 'pending_invitee' ||
+              allowedActions.respondToInvitation)) ||
           allowedActions.respondToAvailability ? (
             <>
               <section
@@ -1453,17 +1454,7 @@ export function ManagedEventWorkspace({
                               setCastingError(result.error.message)
                               return
                             }
-                            setCast((current) =>
-                              current.map((castMember) =>
-                                castMember.user_id === actorUserId
-                                  ? {
-                                      ...castMember,
-                                      responded_at: new Date().toISOString(),
-                                      status: response,
-                                    }
-                                  : castMember,
-                              ),
-                            )
+                            window.location.reload()
                           } finally {
                             setIsCasting(false)
                           }
@@ -2927,55 +2918,85 @@ function EventOverview({
             </p>
           </div>
         </div>
-        <dl className="grid content-start gap-3 text-sm">
+        {overview.invitation ? (
           <div>
-            <dt className="font-bold">Next Occurrence</dt>
-            <dd>
-              {overview.summary.nextOccurrence
-                ? `${overview.summary.nextOccurrence.localStartsAt.replace('T', ' ')} · ${overview.summary.nextOccurrence.locationName}`
-                : 'No Confirmed Occurrence'}
-            </dd>
+            <dl className="grid content-start gap-3 text-sm">
+              <div>
+                <dt className="font-bold">Theater</dt>
+                <dd>{overview.invitation.theaterName}</dd>
+              </div>
+              <div>
+                <dt className="font-bold">Invited by</dt>
+                <dd>{overview.invitation.inviterName}</dd>
+              </div>
+              <div>
+                <dt className="font-bold">Your role</dt>
+                <dd>{overview.invitation.role}</dd>
+              </div>
+              <div>
+                <dt className="font-bold">Invitation status</dt>
+                <dd>{overview.invitation.status}</dd>
+              </div>
+              <div>
+                <dt className="font-bold">Planned participation</dt>
+                <dd>{overview.invitation.planSummary}</dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-sm text-[var(--sea-ink-soft)]">
+              Accept to see the details needed for your Event responsibility.
+            </p>
           </div>
-          <div>
-            <dt className="font-bold">Who leads this Event</dt>
-            <dd>
-              {overview.summary.leadership.length > 0
-                ? overview.summary.leadership.join(', ')
-                : 'No leadership assigned'}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold">Participation</dt>
-            <dd>
-              {overview.summary.participation.accepted} accepted ·{' '}
-              {overview.summary.participation.pending} pending
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold">Staffing coverage</dt>
-            <dd>
-              {overview.summary.staffing.unfilled > 0
-                ? `${overview.summary.staffing.unfilled} requested position${overview.summary.staffing.unfilled === 1 ? '' : 's'} remain unfilled.`
-                : 'No staffing needs are unfilled'}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold">Viability risk</dt>
-            <dd>
-              {overview.summary.viability
-                ? overview.summary.viability.shortfall > 0
-                  ? `${overview.summary.viability.shortfall} Cast Member${overview.summary.viability.shortfall === 1 ? '' : 's'} below minimum`
-                  : 'Minimum Viable Cast is covered'
-                : 'No Minimum Viable Cast set'}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold">Public status</dt>
-            <dd className="capitalize">
-              {overview.summary.publicStatus} Public Page
-            </dd>
-          </div>
-        </dl>
+        ) : (
+          <dl className="grid content-start gap-3 text-sm">
+            <div>
+              <dt className="font-bold">Next Occurrence</dt>
+              <dd>
+                {overview.summary.nextOccurrence
+                  ? `${overview.summary.nextOccurrence.localStartsAt.replace('T', ' ')} · ${overview.summary.nextOccurrence.locationName}`
+                  : 'No Confirmed Occurrence'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold">Who leads this Event</dt>
+              <dd>
+                {overview.summary.leadership.length > 0
+                  ? overview.summary.leadership.join(', ')
+                  : 'No leadership assigned'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold">Participation</dt>
+              <dd>
+                {overview.summary.participation.accepted} accepted ·{' '}
+                {overview.summary.participation.pending} pending
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold">Staffing coverage</dt>
+              <dd>
+                {overview.summary.staffing.unfilled > 0
+                  ? `${overview.summary.staffing.unfilled} requested position${overview.summary.staffing.unfilled === 1 ? '' : 's'} remain unfilled.`
+                  : 'No staffing needs are unfilled'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold">Viability risk</dt>
+              <dd>
+                {overview.summary.viability
+                  ? overview.summary.viability.shortfall > 0
+                    ? `${overview.summary.viability.shortfall} Cast Member${overview.summary.viability.shortfall === 1 ? '' : 's'} below minimum`
+                    : 'Minimum Viable Cast is covered'
+                  : 'No Minimum Viable Cast set'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold">Public status</dt>
+              <dd className="capitalize">
+                {overview.summary.publicStatus} Public Page
+              </dd>
+            </div>
+          </dl>
+        )}
       </div>
     </section>
   )

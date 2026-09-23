@@ -6,7 +6,10 @@ import {
 } from '@tanstack/react-router'
 
 import { PublicTheaterPage } from '@/features/first-slice/theater-page'
-import { getPublishedTheaterBySlugFn } from '@/features/theaters/server-functions'
+import {
+  getPublishedTheaterBySlugFn,
+  getPublishedTheaterEventsFn,
+} from '@/features/theaters/server-functions'
 
 export const Route = createFileRoute('/theater/$theaterSlug')({
   loader: async ({ params }) => {
@@ -22,7 +25,11 @@ export const Route = createFileRoute('/theater/$theaterSlug')({
       throw result.error
     }
 
-    return result.data.theater
+    const events = await getPublishedTheaterEventsFn({
+      data: { theaterSlug: params.theaterSlug },
+    })
+    if (!events.ok) throw events.error
+    return { ...result.data.theater, upcomingEvents: events.data.events }
   },
   component: PublicTheaterSlugLayout,
 })

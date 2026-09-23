@@ -115,7 +115,7 @@ export async function getManagedEventWorkspace(
   const { data: managedEvent, error } = await supabase
     .from('shows')
     .select(
-      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, cancelled_at, cancelled_by_user_id, cancellation_reason, show_cancellation_requests(id, actor_user_id, reason, requested_at, resolved_at, resolved_by_user_id), show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name)), show_staff_assignments(id, user_id, status, responsibility, resource_request_id), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
+      'id, title, slug, lifecycle_status, publication_status, operational_health, operational_health_version, at_risk_continuation_allowed, approved_proposal_revision_id, target_cast_size, minimum_viable_cast, cancelled_at, cancelled_by_user_id, cancellation_reason, show_cancellation_requests(id, actor_user_id, reason, requested_at, resolved_at, resolved_by_user_id), show_risk_management_decisions(id, action, reason, actor_user_id, prior_health_version, resulting_health_version, created_at), show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)), show_cast(user_id, status, source, invited_by_user_id, invited_at, responded_at, profiles!show_cast_user_id_fkey(display_name), inviter:profiles!show_cast_invited_by_user_id_fkey(display_name)), show_staff_assignments(id, user_id, status, responsibility, resource_request_id, inviter:profiles!show_staff_assignments_invited_by_user_id_fkey(display_name)), show_proposed_cast(user_id), show_proposal_revisions!show_proposal_revisions_show_id_fkey(id, revision_number, decision_state, decision_version, submitted_by, submitted_at, command_id, snapshot, show_proposal_decisions(id, action, reason, actor_user_id, owner_override, revision_version, command_id, created_at), show_counteroffers!show_counteroffers_proposal_revision_id_fkey(id, occurrence_id, candidate_slot_id, actor_user_id, response_deadline, state, created_at, resulting_proposal_revision_id)), show_occurrences(id, occurrence_type, visibility, position, confirmed_candidate_slot_id, candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at, duration_minutes, local_starts_at, timezone_name, timezone_source, utc_offset_minutes, location_kind, resource_id, location_name, off_site_approved, position)), show_resource_requests(id, resource_type, label, quantity, position)',
     )
     .eq('theater_id', access.data.theater.id)
     .eq('slug', input.eventSlug)
@@ -192,6 +192,12 @@ export async function getManagedEventWorkspace(
   const isTerminalEvent =
     managedEvent.lifecycle_status === 'cancelled' ||
     managedEvent.lifecycle_status === 'completed'
+  const canRespondToCounteroffer =
+    !isTerminalEvent &&
+    isProducer &&
+    managedEvent.show_proposal_revisions.some((revision) =>
+      revision.show_counteroffers.some((offer) => offer.state === 'pending'),
+    )
   const canEditOperationalPlan =
     (managedEvent.lifecycle_status === 'draft' ||
       managedEvent.lifecycle_status === 'approved') &&
@@ -207,12 +213,10 @@ export async function getManagedEventWorkspace(
     actorCast?.source === 'invited' &&
     (actorCast.status === 'pending' || actorCast.status === 'accepted')
   const visibleCast = managedEvent.show_cast.filter((castMember) => {
+    if (view === 'operational') return true
     if (!actorCast) return false
     if (view !== 'pending_invitee') return true
-    return (
-      castMember.user_id === access.data.actorUserId ||
-      castMember.status === 'accepted'
-    )
+    return castMember.user_id === access.data.actorUserId
   })
 
   const candidateSlotIds = managedEvent.show_occurrences.flatMap((occurrence) =>
@@ -270,17 +274,21 @@ export async function getManagedEventWorkspace(
   }
 
   const visibleAvailability =
-    view === 'operational'
-      ? availabilityResult.data
-      : availabilityResult.data.filter(
-          (response) => response.user_id === access.data.actorUserId,
-        )
+    view === 'pending_invitee'
+      ? []
+      : view === 'operational'
+        ? availabilityResult.data
+        : availabilityResult.data.filter(
+            (response) => response.user_id === access.data.actorUserId,
+          )
   const visibleOccurrenceCalls =
-    view === 'operational'
-      ? callsResult.data
-      : callsResult.data.filter(
-          (call) => call.user_id === access.data.actorUserId,
-        )
+    view === 'pending_invitee'
+      ? []
+      : view === 'operational'
+        ? callsResult.data
+        : callsResult.data.filter(
+            (call) => call.user_id === access.data.actorUserId,
+          )
   const primaryVenueCommitments = commitmentsResult.data.flatMap((event) =>
     event.show_occurrences.flatMap((occurrence) =>
       occurrence.confirmed_slot?.location_kind === 'primary_venue'
@@ -318,72 +326,78 @@ export async function getManagedEventWorkspace(
       .map((call) => call.occurrence_id),
   )
   const visibleOccurrences =
-    view === 'accepted_staff'
-      ? orderedOccurrences
-          .filter((occurrence) => staffOccurrenceIds.has(occurrence.id))
-          .map((occurrence) => ({
-            ...occurrence,
-            candidate_slots: occurrence.candidate_slots.filter(
-              (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
-            ),
-          }))
-      : orderedOccurrences
+    view === 'pending_invitee'
+      ? []
+      : view === 'accepted_staff'
+        ? orderedOccurrences
+            .filter((occurrence) => staffOccurrenceIds.has(occurrence.id))
+            .map((occurrence) => ({
+              ...occurrence,
+              candidate_slots: occurrence.candidate_slots.filter(
+                (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
+              ),
+            }))
+        : orderedOccurrences
   const orderedResourceRequests = orderByPosition(
     managedEvent.show_resource_requests,
   )
   const history = createEventHistoryReadModel({
     actorUserId: access.data.actorUserId,
     canViewAdminActivity: isTheaterAdmin,
-    events: activityResult.data.map((activity) => ({
-      action: activity.action,
-      actorDisplayName: activity.profiles?.display_name ?? null,
-      actorUserId: activity.actor_user_id,
-      createdAt: activity.created_at,
-      id: activity.id,
-      payload: activity.payload,
-      visibility: activity.visibility,
-    })),
+    events: (view === 'pending_invitee' ? [] : activityResult.data).map(
+      (activity) => ({
+        action: activity.action,
+        actorDisplayName: activity.profiles?.display_name ?? null,
+        actorUserId: activity.actor_user_id,
+        createdAt: activity.created_at,
+        id: activity.id,
+        payload: activity.payload,
+        visibility: activity.visibility,
+      }),
+    ),
   })
-  const proposalPreparation = createProposalPreparationReadModel({
-    acceptedCastMembers: visibleCast
-      .filter(({ status }) => status === 'accepted')
-      .map((castMember) => ({
-        displayName: castMember.profiles.display_name,
-        userId: castMember.user_id,
-      })),
-    capabilities: {
-      editOperationalPlan: canEditOperationalPlan,
-      selectProposedCast: canEditDraftProposal,
-      submitProposalRevision: canEditDraftProposal,
-      viewResourceRequests: view === 'operational',
-    },
-    event: {
-      ...managedEvent,
-      show_occurrences: orderedOccurrences,
-      show_resource_requests: orderedResourceRequests,
-    },
-    includeResourceRequests: view === 'operational',
-    proposedCastUserIds:
-      view === 'pending_invitee'
-        ? []
-        : managedEvent.show_proposed_cast.map(({ user_id }) => user_id),
-    recommendations,
-    theater: {
-      primaryVenueId: access.data.theater.primary_venue_id,
-      primaryVenueName:
-        access.data.theater.primary_venue_name ?? 'Primary Venue',
-      slug: access.data.theater.slug,
-      timezoneName: access.data.theater.timezone ?? 'UTC',
-      timezoneSource: access.data.theater.timezone_source,
-    },
-  })
+  const proposalPreparation =
+    view === 'pending_invitee'
+      ? null
+      : createProposalPreparationReadModel({
+          acceptedCastMembers: visibleCast
+            .filter(({ status }) => status === 'accepted')
+            .map((castMember) => ({
+              displayName: castMember.profiles.display_name,
+              userId: castMember.user_id,
+            })),
+          capabilities: {
+            editOperationalPlan: canEditOperationalPlan,
+            selectProposedCast: canEditDraftProposal,
+            submitProposalRevision: canEditDraftProposal,
+            viewResourceRequests: view === 'operational',
+          },
+          event: {
+            ...managedEvent,
+            show_occurrences: orderedOccurrences,
+            show_resource_requests: orderedResourceRequests,
+          },
+          includeResourceRequests: view === 'operational',
+          proposedCastUserIds: managedEvent.show_proposed_cast.map(
+            ({ user_id }) => user_id,
+          ),
+          recommendations,
+          theater: {
+            primaryVenueId: access.data.theater.primary_venue_id,
+            primaryVenueName:
+              access.data.theater.primary_venue_name ?? 'Primary Venue',
+            slug: access.data.theater.slug,
+            timezoneName: access.data.theater.timezone ?? 'UTC',
+            timezoneSource: access.data.theater.timezone_source,
+          },
+        })
   const overview = createEventOverviewReadModel({
     actions: {
       manageAtRisk:
         isTheaterAdmin &&
         managedEvent.lifecycle_status === 'approved' &&
         managedEvent.operational_health === 'at_risk',
-      respondToCounteroffer: !isTerminalEvent && isProducer,
+      respondToCounteroffer: canRespondToCounteroffer,
       respondToInvitation:
         !isTerminalEvent &&
         actorCast?.source === 'invited' &&
@@ -397,6 +411,16 @@ export async function getManagedEventWorkspace(
     },
     actor: {
       castStatus: actorCast?.status,
+      invitationKind:
+        view === 'pending_invitee'
+          ? actorCast?.status === 'pending'
+            ? 'cast'
+            : 'staff'
+          : null,
+      inviterName:
+        actorCast?.inviter?.display_name ??
+        actorStaffAssignment?.inviter?.display_name ??
+        null,
       isReviewer,
       leadershipRoles: actorLeadership.map(({ role }) => role),
       roles: access.data.membership.roles,
@@ -404,6 +428,18 @@ export async function getManagedEventWorkspace(
     },
     event: {
       cast: visibleCast.map(({ status }) => ({ status })),
+      invitationPlan:
+        view === 'pending_invitee'
+          ? {
+              performanceCount: managedEvent.show_occurrences.filter(
+                (occurrence) => occurrence.occurrence_type === 'performance',
+              ).length,
+              rehearsalCount: managedEvent.show_occurrences.filter(
+                (occurrence) => occurrence.occurrence_type === 'rehearsal',
+              ).length,
+              theaterName: access.data.theater.name,
+            }
+          : undefined,
       lifecycleStatus: managedEvent.lifecycle_status,
       leadership: managedEvent.show_leadership.map(({ profiles, role }) => ({
         displayName: profiles.display_name,
@@ -480,7 +516,7 @@ export async function getManagedEventWorkspace(
         actorCast.status === 'pending',
       respondToStaffInvitation:
         !isTerminalEvent && actorStaffAssignment?.status === 'pending',
-      respondToCounteroffer: !isTerminalEvent && isProducer,
+      respondToCounteroffer: canRespondToCounteroffer,
       requestCancellation: isProducer && !isTerminalEvent,
       reviewProposalRevisions: !isTerminalEvent && isReviewer,
       seedDeniedReplacement: !isTerminalEvent && isProducer,
@@ -493,6 +529,19 @@ export async function getManagedEventWorkspace(
     },
     event: {
       ...managedEvent,
+      ...(view === 'pending_invitee'
+        ? {
+            approved_proposal_revision_id: null,
+            at_risk_continuation_allowed: false,
+            cancelled_at: null,
+            cancelled_by_user_id: null,
+            cancellation_reason: null,
+            minimum_viable_cast: null,
+            operational_health: 'on_track' as const,
+            operational_health_version: 0,
+            target_cast_size: null,
+          }
+        : {}),
       show_availability_responses: visibleAvailability,
       show_cast: view === 'accepted_staff' ? [] : visibleCast,
       show_staff_assignments:
@@ -543,7 +592,29 @@ export async function getManagedEventWorkspace(
     history,
     overview,
     proposalPreparation,
-    theater: access.data.theater,
+    theater: {
+      slug: access.data.theater.slug,
+      primary_venue_id:
+        view === 'pending_invitee' ? '' : access.data.theater.primary_venue_id,
+      primary_venue_name:
+        view === 'pending_invitee'
+          ? null
+          : access.data.theater.primary_venue_name,
+      setup_buffer_minutes:
+        view === 'pending_invitee'
+          ? 0
+          : access.data.theater.setup_buffer_minutes,
+      turnover_buffer_minutes:
+        view === 'pending_invitee'
+          ? 0
+          : access.data.theater.turnover_buffer_minutes,
+      timezone:
+        view === 'pending_invitee' ? null : access.data.theater.timezone,
+      timezone_source:
+        view === 'pending_invitee'
+          ? ('unknown' as const)
+          : access.data.theater.timezone_source,
+    },
     view,
   })
 }

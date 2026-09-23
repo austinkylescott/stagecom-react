@@ -3,6 +3,68 @@ import { describe, expect, it } from 'vitest'
 import { createEventOverviewReadModel } from './read-model'
 
 describe('Event Overview read model', () => {
+  it('limits a pending Cast invitee to invitation information before acceptance', () => {
+    const model = createEventOverviewReadModel({
+      actions: { respondToInvitation: true },
+      actor: {
+        castStatus: 'pending',
+        isReviewer: false,
+        roles: [],
+        inviterName: 'Director Person',
+      },
+      event: {
+        ...event({ castStatus: 'pending' }),
+        invitationPlan: {
+          performanceCount: 1,
+          rehearsalCount: 1,
+          theaterName: 'Milestone Theater',
+        },
+        view: 'pending_invitee',
+      },
+    })
+
+    expect(model.sections.map(({ label }) => label)).toEqual([
+      'Overview',
+      'Cast & Team',
+    ])
+    expect(model.states).toEqual([{ label: 'Invitation', value: 'pending' }])
+    expect(model.summary.inviter).toBe('Director Person')
+    expect(model.summary.nextOccurrence).toBeNull()
+    expect(model.summary.participation).toEqual({ accepted: 0, pending: 0 })
+    expect(model.invitation).toMatchObject({
+      planSummary:
+        '1 planned Rehearsal and 1 planned Performance. Exact dates and Calls are shared after acceptance.',
+      theaterName: 'Milestone Theater',
+    })
+  })
+
+  it('labels a pending staff invitation without exposing Cast work', () => {
+    const model = createEventOverviewReadModel({
+      actions: { respondToStaffInvitation: true },
+      actor: {
+        invitationKind: 'staff',
+        inviterName: 'Theater Admin',
+        isReviewer: false,
+        roles: [],
+      },
+      event: { ...event(), view: 'pending_invitee' },
+    })
+
+    expect(model.invitation).toEqual({
+      inviterName: 'Theater Admin',
+      planSummary:
+        'No Occurrences have been planned yet. Ask the inviter about timing before responding.',
+      role: 'Event staff invitee',
+      status: 'pending',
+      theaterName: '',
+    })
+    expect(model.relationships).toEqual(['Event staff invitee'])
+    expect(model.primaryAction?.relationship).toBe('Event staff invitee')
+    expect(model.sections.map(({ label }) => label)).toEqual([
+      'Overview',
+      'Cast & Team',
+    ])
+  })
   it('prioritizes an actionable At Risk decision ahead of a review and labels every action by relationship', () => {
     const model = createEventOverviewReadModel({
       actions: { manageAtRisk: true, reviewProposalRevisions: true },
@@ -36,10 +98,6 @@ describe('Event Overview read model', () => {
       },
     ])
     expect(model.primaryAction).toBeNull()
-    expect(model.sections).toContainEqual({
-      label: 'Review',
-      target: '#review',
-    })
   })
 
   it('keeps the author explanation when the author is not a Reviewer', () => {
@@ -115,7 +173,13 @@ describe('Event Overview read model', () => {
     const model = createEventOverviewReadModel({
       actions: {},
       actor: { isReviewer: false, leadershipRoles: ['producer'], roles: [] },
-      event: { ...event(), cast: [], occurrences: [], staffAssignments: [] },
+      event: {
+        ...event(),
+        cast: [],
+        occurrences: [],
+        proposalRevisions: [],
+        staffAssignments: [],
+      },
     })
 
     expect(model.sections).toContainEqual({
@@ -125,6 +189,10 @@ describe('Event Overview read model', () => {
     expect(model.sections).toContainEqual({
       label: 'Cast & Team',
       target: '#cast-team',
+    })
+    expect(model.sections).toContainEqual({
+      label: 'Review',
+      target: '#review',
     })
   })
 })

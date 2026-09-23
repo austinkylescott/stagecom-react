@@ -2722,9 +2722,28 @@ export type Database = {
         Args: { p_now?: string; p_show_id?: string }
         Returns: number
       }
+      get_event_staff_invitation_response_state: {
+        Args: { p_assignment_id: string }
+        Returns: string
+      }
       get_published_event: {
         Args: { p_event_slug: string; p_theater_slug: string }
         Returns: Json
+      }
+      get_published_theater_events: {
+        Args: { p_theater_slug: string }
+        Returns: {
+          admission_price_cents: number
+          event_slug: string
+          image_url: string
+          lifecycle_status: Database['public']['Enums']['show_lifecycle_status']
+          local_starts_at: string
+          location_name: string
+          sales_channel: Database['public']['Enums']['event_sales_channel']
+          starts_at: string
+          timezone_name: string
+          title: string
+        }[]
       }
       get_reusable_theater_join_link: {
         Args: { p_token_hash: string }
@@ -2824,6 +2843,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      is_accepted_event_staff: { Args: { p_show_id: string }; Returns: boolean }
       is_active_member_of_theater: {
         Args: { p_theater_id: string }
         Returns: boolean

@@ -43,7 +43,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await expect(
       directorPage.page.getByRole('heading', { name: 'Private Cast Event' }),
     ).toBeVisible()
-    await directorPage.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await directorPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
     await waitForReactHandler(
       directorPage.page.getByLabel('Active Theater Member'),
       'onChange',
@@ -71,14 +74,28 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await acceptedPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await acceptedPage.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await acceptedPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
+    await expect(
+      acceptedPage.page.getByText('Your participation response is separate'),
+    ).toBeVisible()
+    await expect(
+      acceptedPage.page.getByRole('heading', { name: 'Candidate Slot 1' }),
+    ).toHaveCount(0)
+    await expect(acceptedPage.page.getByText('Pending Member')).toHaveCount(0)
+    await acceptedPage.page
+      .getByRole('button', { name: 'Accept invitation' })
+      .click()
+    await acceptedPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
     await waitForReactHandler(
       acceptedPage.page.getByLabel('Availability for Candidate Slot 1'),
       'onChange',
     )
-    await expect(
-      acceptedPage.page.getByText('Your participation response is separate'),
-    ).toBeVisible()
     await expect(
       acceptedPage.page.getByRole('heading', { name: 'Candidate Slot 1' }),
     ).toBeVisible()
@@ -96,12 +113,6 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
           .selectOption(response),
       ])
     }
-    await expect(
-      acceptedPage.page.getByText('Accepted Member').first().locator('..'),
-    ).toContainText('pending')
-    await acceptedPage.page
-      .getByRole('button', { name: 'Accept invitation' })
-      .click()
     await expect(
       acceptedPage.page.getByText('Accepted Member').first().locator('..'),
     ).toContainText('accepted')
@@ -125,7 +136,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await declinedPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await declinedPage.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await declinedPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
     await waitForReactHandler(
       declinedPage.page.getByRole('button', { name: 'Decline invitation' }),
       'onClick',
@@ -139,26 +153,33 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     await pendingPage.page.goto(
       `/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`,
     )
-    await pendingPage.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await pendingPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
     await expect(
       pendingPage.page.getByRole('heading', { name: 'Candidate Slot 1' }),
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       pendingPage.page.getByRole('heading', { name: 'Candidate Slot 2' }),
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       pendingPage.page.getByRole('heading', { name: 'Candidate Slot 3' }),
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       pendingPage.page.getByRole('heading', {
         name: 'Collaborative availability matrix',
       }),
     ).toHaveCount(0)
-    await expect(pendingPage.page.getByText('Occurrence Calls')).toHaveCount(0)
-    await expect(pendingPage.page.getByText('Accepted Member')).toBeVisible()
+    await expect(
+      pendingPage.page.getByRole('heading', { name: 'Occurrence Calls' }),
+    ).toHaveCount(0)
+    await expect(pendingPage.page.getByText('Accepted Member')).toHaveCount(0)
     await expect(pendingPage.page.getByText('Pending Member')).toBeVisible()
     await expect(pendingPage.page.getByText('Declined Member')).toHaveCount(0)
-    await expect(pendingPage.page.getByText('Leadership')).toHaveCount(0)
+    await expect(
+      pendingPage.page.getByRole('heading', { name: 'Leadership' }),
+    ).toHaveCount(0)
     await expect(
       pendingPage.page.getByRole('heading', {
         name: 'Requested staffing needs and resources',
@@ -166,7 +187,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
     ).toHaveCount(0)
 
     await acceptedPage.page.reload()
-    await acceptedPage.page.getByRole('link', { name: 'Cast & Team' }).click()
+    await acceptedPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
     await expect(
       acceptedPage.page.getByRole('heading', {
         name: 'Collaborative availability matrix',
@@ -202,6 +226,10 @@ test('Cast invitations and disclosure boundaries use distinct actor contexts', a
         name: 'Requested staffing needs and resources',
       }),
     ).toBeVisible()
+    await ownerPage.page
+      .getByRole('navigation', { name: 'Event workspace sections' })
+      .getByRole('link', { name: 'Cast & Team' })
+      .click()
     await expect(
       ownerPage.page.getByText('Pending Member').first(),
     ).toBeVisible()

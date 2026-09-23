@@ -407,3 +407,4 @@ hidden production blockers.
 - The current Event-publication capability path remains valuable prior art. This milestone is not a backend rewrite; it reorganizes and deepens the product around existing commands and fills the specific seams required for a coherent operating experience.
 - The accepted specification is published in Linear as STA-25; this file is its repository mirror.
 - The approved tracer-bullet tickets and native blocking relationships are recorded under STA-25 in Linear.
+- Current implementation evidence and its limits are recorded in `wiki/features/operational-workspaces.md`. The uncoached Operator research gap remains recorded separately in `wiki/design/operational-workspaces-validation.md`.

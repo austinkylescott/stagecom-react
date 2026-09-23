@@ -1,4 +1,5 @@
 import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
+import { getTheaterWorkQueue } from '@/features/work-queue/queries'
 import {
   getBearerTokenFromRequest,
   getCurrentUserFromRequest,
@@ -40,7 +41,20 @@ export async function getMyCallsheet() {
   }))
   const theaterById = new Map(theaters.map((theater) => [theater.id, theater]))
 
-  if (theaters.length === 0) return ok({ commitments: [], theaters })
+  if (theaters.length === 0)
+    return ok({ commitments: [], sharedWork: [], theaters })
+
+  // Each Theater projection rechecks current membership and action eligibility.
+  const sharedResults = await Promise.all(
+    theaters.map((theater) =>
+      getTheaterWorkQueue({ theaterSlug: theater.slug }),
+    ),
+  )
+  const failedSharedRead = sharedResults.find((result) => !result.ok)
+  if (failedSharedRead) return failedSharedRead
+  const sharedWork = sharedResults.flatMap((result) =>
+    result.ok ? result.data.items : [],
+  )
 
   const supabase = createSupabaseServiceRoleClient()
   const { data: adminInvitations, error: adminInvitationError } = await supabase
@@ -137,6 +151,7 @@ export async function getMyCallsheet() {
     return ok({
       ...createCallsheetReadModel({
         commitments: [...adminCommitments, ...ownershipTransferCommitments],
+        sharedWork,
       }),
       theaters,
     })
@@ -501,7 +516,10 @@ export async function getMyCallsheet() {
     }),
   ]
 
-  return ok({ ...createCallsheetReadModel({ commitments }), theaters })
+  return ok({
+    ...createCallsheetReadModel({ commitments, sharedWork }),
+    theaters,
+  })
 }
 
 function toCommitment({

@@ -581,12 +581,10 @@ export function createSupabaseEventPersistence(): EventPersistence {
     },
     async authorizeStaffResponse(input) {
       const supabase = createAuthenticatedClient()
-      const { data, error } = await supabase
-        .from('show_staff_assignments')
-        .select('status')
-        .eq('id', input.assignmentId)
-        .eq('user_id', input.actorUserId)
-        .maybeSingle()
+      const { data, error } = await supabase.rpc(
+        'get_event_staff_invitation_response_state',
+        { p_assignment_id: input.assignmentId },
+      )
       if (error)
         throw appError(
           'external_service_error',
@@ -594,7 +592,7 @@ export function createSupabaseEventPersistence(): EventPersistence {
         )
       if (!data)
         throw appError('not_found', 'Event staff invitation was not found.')
-      if (data.status !== 'pending' && data.status !== input.response)
+      if (data !== 'pending' && data !== input.response)
         throw appError(
           'conflict',
           'This Event staff invitation has already received a response.',
@@ -657,51 +655,48 @@ export function createSupabaseEventPersistence(): EventPersistence {
     },
     async authorizeCastInvitation(input) {
       const supabase = createAuthenticatedClient()
-      const { data: event, error: eventError } = await supabase
-        .from('shows')
-        .select('id, theater_id')
-        .eq('id', input.eventId)
-        .maybeSingle()
-
-      if (eventError) {
-        throw appError(
-          'external_service_error',
-          'Cast invitation authorization could not be checked.',
-        )
-      }
-
-      if (!event) {
-        throw appError('not_found', 'Event was not found.')
-      }
-
-      const [
-        { data: isEventLeader, error: leadershipError },
-        { data: membership, error: membershipError },
-      ] = await Promise.all([
-        supabase.rpc('is_show_leader', {
+      const { data: isEventLeader, error: leadershipError } =
+        await supabase.rpc('is_show_leader', {
           p_show_id: input.eventId,
           p_user_id: input.actorUserId,
-        }),
-        supabase
-          .from('theater_memberships')
-          .select('user_id')
-          .eq('theater_id', event.theater_id)
-          .eq('user_id', input.memberUserId)
-          .eq('status', 'active')
-          .limit(1),
-      ])
-
-      if (leadershipError || membershipError) {
+        })
+      if (leadershipError) {
         throw appError(
           'external_service_error',
           'Cast invitation authorization could not be checked.',
         )
       }
-
       if (!isEventLeader) {
         throw appError(
           'forbidden',
           'Active Event leader access is required to invite Cast Members.',
+        )
+      }
+
+      // The active-leader RPC establishes Event access before privileged reads.
+      const service = createSupabaseServiceRoleClient()
+      const { data: event, error: eventError } = await service
+        .from('shows')
+        .select('theater_id')
+        .eq('id', input.eventId)
+        .maybeSingle()
+      if (eventError || !event) {
+        throw appError(
+          'external_service_error',
+          'Cast invitation authorization could not be checked.',
+        )
+      }
+      const { data: membership, error: membershipError } = await service
+        .from('theater_memberships')
+        .select('user_id')
+        .eq('theater_id', event.theater_id)
+        .eq('user_id', input.memberUserId)
+        .eq('status', 'active')
+        .limit(1)
+      if (membershipError) {
+        throw appError(
+          'external_service_error',
+          'Cast invitation authorization could not be checked.',
         )
       }
 

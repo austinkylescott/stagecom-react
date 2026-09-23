@@ -3,6 +3,42 @@ import { describe, expect, it } from 'vitest'
 import { createCallsheetReadModel } from './read-model'
 
 describe('Callsheet read model', () => {
+  it('keeps shared Theater decisions separate from personal commitments and orders them across Theaters', () => {
+    const model = createCallsheetReadModel({
+      commitments: [commitment({ id: 'personal', relationship: 'Producer' })],
+      sharedWork: [
+        {
+          id: 'publication:1',
+          kind: 'publication',
+          label: 'Publish Event',
+          relationship: 'Theater Operator',
+          priorityReason: 'Ready for Publication',
+          href: '/app/first/events/a#public-page',
+          theaterName: 'First Theater',
+          eventTitle: 'Event A',
+          deadlineAt: null,
+        },
+        {
+          id: 'risk:2',
+          kind: 'risk',
+          label: 'Manage At Risk Event',
+          relationship: 'Theater Operator',
+          priorityReason: 'At Risk',
+          href: '/app/second/events/b#operational-health',
+          theaterName: 'Second Theater',
+          eventTitle: 'Event B',
+          deadlineAt: null,
+        },
+      ],
+      now: new Date('2026-09-22T12:00:00Z'),
+    })
+
+    expect(model.commitments.map(({ id }) => id)).toEqual(['personal'])
+    expect(model.sharedWork.map(({ id }) => id)).toEqual([
+      'risk:2',
+      'publication:1',
+    ])
+  })
   it('keeps an Admin Invitation as a relationship-labeled personal commitment', () => {
     const model = createCallsheetReadModel({
       commitments: [

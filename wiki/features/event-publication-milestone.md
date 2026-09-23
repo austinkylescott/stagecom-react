@@ -22,7 +22,8 @@ This is Stagecom's first meaningful product win. It proves that multiple Theater
 10. A Reviewer approves the operational proposal.
 11. The Producer prepares public copy, public cast credits, ticket price, and an external admission link.
 12. Owner/Admin publishes the Event.
-13. An anonymous visitor views the Event on the published Theater page.
+13. An anonymous visitor finds the Event on the published Theater page, then
+    opens its canonical Event page and admission action.
 
 ## Supporting Journeys
 
@@ -65,7 +66,11 @@ and dependency relationships are tracked under STA-5 in Linear.
 `e2e/event-publication-milestone.spec.ts` is the primary seeded seam. It creates
 and publishes a persistent Theater, admits four Members through one Reusable
 Join Link, and uses distinct Owner, Producer, Director, Cast, Reviewer, and
-anonymous browser contexts through Event Publication and admission.
+anonymous browser contexts through Event Publication and admission. The Cast
+response starts from Callsheet, the Owner follows shared Publication work from
+Callsheet, and the anonymous visitor starts from the published Theater page.
+This proves those visible paths within the seeded journey; it does not stand in
+for uncoached Theater Operator validation.
 
 Focused Playwright specs retain alternate outcomes and disclosure boundaries.
 The pgTAP suite owns transactional concurrency, immutable revision,

@@ -20,7 +20,13 @@ export type PublicTheaterView = {
   upcomingEvents: Array<{
     title: string
     startsAt: string
-    type: string
+    localStartsAt: string
+    timezoneName: string
+    locationName: string
+    imageUrl: string | null
+    admissionSummary: string
+    cancelled: boolean
+    href: string
   }>
 }
 
@@ -131,18 +137,37 @@ export function PublicTheaterPage({
           <div className="grid gap-3">
             {theater.upcomingEvents.map((event) => (
               <article
-                className="rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] px-5 py-4"
-                key={event.title}
+                className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] sm:flex"
+                key={event.href}
               >
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
-                  {event.type}
-                </p>
-                <h3 className="mt-1 text-xl font-extrabold text-[var(--sea-ink)]">
-                  {event.title}
-                </h3>
-                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-                  {event.startsAt}
-                </p>
+                {event.imageUrl ? (
+                  <img
+                    alt=""
+                    className="aspect-[4/3] w-full object-cover sm:w-44"
+                    src={event.imageUrl}
+                  />
+                ) : null}
+                <div className="px-5 py-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+                    {event.cancelled ? 'Cancelled Event' : 'Upcoming Event'}
+                  </p>
+                  <h3 className="mt-1 text-xl font-extrabold text-[var(--sea-ink)]">
+                    <a
+                      className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+                      href={event.href}
+                    >
+                      {event.title}
+                    </a>
+                  </h3>
+                  <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                    {formatPerformance(event.startsAt, event.timezoneName)} ·{' '}
+                    {event.locationName}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--sea-ink)]">
+                    {event.cancelled ? 'Admission closed · ' : ''}
+                    {event.admissionSummary}
+                  </p>
+                </div>
               </article>
             ))}
           </div>
@@ -160,4 +185,12 @@ export function PublicTheaterPage({
       </section>
     </main>
   )
+}
+
+function formatPerformance(startsAt: string, timezoneName: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: timezoneName,
+  }).format(new Date(startsAt))
 }

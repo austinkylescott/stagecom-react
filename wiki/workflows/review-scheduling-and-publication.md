@@ -115,6 +115,12 @@ published copy, snapshotted public Performances, permitted Cast credits, price,
 Sales Channel, and admission call to action, and returns not found when either
 the Event or its Theater is unpublished.
 
+The public Theater page uses a separate anonymous allowlist for Event cards.
+It orders published Events by their next public Performance snapshot and shows
+image, title, time, place, admission summary, and cancellation state. A
+cancelled published Event remains listed until its final scheduled Performance
+ends; private Candidate Slots and operational state never enter the card read.
+
 ## How Does Initial Ticketing Work?
 
 The first milestone supports general admission and an explicit Sales Channel:

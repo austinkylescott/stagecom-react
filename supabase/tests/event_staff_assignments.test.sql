@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(14);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -23,6 +23,13 @@ select is((select public.event_staff_coverage((select id from public.shows where
 select lives_ok($$ select * from public.invite_event_staff_member((select id from public.shows where slug = 'staff-event'), '73000000-0000-0000-0000-000000000001', '73000000-0000-0000-0000-000000000002', '74000000-0000-0000-0000-000000000001') $$, 'retrying a pending invitation is idempotent');
 select is((select count(*) from public.activity_events where action = 'event.staff.invited'), 1::bigint, 'idempotent invitation emits one factual Event history record');
 select is((select count(*) from public.notifications where type = 'event.staff.invited'), 1::bigint, 'notification is projected from the invitation domain event');
+select set_config('stagecom.test_assignment_id', (select id from public.show_staff_assignments limit 1)::text, true);
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '73000000-0000-0000-0000-000000000002', true);
+select is((select public.get_event_staff_invitation_response_state(current_setting('stagecom.test_assignment_id')::uuid)), 'pending', 'the active invitee can authorize their own pending response without direct table SELECT');
+select set_config('request.jwt.claim.sub', '73000000-0000-0000-0000-000000000003', true);
+select is((select public.get_event_staff_invitation_response_state(current_setting('stagecom.test_assignment_id')::uuid)), null::text, 'another Member cannot inspect the invitation response state');
+reset role;
 select lives_ok($$ select * from public.respond_to_event_staff_invitation((select id from public.show_staff_assignments), '73000000-0000-0000-0000-000000000002', 'accepted') $$, 'the invited Member can accept');
 select is((select public.event_staff_coverage((select id from public.shows where slug = 'staff-event'), '74000000-0000-0000-0000-000000000001')), 1, 'only an accepted assignment counts toward coverage');
 select lives_ok($$ select * from public.respond_to_event_staff_invitation((select id from public.show_staff_assignments), '73000000-0000-0000-0000-000000000002', 'accepted') $$, 'retrying an acceptance is idempotent');

@@ -57,6 +57,13 @@ All mutations and private reads go through app-owned server functions/commands. 
 
 Public Theater/Event queries must use separate anonymous-safe public query modules. Draft and archived Theater data is not public.
 
+The public Theater Event-card query returns only published Event presentation
+and its next published Performance snapshot. It includes an explicit cancelled
+state until the final scheduled Performance passes. It excludes private Event
+titles, Candidate Slots, internal health, staffing, and logistics. The private
+Event workspace separately redacts a pending Cast invitee to their invitation,
+inviter, role, Event summary, and response action until acceptance.
+
 The persistent Theater slice enforces this boundary in the database as well as
 the app query layer. `anon` and `authenticated` may select only the approved
 public Theater columns, while Theater RLS returns published rows to anonymous

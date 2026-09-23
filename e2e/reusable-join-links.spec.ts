@@ -39,6 +39,10 @@ test('Owner creates, rotates, and revokes a governed Reusable Join Link', async 
     const pageErrors: string[] = []
     page.on('pageerror', (error) => pageErrors.push(error.message))
     const maximumUsesInput = page.getByLabel('Maximum uses (optional)')
+    await waitForReactHandler(
+      page.locator('form').filter({ has: maximumUsesInput }),
+      'onSubmit',
+    )
     await maximumUsesInput.fill('2')
     await expect(maximumUsesInput).toHaveValue('2')
     await page.getByRole('button', { name: 'Create Join Link' }).click()

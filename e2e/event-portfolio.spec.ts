@@ -1,9 +1,27 @@
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
+import type { Locator } from '@playwright/test'
 import type { Database } from '../src/server/db/database.types'
 
 const env = loadEnv('development', process.cwd(), '')
+
+async function waitForReactHandler(locator: Locator, handlerName: string) {
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element, name) =>
+          Object.keys(element).some((key) => {
+            if (!key.startsWith('__reactProps$')) return false
+            const props = Reflect.get(element, key) as
+              Record<string, unknown> | undefined
+            return typeof props?.[name] === 'function'
+          }),
+        handlerName,
+      ),
+    )
+    .toBe(true)
+}
 
 test('Operator filters the Event portfolio on desktop and phone', async ({
   context,
@@ -83,6 +101,10 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
     await page.waitForTimeout(500)
     await page.getByRole('button', { name: 'Draft/Review' }).click()
     await expect(page.getByText('1 of 1 Events')).toBeVisible()
+    await waitForReactHandler(
+      page.getByRole('combobox', { name: 'Publication', exact: true }),
+      'onChange',
+    )
     await page
       .getByRole('combobox', { name: 'Publication', exact: true })
       .selectOption('published', { timeout: 5_000 })
@@ -130,15 +152,13 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
       .eq('theater_id', theaterId)
       .eq('slug', 'draft-event')
       .single()
-    const { error: castError } = await admin
-      .from('show_cast')
-      .insert({
-        show_id: event!.id,
-        user_id: memberId,
-        source: 'invited',
-        status: 'pending',
-        public_credit_enabled: false,
-      })
+    const { error: castError } = await admin.from('show_cast').insert({
+      show_id: event!.id,
+      user_id: memberId,
+      source: 'invited',
+      status: 'pending',
+      public_credit_enabled: false,
+    })
     expect(castError).toBeNull()
     const { data: memberSession, error: memberSignInError } =
       await auth.auth.signInWithPassword({ email: memberEmail, password })

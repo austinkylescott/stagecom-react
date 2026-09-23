@@ -2,11 +2,28 @@ import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
-import type { BrowserContext } from '@playwright/test'
+import type { BrowserContext, Locator } from '@playwright/test'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../src/server/db/database.types'
 
 const testEnv = loadEnv('development', process.cwd(), '')
+
+async function waitForReactHandler(locator: Locator, handlerName: string) {
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element, name) =>
+          Object.keys(element).some((key) => {
+            if (!key.startsWith('__reactProps$')) return false
+            const props = Reflect.get(element, key) as
+              Record<string, unknown> | undefined
+            return typeof props?.[name] === 'function'
+          }),
+        handlerName,
+      ),
+    )
+    .toBe(true)
+}
 
 type Fixture = {
   admin: SupabaseClient<Database>
@@ -47,38 +64,56 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
 
     await signInBrowser(context, fixture)
     await page.goto(`/app/${fixture.theaterSlug}/settings/event-policy`)
-    await page.waitForTimeout(500)
+    await waitForReactHandler(
+      page.getByLabel('Producer eligibility'),
+      'onChange',
+    )
     await page
       .getByLabel('Producer eligibility')
       .selectOption('designated_proposers')
     await page.getByLabel('Counteroffer response window (hours)').fill('96')
     await page.getByLabel('Allow audited Owner self-approval').check()
+    await expect(
+      page.getByRole('button', { name: 'Save settings' }),
+    ).toBeEnabled()
     await Promise.all([
-      page.waitForResponse((response) =>
-        response.url().includes('/_serverFn/'),
+      page.waitForResponse(
+        (response) => response.url().includes('/_serverFn/'),
+        { timeout: 10_000 },
       ),
       page.getByRole('button', { name: 'Save settings' }).click(),
     ])
     await expect(page.getByText('Governance saved.')).toBeVisible()
 
     await page.goto(`/app/${fixture.theaterSlug}/settings/venue-calendar`)
+    await waitForReactHandler(page.getByLabel('Primary Venue name'), 'onChange')
     await page.getByLabel('Primary Venue name').fill('Main Stage')
     await page.getByLabel('Setup buffer (minutes)').fill('30')
     await page.getByLabel('Turnover buffer (minutes)').fill('45')
+    await expect(
+      page.getByRole('button', { name: 'Save settings' }),
+    ).toBeEnabled()
     await Promise.all([
-      page.waitForResponse((response) =>
-        response.url().includes('/_serverFn/'),
+      page.waitForResponse(
+        (response) => response.url().includes('/_serverFn/'),
+        { timeout: 10_000 },
       ),
       page.getByRole('button', { name: 'Save settings' }).click(),
     ])
     await expect(page.getByText('Governance saved.')).toBeVisible()
 
+    await page.goto(`/app/${fixture.theaterSlug}/members`)
     const memberCard = page
       .locator('article')
       .filter({ hasText: 'Governed Member' })
+    await waitForReactHandler(
+      memberCard.getByRole('button', { name: 'Designate proposer' }),
+      'onClick',
+    )
     await Promise.all([
-      page.waitForResponse((response) =>
-        response.url().includes('/_serverFn/'),
+      page.waitForResponse(
+        (response) => response.url().includes('/_serverFn/'),
+        { timeout: 10_000 },
       ),
       memberCard.getByRole('button', { name: 'Designate proposer' }).click(),
     ])
@@ -87,7 +122,7 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     ).toBeVisible()
 
     await page.goto(`/app/${fixture.theaterSlug}/events/new`)
-    await page.waitForTimeout(500)
+    await waitForReactHandler(page.getByLabel('Event title'), 'onChange')
     await page.getByLabel('Event title').fill('Summer Hamlet')
     await expect(page.getByLabel('Event slug')).toHaveValue('summer-hamlet')
     await page.getByRole('checkbox', { name: 'Governed Member' }).check()
@@ -98,7 +133,10 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
       new RegExp(`/app/${fixture.theaterSlug}/events/summer-hamlet$`),
     )
     await page.waitForTimeout(500)
-    await expect(page.getByText('Cast Members: 0.')).toBeVisible()
+    await expect(page.getByText('0 accepted · 0 pending')).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Respond to Counteroffer · Producer' }),
+    ).toHaveCount(0)
     await expect(page.getByText('Lifecycle').locator('..')).toContainText(
       'draft',
     )
@@ -109,6 +147,7 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
       page.getByText('Operational health').locator('..'),
     ).toContainText('on_track')
 
+    await page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await page.getByLabel('Target cast size').fill('8')
     await page.getByLabel('Minimum Viable Cast').fill('5')
     await expect(page.getByLabel('Target cast size')).toHaveValue('8')
@@ -117,11 +156,11 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     await page.getByLabel('Occurrence 1 type').selectOption('performance')
     await page.getByLabel('Occurrence 1 visibility').selectOption('public')
     await page.getByRole('button', { name: 'Add Candidate Slot' }).click()
-    await page.getByLabel('Local date and time').fill('2026-08-15T19:30')
+    await page.getByLabel('Local date and time').fill('2026-10-15T19:30')
     await page.getByLabel('Duration (minutes)').fill('90')
     await page.getByLabel('Confirm this Slot').check()
     await page.getByRole('button', { name: 'Add Candidate Slot' }).click()
-    await page.getByLabel('Local date and time').nth(1).fill('2026-08-16T19:30')
+    await page.getByLabel('Local date and time').nth(1).fill('2026-10-16T19:30')
     await page.getByLabel('Location type').nth(1).selectOption('off_site')
     await page
       .getByLabel('Location', { exact: true })
@@ -132,8 +171,9 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     await page.getByLabel('Requested resource').fill('Wireless microphones')
     await page.getByLabel('Quantity').fill('4')
     await Promise.all([
-      page.waitForResponse((response) =>
-        response.url().includes('/_serverFn/'),
+      page.waitForResponse(
+        (response) => response.url().includes('/_serverFn/'),
+        { timeout: 10_000 },
       ),
       page.getByRole('button', { name: 'Save operational plan' }).click(),
     ])
