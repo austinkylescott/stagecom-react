@@ -1,4 +1,4 @@
-export type PortfolioEventInput = {
+export type PortfolioEvent = {
   id: string
   slug: string
   title: string
@@ -7,27 +7,18 @@ export type PortfolioEventInput = {
   publication: string
   health: string
   dates: string[]
-  candidateDates?: string[]
+  candidateDates: string[]
   leadership: Array<{ userId: string; displayName: string; role: string }>
   limited?: boolean
-  overviewHref?: string
-}
-
-export type PortfolioAction = {
-  eventTitle?: string | null
-  label: string
-  href: string
-  kind: string
-  urgent?: boolean
-  relationship?: string
-}
-
-export type PortfolioEvent = PortfolioEventInput & {
-  dateKeys: string[]
+  overviewHref: string
   nextDate: string | null
   nextProposedDate: string | null
-  nextAction: Omit<PortfolioAction, 'eventTitle' | 'urgent'> | null
-  overviewHref: string
+  nextAction: {
+    label: string
+    href: string
+    kind: string
+    relationship?: string
+  } | null
   upcoming: boolean
 }
 
@@ -54,57 +45,10 @@ export type PortfolioFilters = {
     | 'action-asc'
 }
 
-export function createEventPortfolioReadModel(input: {
-  now: string
-  theaterSlug: string
-  timezone?: string
-  events: PortfolioEventInput[]
-  actions: PortfolioAction[]
-}) {
-  const events: PortfolioEvent[] = input.events.map((event) => {
-    const dates = [...event.dates].sort()
-    const candidateDates = [...(event.candidateDates ?? [])].sort()
-    const eventHref = `/app/${input.theaterSlug}/events/${event.slug}`
-    const action = input.actions
-      .map((item, index) => ({ item, index }))
-      .filter(({ item }) => item.href.startsWith(`${eventHref}#`))
-      .sort(
-        (a, b) =>
-          actionPriority(a.item) - actionPriority(b.item) || a.index - b.index,
-      )
-      .at(0)?.item
-    return {
-      ...event,
-      dates,
-      candidateDates,
-      dateKeys: [...dates, ...candidateDates].map((date) =>
-        dateKey(date, input.timezone ?? 'UTC'),
-      ),
-      nextDate: dates.find((date) => date >= input.now) ?? null,
-      nextProposedDate:
-        candidateDates.find((date) => date >= input.now) ?? null,
-      nextAction: action
-        ? {
-            label: action.label,
-            href: action.href,
-            kind: action.kind,
-            ...(action.relationship
-              ? { relationship: action.relationship }
-              : {}),
-          }
-        : null,
-      overviewHref: event.overviewHref ?? `${eventHref}#overview`,
-      upcoming:
-        !['cancelled', 'completed'].includes(event.lifecycle) &&
-        dates.some((date) => date >= input.now),
-    }
-  })
-  return { events }
-}
-
 export function filterEventPortfolio(
   events: PortfolioEvent[],
   filters: PortfolioFilters,
+  timezone = 'UTC',
 ) {
   const filtered = events.filter((event) => {
     if (filters.view === 'needs-attention' && !event.nextAction) return false
@@ -118,11 +62,13 @@ export function filterEventPortfolio(
       return false
     if (
       (filters.from || filters.to) &&
-      !event.dateKeys.some(
-        (date) =>
-          (!filters.from || date >= filters.from) &&
-          (!filters.to || date <= filters.to),
-      )
+      ![...event.dates, ...event.candidateDates]
+        .map((date) => dateKey(date, timezone))
+        .some(
+          (date) =>
+            (!filters.from || date >= filters.from) &&
+            (!filters.to || date <= filters.to),
+        )
     )
       return false
     if (
@@ -180,26 +126,6 @@ function sortDate(event: PortfolioEvent) {
       .filter((date): date is string => date !== null)
       .sort()
       .at(0) ?? null
-  )
-}
-
-function actionPriority(action: PortfolioAction) {
-  if (action.kind === 'risk') return 0
-  if (action.urgent) return 1
-  return (
-    {
-      cancellation: 2,
-      counteroffer: 3,
-      cast_invitation: 3,
-      staff_invitation: 3,
-      staffing: 4,
-      proposal: 5,
-      proposal_edits: 6,
-      public_content: 6,
-      availability_response: 7,
-      publication: 8,
-      occurrence_call: 9,
-    }[action.kind] ?? 10
   )
 }
 

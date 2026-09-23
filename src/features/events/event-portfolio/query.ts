@@ -1,8 +1,10 @@
-import { getMyCallsheet } from '@/features/callsheet/queries'
+import { getEventCommitments } from '@/features/callsheet/event-commitments'
+import { createCallsheetReadModel } from '@/features/callsheet/read-model'
 import { getTheaterAccess } from '@/features/events/queries'
+import { getTheaterWorkQueue } from '@/features/work-queue/queries'
 import { appError, err, ok } from '@/server/errors'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
-import { createEventPortfolioReadModel } from './read-model'
+import type { PortfolioEvent } from './read-model'
 import type { z } from 'zod'
 import type { theaterEventsInputSchema } from '@/features/events/schemas'
 
@@ -73,20 +75,25 @@ export async function getEventPortfolio(
     .eq('event_type', 'show')
   if (!operator && !reviewer) privateQuery = privateQuery.in('id', leaderIds)
 
-  const [privateEvents, publicEvents, callsheet] = await Promise.all([
-    !operator && !reviewer && !leaderIds.length
-      ? Promise.resolve({ data: [], error: null })
-      : privateQuery,
-    operator || reviewer
-      ? Promise.resolve({ data: [], error: null })
-      : service
-          .from('shows')
-          .select('id, title, slug, lifecycle_status, publication_status')
-          .eq('theater_id', theater.id)
-          .eq('event_type', 'show')
-          .eq('publication_status', 'published'),
-    getMyCallsheet(),
-  ])
+  const [privateEvents, publicEvents, sharedWork, personalWork] =
+    await Promise.all([
+      !operator && !reviewer && !leaderIds.length
+        ? Promise.resolve({ data: [], error: null })
+        : privateQuery,
+      operator || reviewer
+        ? Promise.resolve({ data: [], error: null })
+        : service
+            .from('shows')
+            .select('id, title, slug, lifecycle_status, publication_status')
+            .eq('theater_id', theater.id)
+            .eq('event_type', 'show')
+            .eq('publication_status', 'published'),
+      getTheaterWorkQueue(
+        { theaterSlug: theater.slug },
+        { includeExceptions: false },
+      ),
+      getEventCommitments({ actorUserId, theaters: [theater] }),
+    ])
   if (privateEvents.error || publicEvents.error)
     return err(
       appError(
@@ -94,7 +101,8 @@ export async function getEventPortfolio(
         'Event portfolio could not be loaded.',
       ),
     )
-  if (!callsheet.ok) return callsheet
+  if (!sharedWork.ok) return sharedWork
+  if (!personalWork.ok) return personalWork
 
   const privateIds = new Set(privateEvents.data.map((event) => event.id))
   const participantIdSet = new Set(participantIds)
@@ -123,31 +131,29 @@ export async function getEventPortfolio(
     ].map((event) => [event.id, event]),
   )
 
+  const commitments = createCallsheetReadModel({
+    commitments: personalWork.data,
+  }).commitments
   const actions = [
-    ...callsheet.data.sharedWork
-      .filter((item) => item.href.startsWith(`/app/${theater.slug}/`))
-      .map((item) => ({
-        label: item.label,
-        href: item.href,
-        kind: item.kind,
-        relationship: item.relationship,
-      })),
-    ...callsheet.data.commitments
-      .filter((item) => item.theater.slug === theater.slug && item.event.slug)
-      .map((item) => ({
-        label: item.action,
-        href: `/app/${theater.slug}/events/${item.event.slug}${item.targetAnchor}`,
-        kind: item.kind,
-        relationship: item.relationship,
-        urgent: Boolean(item.urgencyReason),
-      })),
+    ...sharedWork.data.items.map((item) => ({
+      label: item.label,
+      href: item.href,
+      kind: item.kind,
+      relationship: item.relationship,
+    })),
+    ...commitments.map((item) => ({
+      label: item.action,
+      href: `/app/${theater.slug}/events/${item.event.slug}${item.targetAnchor}`,
+      kind: item.kind,
+      relationship: item.relationship,
+      urgent: Boolean(item.urgencyReason),
+    })),
   ]
   return ok({
     theater,
     portfolio: createEventPortfolioReadModel({
       now: new Date().toISOString(),
       theaterSlug: theater.slug,
-      timezone: theater.timezone ?? 'UTC',
       events: [
         ...privateEvents.data.map((event) => ({
           id: event.id,
@@ -207,4 +213,81 @@ export async function getEventPortfolio(
       (theater.producer_eligibility === 'designated_proposers' &&
         capabilities.data.some((row) => row.capability === 'proposer')),
   })
+}
+
+type PortfolioEventInput = Omit<
+  PortfolioEvent,
+  'nextDate' | 'nextProposedDate' | 'nextAction' | 'upcoming' | 'overviewHref'
+> & { overviewHref?: string }
+
+type PortfolioAction = {
+  label: string
+  href: string
+  kind: string
+  urgent?: boolean
+  relationship?: string
+}
+
+function createEventPortfolioReadModel(input: {
+  now: string
+  theaterSlug: string
+  events: PortfolioEventInput[]
+  actions: PortfolioAction[]
+}) {
+  const events: PortfolioEvent[] = input.events.map((event) => {
+    const dates = [...event.dates].sort()
+    const candidateDates = [...event.candidateDates].sort()
+    const eventHref = `/app/${input.theaterSlug}/events/${event.slug}`
+    const action = input.actions
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.href.startsWith(`${eventHref}#`))
+      .sort(
+        (a, b) =>
+          actionPriority(a.item) - actionPriority(b.item) || a.index - b.index,
+      )
+      .at(0)?.item
+    return {
+      ...event,
+      dates,
+      candidateDates,
+      nextDate: dates.find((date) => date >= input.now) ?? null,
+      nextProposedDate:
+        candidateDates.find((date) => date >= input.now) ?? null,
+      nextAction: action
+        ? {
+            label: action.label,
+            href: action.href,
+            kind: action.kind,
+            ...(action.relationship
+              ? { relationship: action.relationship }
+              : {}),
+          }
+        : null,
+      overviewHref: event.overviewHref ?? `${eventHref}#overview`,
+      upcoming:
+        !['cancelled', 'completed'].includes(event.lifecycle) &&
+        dates.some((date) => date >= input.now),
+    }
+  })
+  return { events }
+}
+
+function actionPriority(action: PortfolioAction) {
+  if (action.kind === 'risk') return 0
+  if (action.urgent) return 1
+  return (
+    {
+      cancellation: 2,
+      counteroffer: 3,
+      cast_invitation: 3,
+      staff_invitation: 3,
+      staffing: 4,
+      proposal: 5,
+      proposal_edits: 6,
+      public_content: 6,
+      availability_response: 7,
+      publication: 8,
+      occurrence_call: 9,
+    }[action.kind] ?? 10
+  )
 }

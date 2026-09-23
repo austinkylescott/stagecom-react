@@ -72,6 +72,9 @@ An Owner, Admin, or explicitly designated Theater Member authorized to decide an
 The continuous record of a proposed or approved public performance program, from its first draft through completion or cancellation.
 _Avoid_: Show, production, sub-event
 
+**Event Portfolio**:
+A Theater-scoped view of Events, their independent states and dates, and the next actions available to the viewer through their relationships and authority. It does not create a separate Event state.
+
 **Occurrence**:
 One gathering belonging to an Event, initially either a Rehearsal or a Performance.
 _Avoid_: Sub-event, date
