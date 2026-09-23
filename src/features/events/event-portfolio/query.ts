@@ -1,5 +1,7 @@
-import { getMyCallsheet } from '@/features/callsheet/queries'
+import { getEventCommitments } from '@/features/callsheet/event-commitments'
+import { createCallsheetReadModel } from '@/features/callsheet/read-model'
 import { getTheaterAccess } from '@/features/events/queries'
+import { getTheaterWorkQueue } from '@/features/work-queue/queries'
 import { appError, err, ok } from '@/server/errors'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 import { createEventPortfolioReadModel } from './read-model'
@@ -73,20 +75,25 @@ export async function getEventPortfolio(
     .eq('event_type', 'show')
   if (!operator && !reviewer) privateQuery = privateQuery.in('id', leaderIds)
 
-  const [privateEvents, publicEvents, callsheet] = await Promise.all([
-    !operator && !reviewer && !leaderIds.length
-      ? Promise.resolve({ data: [], error: null })
-      : privateQuery,
-    operator || reviewer
-      ? Promise.resolve({ data: [], error: null })
-      : service
-          .from('shows')
-          .select('id, title, slug, lifecycle_status, publication_status')
-          .eq('theater_id', theater.id)
-          .eq('event_type', 'show')
-          .eq('publication_status', 'published'),
-    getMyCallsheet(),
-  ])
+  const [privateEvents, publicEvents, sharedWork, personalWork] =
+    await Promise.all([
+      !operator && !reviewer && !leaderIds.length
+        ? Promise.resolve({ data: [], error: null })
+        : privateQuery,
+      operator || reviewer
+        ? Promise.resolve({ data: [], error: null })
+        : service
+            .from('shows')
+            .select('id, title, slug, lifecycle_status, publication_status')
+            .eq('theater_id', theater.id)
+            .eq('event_type', 'show')
+            .eq('publication_status', 'published'),
+      getTheaterWorkQueue(
+        { theaterSlug: theater.slug },
+        { includeExceptions: false },
+      ),
+      getEventCommitments({ actorUserId, theaters: [theater] }),
+    ])
   if (privateEvents.error || publicEvents.error)
     return err(
       appError(
@@ -94,7 +101,8 @@ export async function getEventPortfolio(
         'Event portfolio could not be loaded.',
       ),
     )
-  if (!callsheet.ok) return callsheet
+  if (!sharedWork.ok) return sharedWork
+  if (!personalWork.ok) return personalWork
 
   const privateIds = new Set(privateEvents.data.map((event) => event.id))
   const participantIdSet = new Set(participantIds)
@@ -123,24 +131,23 @@ export async function getEventPortfolio(
     ].map((event) => [event.id, event]),
   )
 
+  const commitments = createCallsheetReadModel({
+    commitments: personalWork.data,
+  }).commitments
   const actions = [
-    ...callsheet.data.sharedWork
-      .filter((item) => item.href.startsWith(`/app/${theater.slug}/`))
-      .map((item) => ({
-        label: item.label,
-        href: item.href,
-        kind: item.kind,
-        relationship: item.relationship,
-      })),
-    ...callsheet.data.commitments
-      .filter((item) => item.theater.slug === theater.slug && item.event.slug)
-      .map((item) => ({
-        label: item.action,
-        href: `/app/${theater.slug}/events/${item.event.slug}${item.targetAnchor}`,
-        kind: item.kind,
-        relationship: item.relationship,
-        urgent: Boolean(item.urgencyReason),
-      })),
+    ...sharedWork.data.items.map((item) => ({
+      label: item.label,
+      href: item.href,
+      kind: item.kind,
+      relationship: item.relationship,
+    })),
+    ...commitments.map((item) => ({
+      label: item.action,
+      href: `/app/${theater.slug}/events/${item.event.slug}${item.targetAnchor}`,
+      kind: item.kind,
+      relationship: item.relationship,
+      urgent: Boolean(item.urgencyReason),
+    })),
   ]
   return ok({
     theater,

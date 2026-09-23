@@ -39,6 +39,11 @@ pending invitation presentation. Local database tests check the anonymous
 public-discovery allowlist, cancellation and end-of-listing boundary, and
 invitee-only staff response authorization.
 
+The Event Portfolio reads current Theater work and personal Event commitments
+through Theater-scoped readers. It does not load the person's cross-Theater
+Callsheet. The Callsheet and Event Portfolio share the same personal commitment
+rules; the Portfolio associates actions with Events in the requested Theater.
+
 The merged [STA-25 verification PR](https://github.com/austinkylescott/stagecom-react/pull/49)
 records a passing seeded browser journey, focused scenarios, 168 unit and
 integration tests, local database checks, type checking, and a production

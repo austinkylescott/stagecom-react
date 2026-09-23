@@ -46,6 +46,7 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
   const email = `portfolio-${suffix}@example.com`
   const password = `Stagecom-${suffix}`
   const slug = `portfolio-${suffix}`
+  const otherSlug = `portfolio-other-${suffix}`
   const { data: owner, error: ownerError } = await admin.auth.admin.createUser({
     email,
     password,
@@ -54,6 +55,7 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
   })
   expect(ownerError).toBeNull()
   let theaterId: string | null = null
+  let otherTheaterId: string | null = null
   let memberId: string | null = null
   try {
     const { data: theaters, error: theaterError } = await admin.rpc(
@@ -160,6 +162,48 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
       public_credit_enabled: false,
     })
     expect(castError).toBeNull()
+    const { data: otherTheaters, error: otherTheaterError } = await admin.rpc(
+      'create_theater_with_owner',
+      {
+        p_actor_user_id: owner.user!.id,
+        p_name: 'Other Portfolio Stage',
+        p_slug: otherSlug,
+        p_timezone: 'America/New_York',
+      },
+    )
+    expect(otherTheaterError).toBeNull()
+    otherTheaterId = otherTheaters![0].id
+    const { error: otherMembershipError } = await admin
+      .from('theater_memberships')
+      .insert({
+        theater_id: otherTheaterId,
+        user_id: memberId,
+        roles: ['member'],
+        status: 'active',
+      })
+    expect(otherMembershipError).toBeNull()
+    const { error: otherEventError } = await admin.rpc('create_managed_event', {
+      p_actor_user_id: owner.user!.id,
+      p_producer_user_ids: [],
+      p_slug: 'other-event',
+      p_theater_id: otherTheaterId,
+      p_title: 'Other Event',
+    })
+    expect(otherEventError).toBeNull()
+    const { data: otherEvent } = await admin
+      .from('shows')
+      .select('id')
+      .eq('theater_id', otherTheaterId)
+      .eq('slug', 'other-event')
+      .single()
+    const { error: otherCastError } = await admin.from('show_cast').insert({
+      show_id: otherEvent!.id,
+      user_id: memberId,
+      source: 'invited',
+      status: 'pending',
+      public_credit_enabled: false,
+    })
+    expect(otherCastError).toBeNull()
     const { data: memberSession, error: memberSignInError } =
       await auth.auth.signInWithPassword({ email: memberEmail, password })
     expect(memberSignInError).toBeNull()
@@ -185,8 +229,24 @@ test('Operator filters the Event portfolio on desktop and phone', async ({
     await expect(
       inviteeSummary.getByRole('link', { name: 'Respond to invitation' }),
     ).toHaveAttribute('href', /#cast-participation$/)
+    await expect(page.getByText('1 of 1 Events')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Other Event' }),
+    ).toHaveCount(0)
+    await page.goto(`/app/${otherSlug}/events`)
+    await expect(
+      page.getByRole('heading', { name: 'Other Event' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Draft Event' }),
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: 'Respond to invitation' }),
+    ).toHaveAttribute('href', /#cast-participation$/)
   } finally {
     if (theaterId) await admin.from('theaters').delete().eq('id', theaterId)
+    if (otherTheaterId)
+      await admin.from('theaters').delete().eq('id', otherTheaterId)
     if (memberId) await admin.auth.admin.deleteUser(memberId)
     await admin.auth.admin.deleteUser(owner.user!.id)
   }
