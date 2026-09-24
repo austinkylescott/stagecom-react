@@ -1,4 +1,5 @@
 import { appError, err, ok } from '@/server/errors'
+import { getBearerTokenFromRequest } from '@/server/auth/session'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
 
 import { getEventCommitments } from './event-commitments'
@@ -8,7 +9,7 @@ import { getMySharedTheaterWork } from './shared-work'
 export async function getMyCallsheet() {
   const sharedResult = await getMySharedTheaterWork()
   if (!sharedResult.ok) return sharedResult
-  const { actorUserId, theaters, sharedWork } = sharedResult.data
+  const { theaters, sharedWork } = sharedResult.data
   const theaterById = new Map(theaters.map((theater) => [theater.id, theater]))
 
   if (theaters.length === 0)
@@ -18,7 +19,7 @@ export async function getMyCallsheet() {
   const { data: adminInvitations, error: adminInvitationError } = await supabase
     .from('admin_invitations')
     .select('id, theater_id')
-    .eq('member_user_id', actorUserId)
+    .eq('member_user_id', sharedResult.data.actorUserId)
     .eq('status', 'pending')
     .in(
       'theater_id',
@@ -53,7 +54,7 @@ export async function getMyCallsheet() {
     await supabase
       .from('theater_ownership_transfers')
       .select('id, theater_id')
-      .eq('member_user_id', actorUserId)
+      .eq('member_user_id', sharedResult.data.actorUserId)
       .eq('status', 'pending')
       .in(
         'theater_id',
@@ -86,7 +87,13 @@ export async function getMyCallsheet() {
     },
   )
 
-  const eventCommitments = await getEventCommitments({ actorUserId, theaters })
+  const accessToken = getBearerTokenFromRequest()
+  if (!accessToken)
+    return err(appError('unauthenticated', 'Sign in is required.'))
+  const eventCommitments = await getEventCommitments({
+    accessToken,
+    scope: { kind: 'all_active_theaters' },
+  })
   if (!eventCommitments.ok) return eventCommitments
   return ok({
     ...createCallsheetReadModel({

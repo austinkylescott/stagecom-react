@@ -90,11 +90,11 @@ describe('cross-Theater shared work', () => {
     expect(getTheaterWorkQueue).toHaveBeenCalledTimes(2)
     expect(getTheaterWorkQueue).toHaveBeenCalledWith(
       { theaterSlug: 'a' },
-      { includeExceptions: false },
+      { accessToken: 'actor-token', mode: 'decisions' },
     )
     expect(getTheaterWorkQueue).toHaveBeenCalledWith(
       { theaterSlug: 'b' },
-      { includeExceptions: false },
+      { accessToken: 'actor-token', mode: 'decisions' },
     )
   })
 

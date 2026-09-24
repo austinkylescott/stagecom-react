@@ -1,10 +1,11 @@
 import { getRequestHeader } from '@tanstack/react-start/server'
 
-import { appError, err, ok, type AppResult } from '../errors'
+import { appError, err, ok } from '../errors'
 import { createSupabaseAnonClient } from '../supabase/client'
 import { getAuthAccessTokenCookie } from './cookies'
 
 import type { User } from '@supabase/supabase-js'
+import type { AppResult } from '../errors'
 
 export type CurrentSessionUser = Pick<
   User,
@@ -30,10 +31,20 @@ export async function getCurrentUserFromRequest(): Promise<
     return err(appError('unauthenticated', 'Sign in is required.'))
   }
 
+  return getCurrentUserFromToken(token)
+}
+
+export async function getCurrentUserFromToken(
+  token: string,
+): Promise<AppResult<CurrentSessionUser>> {
+  if (!token) {
+    return err(appError('unauthenticated', 'Sign in is required.'))
+  }
+
   const supabase = createSupabaseAnonClient(token)
   const { data, error } = await supabase.auth.getUser(token)
 
-  if (error || !data.user) {
+  if (error) {
     return err(appError('unauthenticated', 'Sign in is required.'))
   }
 

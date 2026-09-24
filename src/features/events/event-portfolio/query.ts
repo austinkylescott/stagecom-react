@@ -90,9 +90,12 @@ export async function getEventPortfolio(
             .eq('publication_status', 'published'),
       getTheaterWorkQueue(
         { theaterSlug: theater.slug },
-        { includeExceptions: false },
+        { accessToken: access.data.bearerToken, mode: 'decisions' },
       ),
-      getEventCommitments({ actorUserId, theaters: [theater] }),
+      getEventCommitments({
+        accessToken: access.data.bearerToken,
+        scope: { kind: 'theater', theaterSlug: theater.slug },
+      }),
     ])
   if (privateEvents.error || publicEvents.error)
     return err(

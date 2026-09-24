@@ -44,7 +44,7 @@ export async function getMySharedTheaterWork() {
     theaters.map((theater) =>
       getTheaterWorkQueue(
         { theaterSlug: theater.slug },
-        { includeExceptions: false },
+        { accessToken: token, mode: 'decisions' },
       ),
     ),
   )

@@ -45,6 +45,14 @@ Callsheet. The Callsheet and Event Portfolio share the same personal commitment
 rules; the Portfolio's authorized read owns relationship-based Event visibility
 and associates actions with Events in the requested Theater. Saved views,
 filters, and sorting operate on that authorized result in the browser.
+The personal Event commitments read checks active membership for the requested
+Theater scope before reading Event details. Callsheet requests all active
+Theaters; Event Portfolio requests one Theater. Event details are read only for
+Events connected to that person.
+The Work Queue read checks active Theater membership and action eligibility,
+then classifies one internal Theater work snapshot. Callsheet and Event
+Portfolio request decisions only; Theater Operations also receives separate
+watch-only Operational Exceptions.
 
 The merged [STA-25 verification PR](https://github.com/austinkylescott/stagecom-react/pull/49)
 records a passing seeded browser journey, focused scenarios, 168 unit and

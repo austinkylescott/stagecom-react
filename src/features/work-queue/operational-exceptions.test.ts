@@ -27,7 +27,7 @@ function input(): OperationalExceptionsInput {
         title: 'Opening',
         lifecycle: 'in_review',
         approvedRevisionId: null,
-        health: 'healthy',
+        health: 'on_track',
         continuationAllowed: false,
         revisions: [],
         occurrences: [],

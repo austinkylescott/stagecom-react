@@ -1,14 +1,17 @@
 import { z } from 'zod'
 import { evaluatePublicReadiness } from '@/features/events/public-content-readiness'
+import type { Database } from '@/server/db/database.types'
 
-export type WorkQueueInput = {
+type WorkState = Database['public']['Enums']
+
+export type TheaterWorkSnapshot = {
   now: string
   viewer: { userId: string; roles: string[]; isReviewer: boolean }
   theater: {
     id: string
     slug: string
     name: string
-    status: string
+    status: WorkState['theater_status']
     ownerSelfApprovalEnabled: boolean
     missingPublicationFields: string[]
   }
@@ -20,14 +23,14 @@ export type WorkQueueInput = {
     id: string
     slug: string
     title: string
-    lifecycle: string
+    lifecycle: WorkState['show_lifecycle_status']
     approvedRevisionId: string | null
-    health: string
+    health: WorkState['show_operational_health']
     continuationAllowed: boolean
     revisions: Array<{
       id: string
       number: number
-      state: string
+      state: WorkState['proposal_decision_state']
       authorId: string
       hasDecision: boolean
       snapshot: unknown
@@ -62,7 +65,7 @@ export type WorkQueueItem = {
 }
 
 export function createWorkQueueReadModel(
-  input: WorkQueueInput,
+  input: TheaterWorkSnapshot,
 ): WorkQueueItem[] {
   const items: WorkQueueItem[] = []
   const operator = input.viewer.roles.some(
@@ -250,7 +253,7 @@ const approvalSnapshotSchema = z.object({
   ),
 })
 
-function canApproveSnapshot(snapshot: unknown, input: WorkQueueInput) {
+function canApproveSnapshot(snapshot: unknown, input: TheaterWorkSnapshot) {
   const parsed = approvalSnapshotSchema.safeParse(snapshot)
   if (!parsed.success) return false
   const reservations = [...input.reservations]
@@ -283,7 +286,7 @@ function canApproveSnapshot(snapshot: unknown, input: WorkQueueInput) {
 
 export function getStaffingNeedState(
   need: { id: string; quantity: number },
-  eventAssignments: WorkQueueInput['events'][number]['assignments'],
+  eventAssignments: TheaterWorkSnapshot['events'][number]['assignments'],
   activeMemberIds: string[],
 ) {
   const assignments = eventAssignments.filter(

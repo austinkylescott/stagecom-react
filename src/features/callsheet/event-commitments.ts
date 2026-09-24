@@ -1,106 +1,190 @@
 import { getProducerContentCommitment } from '@/features/events/public-content-readiness'
 import { appError, err, ok } from '@/server/errors'
-import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
+import {
+  createSupabaseAnonClient,
+  createSupabaseServiceRoleClient,
+} from '@/server/supabase/client'
 
 import type { CallsheetCommitmentInput } from './read-model'
 
 type Theater = { id: string; name: string; slug: string }
+type EventCommitmentScope =
+  { kind: 'all_active_theaters' } | { kind: 'theater'; theaterSlug: string }
 
-/** The caller establishes active membership before this scoped service-role read. */
+/** Authentication and active membership precede every service-role Event read. */
 export async function getEventCommitments({
-  actorUserId,
-  theaters,
+  accessToken,
+  scope,
 }: {
-  actorUserId: string
-  theaters: Theater[]
+  accessToken: string
+  scope: EventCommitmentScope
 }) {
-  if (!theaters.length) return ok([] as CallsheetCommitmentInput[])
+  const actorClient = createSupabaseAnonClient(accessToken)
+  const { data: identity, error: identityError } =
+    await actorClient.auth.getUser(accessToken)
+  if (identityError)
+    return err(appError('unauthenticated', 'Sign in is required.'))
+  const actorUserId = identity.user.id
+  const { data: memberships, error: membershipError } = await actorClient
+    .from('theater_memberships')
+    .select('theater_id, theaters!inner(name, slug)')
+    .eq('user_id', actorUserId)
+    .eq('status', 'active')
+  if (membershipError)
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+  const theaters: Theater[] = memberships
+    .filter(
+      (membership) =>
+        scope.kind === 'all_active_theaters' ||
+        membership.theaters.slug === scope.theaterSlug,
+    )
+    .map((membership) => ({
+      id: membership.theater_id,
+      name: membership.theaters.name,
+      slug: membership.theaters.slug,
+    }))
+  if (!theaters.length)
+    return scope.kind === 'theater'
+      ? err(appError('forbidden', 'Active Theater membership is required.'))
+      : ok([] as CallsheetCommitmentInput[])
+
+  const now = new Date().toISOString()
   const theaterById = new Map(theaters.map((theater) => [theater.id, theater]))
   const supabase = createSupabaseServiceRoleClient()
 
-  // The caller's actor-scoped read establishes active membership before this
-  // service-role query reads Events within those Theaters.
+  // Discover the actor's relationships before reading private Event summaries.
+  const [staffResult, castResult, leadershipResult, availabilityRequestResult] =
+    await Promise.all([
+      supabase
+        .from('show_staff_assignments')
+        .select('id, show_id, responsibility, status')
+        .eq('user_id', actorUserId)
+        .in('status', ['pending', 'accepted']),
+      supabase
+        .from('show_cast')
+        .select('show_id, status, source')
+        .eq('user_id', actorUserId),
+      supabase
+        .from('show_leadership')
+        .select('show_id')
+        .eq('user_id', actorUserId)
+        .eq('role', 'producer'),
+      supabase
+        .from('show_availability_requests')
+        .select('candidate_slot_id, counteroffer_id')
+        .eq('user_id', actorUserId)
+        .is('responded_at', null)
+        .is('closed_at', null),
+    ])
+  if (
+    staffResult.error ||
+    castResult.error ||
+    leadershipResult.error ||
+    availabilityRequestResult.error
+  )
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+
+  const {
+    data: availabilityCounteroffers,
+    error: availabilityCounterofferError,
+  } = availabilityRequestResult.data.length
+    ? await supabase
+        .from('show_counteroffers')
+        .select('id, proposal_revision_id')
+        .in(
+          'id',
+          availabilityRequestResult.data.map(
+            (request) => request.counteroffer_id,
+          ),
+        )
+    : { data: [], error: null }
+  if (availabilityCounterofferError)
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+  const { data: availabilityRevisions, error: availabilityRevisionError } =
+    availabilityCounteroffers.length
+      ? await supabase
+          .from('show_proposal_revisions')
+          .select('id, show_id')
+          .in(
+            'id',
+            availabilityCounteroffers.map(
+              (counteroffer) => counteroffer.proposal_revision_id,
+            ),
+          )
+      : { data: [], error: null }
+  if (availabilityRevisionError)
+    return err(
+      appError('external_service_error', 'Callsheet could not be loaded.'),
+    )
+
+  const relatedEventIds = [
+    ...new Set([
+      ...staffResult.data.map((row) => row.show_id),
+      ...castResult.data.map((row) => row.show_id),
+      ...leadershipResult.data.map((row) => row.show_id),
+      ...availabilityRevisions.map((row) => row.show_id),
+    ]),
+  ]
+  if (!relatedEventIds.length) return ok([] as CallsheetCommitmentInput[])
+
   const { data: events, error: eventError } = await supabase
     .from('shows')
     .select(
       'id, theater_id, slug, title, show_occurrences(candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id))',
     )
+    .in('id', relatedEventIds)
     .in(
       'theater_id',
       theaters.map((theater) => theater.id),
     )
     .eq('event_type', 'show')
     .not('lifecycle_status', 'in', '(cancelled,completed)')
-
-  if (eventError) {
+  if (eventError)
     return err(
       appError('external_service_error', 'Callsheet could not be loaded.'),
     )
-  }
+  if (!events.length) return ok([] as CallsheetCommitmentInput[])
 
   const eventById = new Map(events.map((event) => [event.id, event]))
-  if (events.length === 0) return ok([] as CallsheetCommitmentInput[])
-
   const eventIds = events.map((event) => event.id)
-  const scopedCandidateSlotIds = events.flatMap((event) =>
-    event.show_occurrences.flatMap((occurrence) =>
-      occurrence.candidate_slots.map((slot) => slot.id),
+  const eventIdSet = new Set(eventIds)
+  const scopedStaff = staffResult.data.filter((row) =>
+    eventIdSet.has(row.show_id),
+  )
+  const scopedCast = castResult.data.filter((row) =>
+    eventIdSet.has(row.show_id),
+  )
+  const scopedLeadership = leadershipResult.data.filter((row) =>
+    eventIdSet.has(row.show_id),
+  )
+  const scopedCandidateSlotIds = new Set(
+    events.flatMap((event) =>
+      event.show_occurrences.flatMap((occurrence) =>
+        occurrence.candidate_slots.map((slot) => slot.id),
+      ),
     ),
   )
-  const [
-    staffResult,
-    castResult,
-    leadershipResult,
-    availabilityRequestResult,
-    callResult,
-  ] = await Promise.all([
-    supabase
-      .from('show_staff_assignments')
-      .select('id, show_id, responsibility, status')
-      .in('show_id', eventIds)
-      .eq('user_id', actorUserId)
-      .in('status', ['pending', 'accepted']),
-    supabase
-      .from('show_cast')
-      .select('show_id, status, source')
-      .in('show_id', eventIds)
-      .eq('user_id', actorUserId),
-    supabase
-      .from('show_leadership')
-      .select('show_id')
-      .in('show_id', eventIds)
-      .eq('user_id', actorUserId)
-      .eq('role', 'producer'),
-    scopedCandidateSlotIds.length
-      ? supabase
-          .from('show_availability_requests')
-          .select('candidate_slot_id, counteroffer_id')
-          .eq('user_id', actorUserId)
-          .in('candidate_slot_id', scopedCandidateSlotIds)
-          .is('responded_at', null)
-          .is('closed_at', null)
-      : Promise.resolve({ data: [], error: null }),
-    supabase
-      .from('show_occurrence_calls')
-      .select('call, occurrence_id, show_id')
-      .in('show_id', eventIds)
-      .eq('user_id', actorUserId)
-      .neq('call', 'not_called'),
-  ])
-
-  if (
-    castResult.error ||
-    staffResult.error ||
-    leadershipResult.error ||
-    availabilityRequestResult.error ||
-    callResult.error
-  ) {
+  const scopedAvailabilityRequests = availabilityRequestResult.data.filter(
+    (request) => scopedCandidateSlotIds.has(request.candidate_slot_id),
+  )
+  const callResult = await supabase
+    .from('show_occurrence_calls')
+    .select('call, occurrence_id, show_id')
+    .in('show_id', eventIds)
+    .eq('user_id', actorUserId)
+    .neq('call', 'not_called')
+  if (callResult.error)
     return err(
       appError('external_service_error', 'Callsheet could not be loaded.'),
     )
-  }
 
-  const producerEventIds = leadershipResult.data.map(
+  const producerEventIds = scopedLeadership.map(
     (leadership) => leadership.show_id,
   )
   const { data: revisions, error: revisionError } = producerEventIds.length
@@ -173,7 +257,7 @@ export async function getEventCommitments({
           .from('show_counteroffers')
           .select('id, proposal_revision_id, response_deadline')
           .eq('state', 'pending')
-          .gt('response_deadline', new Date().toISOString())
+          .gt('response_deadline', now)
           .in(
             'proposal_revision_id',
             revisions.map((revision) => revision.id),
@@ -226,60 +310,19 @@ export async function getEventCommitments({
     ]),
   )
   const { data: availabilitySlots, error: availabilitySlotError } =
-    availabilityRequestResult.data.length > 0
+    scopedAvailabilityRequests.length > 0
       ? await supabase
           .from('show_candidate_slots')
           .select('id, starts_at')
           .in(
             'id',
-            availabilityRequestResult.data.map(
+            scopedAvailabilityRequests.map(
               (request) => request.candidate_slot_id,
             ),
           )
       : { data: [], error: null }
 
   if (availabilitySlotError) {
-    return err(
-      appError('external_service_error', 'Callsheet could not be loaded.'),
-    )
-  }
-
-  const {
-    data: availabilityCounteroffers,
-    error: availabilityCounterofferError,
-  } =
-    availabilityRequestResult.data.length > 0
-      ? await supabase
-          .from('show_counteroffers')
-          .select('id, proposal_revision_id')
-          .in(
-            'id',
-            availabilityRequestResult.data.map(
-              (request) => request.counteroffer_id,
-            ),
-          )
-      : { data: [], error: null }
-
-  if (availabilityCounterofferError) {
-    return err(
-      appError('external_service_error', 'Callsheet could not be loaded.'),
-    )
-  }
-
-  const { data: availabilityRevisions, error: availabilityRevisionError } =
-    availabilityCounteroffers.length > 0
-      ? await supabase
-          .from('show_proposal_revisions')
-          .select('id, show_id')
-          .in(
-            'id',
-            availabilityCounteroffers.map(
-              (counteroffer) => counteroffer.proposal_revision_id,
-            ),
-          )
-      : { data: [], error: null }
-
-  if (availabilityRevisionError) {
     return err(
       appError('external_service_error', 'Callsheet could not be loaded.'),
     )
@@ -296,7 +339,7 @@ export async function getEventCommitments({
   )
   const commitments = [
     ...publicContentCommitments,
-    ...castResult.data.flatMap((cast) => {
+    ...scopedCast.flatMap((cast) => {
       if (cast.status !== 'pending' || cast.source !== 'invited') return []
       return toCommitment({
         action: 'Respond to invitation',
@@ -309,7 +352,7 @@ export async function getEventCommitments({
         theaterById,
       })
     }),
-    ...staffResult.data.flatMap((assignment) =>
+    ...scopedStaff.flatMap((assignment) =>
       assignment.status === 'pending'
         ? toCommitment({
             action: 'Respond to staff assignment',
@@ -357,7 +400,7 @@ export async function getEventCommitments({
         theaterById,
       })
     }),
-    ...availabilityRequestResult.data.flatMap((request) => {
+    ...scopedAvailabilityRequests.flatMap((request) => {
       const counteroffer = availabilityCounterofferById.get(
         request.counteroffer_id,
       )
@@ -380,17 +423,17 @@ export async function getEventCommitments({
       })
     }),
     ...callResult.data.flatMap((call) => {
-      const staffAssignment = staffResult.data.find(
+      const staffAssignment = scopedStaff.find(
         (assignment) =>
           assignment.show_id === call.show_id &&
           assignment.status === 'accepted',
       )
-      const castMember = castResult.data.find(
+      const castMember = scopedCast.find(
         (cast) => cast.show_id === call.show_id && cast.status === 'accepted',
       )
       if (!staffAssignment && !castMember) return []
       const startsAt = callStartsAtByOccurrenceId.get(call.occurrence_id)
-      if (!startsAt || Date.parse(startsAt) < Date.now()) return []
+      if (!startsAt || Date.parse(startsAt) < Date.parse(now)) return []
       return toCommitment({
         action: 'Review call',
         actionableAt: startsAt,
