@@ -33,6 +33,7 @@ Every wiki page declares one of these implementation states:
 - Permissions: `wiki/data/permissions-model.md`
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
+- Selected Member Home prototype direction (STA-64): `wiki/design/member-home-direction.md`
 - Operational actor/state matrix: `docs/design/operational-actor-state-matrix.md`
 - Operational-workspaces validation: `wiki/design/operational-workspaces-validation.md`
 - Operational-workspaces implementation evidence: `wiki/features/operational-workspaces.md`

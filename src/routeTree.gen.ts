@@ -22,6 +22,7 @@ import { Route as OnboardingTheaterRouteImport } from './routes/onboarding.theat
 import { Route as JoinInviteTokenRouteImport } from './routes/join.$inviteToken'
 import { Route as JoinLinkJoinTokenRouteImport } from './routes/join-link.$joinToken'
 import { Route as DevOperationalWorkspacesPrototypeRouteImport } from './routes/dev.operational-workspaces-prototype'
+import { Route as DevMemberJourneyPrototypeRouteImport } from './routes/dev.member-journey-prototype'
 import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
@@ -107,6 +108,12 @@ const DevOperationalWorkspacesPrototypeRoute =
   DevOperationalWorkspacesPrototypeRouteImport.update({
     id: '/dev/operational-workspaces-prototype',
     path: '/dev/operational-workspaces-prototype',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DevMemberJourneyPrototypeRoute =
+  DevMemberJourneyPrototypeRouteImport.update({
+    id: '/dev/member-journey-prototype',
+    path: '/dev/member-journey-prototype',
     getParentRoute: () => rootRouteImport,
   } as any)
 const DevComponentsRoute = DevComponentsRouteImport.update({
@@ -232,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/app/notifications': typeof AppNotificationsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
+  '/dev/member-journey-prototype': typeof DevMemberJourneyPrototypeRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
   '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
@@ -266,6 +274,7 @@ export interface FileRoutesByTo {
   '/app/notifications': typeof AppNotificationsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
+  '/dev/member-journey-prototype': typeof DevMemberJourneyPrototypeRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
   '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
@@ -301,6 +310,7 @@ export interface FileRoutesById {
   '/app/notifications': typeof AppNotificationsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dev/components': typeof DevComponentsRoute
+  '/dev/member-journey-prototype': typeof DevMemberJourneyPrototypeRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
   '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/auth/callback'
     | '/dev/components'
+    | '/dev/member-journey-prototype'
     | '/dev/operational-workspaces-prototype'
     | '/join-link/$joinToken'
     | '/join/$inviteToken'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/auth/callback'
     | '/dev/components'
+    | '/dev/member-journey-prototype'
     | '/dev/operational-workspaces-prototype'
     | '/join-link/$joinToken'
     | '/join/$inviteToken'
@@ -406,6 +418,7 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/auth/callback'
     | '/dev/components'
+    | '/dev/member-journey-prototype'
     | '/dev/operational-workspaces-prototype'
     | '/join-link/$joinToken'
     | '/join/$inviteToken'
@@ -438,6 +451,7 @@ export interface RootRouteChildren {
   TheaterRoute: typeof TheaterRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   DevComponentsRoute: typeof DevComponentsRoute
+  DevMemberJourneyPrototypeRoute: typeof DevMemberJourneyPrototypeRoute
   DevOperationalWorkspacesPrototypeRoute: typeof DevOperationalWorkspacesPrototypeRoute
   JoinLinkJoinTokenRoute: typeof JoinLinkJoinTokenRoute
   JoinInviteTokenRoute: typeof JoinInviteTokenRoute
@@ -534,6 +548,13 @@ declare module '@tanstack/react-router' {
       path: '/dev/operational-workspaces-prototype'
       fullPath: '/dev/operational-workspaces-prototype'
       preLoaderRoute: typeof DevOperationalWorkspacesPrototypeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/member-journey-prototype': {
+      id: '/dev/member-journey-prototype'
+      path: '/dev/member-journey-prototype'
+      fullPath: '/dev/member-journey-prototype'
+      preLoaderRoute: typeof DevMemberJourneyPrototypeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/components': {
@@ -801,6 +822,7 @@ const rootRouteChildren: RootRouteChildren = {
   TheaterRoute: TheaterRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   DevComponentsRoute: DevComponentsRoute,
+  DevMemberJourneyPrototypeRoute: DevMemberJourneyPrototypeRoute,
   DevOperationalWorkspacesPrototypeRoute:
     DevOperationalWorkspacesPrototypeRoute,
   JoinLinkJoinTokenRoute: JoinLinkJoinTokenRoute,
