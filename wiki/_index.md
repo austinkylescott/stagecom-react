@@ -34,6 +34,7 @@ Every wiki page declares one of these implementation states:
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
 - Selected Member Home prototype direction (STA-64): `wiki/design/member-home-direction.md`
+- Programming and community design synthesis (STA-58): `wiki/design/programming-and-community-direction.md`
 - Reviewed programming Calendar and move prototype direction (STA-63): `src/features/programming-calendar-prototype/README.md`
 - Operational actor/state matrix: `docs/design/operational-actor-state-matrix.md`
 - Operational-workspaces validation: `wiki/design/operational-workspaces-validation.md`
