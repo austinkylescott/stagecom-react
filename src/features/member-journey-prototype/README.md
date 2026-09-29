@@ -2,7 +2,7 @@
 
 **Question:** Which low fidelity layout lets a Member find commitments, discover Events and people, enter an Event, distinguish a practice proposal from a confirmed Call, and reach conversation? Can an Operator find shared work in the same structure, including on a phone?
 
-Run `npm run prototype:member-journey` and open `/dev/member-journey-prototype`. The route is independent of login and database state. `?variant=A|B|C&persona=member|multi|operator|leader|pending|former&screen=home|theater|events|event|conversation|people|profile|calendar|operations|public-theater|public-event|public-profile` makes a view shareable. The floating arrows and keyboard left/right arrows switch layouts. The phone button constrains the canvas; the layout also responds to a narrow browser.
+Run `npm run prototype:member-journey` and open `/dev/member-journey-prototype`. The route is independent of login and database state. `?variant=A|B|C&persona=member|multi|operator|leader|pending|former&screen=home|theater|events|event|conversation|people|profile|calendar|operations|public-theater|public-event|public-profile&calendarView=A|C` makes a view shareable. The floating arrows and keyboard left/right arrows switch journey layouts outside Calendar; within Lantern Theater Calendar, left/right keys and the labeled buttons switch Daybook and Dense month. The phone button constrains the canvas; the layout also responds to a narrow browser.
 
 The layouts disagree about the first screen's structure:
 
@@ -33,7 +33,7 @@ Revision 2 changes the questions to: can a person recognize their own priorities
 - Home is a personal Callsheet, without Theater-scoped navigation. Both Theaters have explicit entrances in the multi-Theater scenario and separate Calls.
 - Daybook is a commitments-only timeline. Published Event discovery remains separate.
 - Events is a visual portfolio with in-place availability responses; Event detail contains schedule and team context.
-- Calendar is a week grid showing venue occupancy, with confirmed bookings, tentative holds, and an unavailable block.
+- The initial Calendar was a week grid showing venue occupancy, with confirmed bookings, tentative holds, and an unavailable block. Lantern Theater Calendar now embeds the separate STA-63 September study with Daybook and Dense month alternatives; Harbor Stage retains the original week fixture for comparison. The September study and October Event examples are explicitly separate fictional scenarios. Hover or keyboard focus reveals booking details. Activating an Event-linked booking enters the STA-64 Event workspace with that booking selected; reservations and standalone activities open their own pages with a clear viewer-specific next step.
 - People is an avatar directory with search; profiles and conversation carry the same illustrated identities.
 - Event posters are local SVG illustrations; all avatars and fixtures are fictional placeholders. No network image dependencies.
 - Repeated body links are reduced to one main destination per Event card. Theater navigation highlights its current destination.

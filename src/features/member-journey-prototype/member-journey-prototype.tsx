@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   Building2,
 } from 'lucide-react'
+import { ProgrammingCalendarPrototype } from '@/features/programming-calendar-prototype/programming-calendar-prototype'
 
 import './member-journey-prototype.css'
 
@@ -90,6 +91,14 @@ const labels: Record<Screen, string> = {
 }
 
 const eventFixtures = [
+  ...(['A', 'B', 'C', 'D'] as const).map((group, index) => ({
+    id: `calendar-${group.toLowerCase()}`,
+    title: `Event ${group}`,
+    theater: 'Lantern Theater',
+    dates: `Sep ${5 + index * 7}–${6 + index * 7}`,
+    subtitle: `Ensemble ${group} · September calendar study`,
+    color: '#526f69',
+  })),
   {
     id: 'tempest',
     title: 'The Tempest',
@@ -250,7 +259,14 @@ function initial<T extends string>(
 export function MemberJourneyPrototype({
   initialSearch,
 }: {
-  initialSearch: { variant?: string; persona?: string; screen?: string }
+  initialSearch: {
+    variant?: string
+    persona?: string
+    screen?: string
+    calendarView?: string
+    booking?: string
+    eventId?: string
+  }
 }) {
   const [variant, setVariant] = useState<Variant>(() =>
     initial(initialSearch.variant, ['A', 'B', 'C'], 'A'),
@@ -265,8 +281,16 @@ export function MemberJourneyPrototype({
   const [screen, setScreen] = useState<Screen>(() =>
     initial(initialSearch.screen, Object.keys(labels) as Screen[], 'home'),
   )
+  const [calendarView, setCalendarView] = useState<'A' | 'C'>(() =>
+    initial(
+      initialSearch.calendarView,
+      ['A', 'C'],
+      persona === 'operator' ? 'A' : 'C',
+    ),
+  )
   const [theaterName, setTheaterName] = useState('Lantern Theater')
-  const [eventId, setEventId] = useState('tempest')
+  const [eventId, setEventId] = useState(initialSearch.eventId ?? 'tempest')
+  const [calendarBooking, setCalendarBooking] = useState(initialSearch.booking)
   const [personIndex, setPersonIndex] = useState(0)
   const [peopleSearch, setPeopleSearch] = useState('')
   const [phone, setPhone] = useState(false)
@@ -286,15 +310,48 @@ export function MemberJourneyPrototype({
     url.searchParams.set('variant', variant)
     url.searchParams.set('persona', persona)
     url.searchParams.set('screen', screen)
+    url.searchParams.set('calendarView', calendarView)
+    if (screen === 'event') url.searchParams.set('eventId', eventId)
+    else url.searchParams.delete('eventId')
+    if (
+      screen !== 'calendar' &&
+      !(screen === 'event' && eventId.startsWith('calendar-'))
+    )
+      url.searchParams.delete('booking')
     window.history.replaceState(null, '', url)
-  }, [variant, persona, screen])
+  }, [variant, persona, screen, calendarView, eventId])
+
+  useEffect(() => {
+    const syncRoute = () => {
+      const search = new URL(window.location.href).searchParams
+      setScreen(
+        initial(
+          search.get('screen') ?? undefined,
+          Object.keys(labels) as Screen[],
+          'home',
+        ),
+      )
+      setEventId(search.get('eventId') ?? 'tempest')
+      setCalendarBooking(search.get('booking') ?? undefined)
+    }
+    window.addEventListener('popstate', syncRoute)
+    return () => window.removeEventListener('popstate', syncRoute)
+  }, [])
 
   useEffect(() => {
     const onKey = (keyEvent: KeyboardEvent) => {
       if (!['ArrowLeft', 'ArrowRight'].includes(keyEvent.key)) return
       const target = keyEvent.target as HTMLElement
-      if (target.closest('input, textarea, select, [contenteditable="true"]'))
+      if (
+        target.closest(
+          'input, textarea, select, [contenteditable="true"], [role="dialog"]',
+        )
+      )
         return
+      if (screen === 'calendar' && theaterName === 'Lantern Theater') {
+        setCalendarView((current) => (current === 'A' ? 'C' : 'A'))
+        return
+      }
       setVariant(
         (current) =>
           variants[
@@ -306,7 +363,7 @@ export function MemberJourneyPrototype({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [screen, theaterName])
 
   const selectedEvent =
     eventFixtures.find((item) => item.id === eventId) ?? eventFixtures[0]
@@ -316,6 +373,7 @@ export function MemberJourneyPrototype({
     setScreen('theater')
   }
   const openEvent = (id: string, next: Screen = 'event') => {
+    setCalendarBooking(undefined)
     setEventId(id)
     setTheaterName(
       eventFixtures.find((item) => item.id === id)?.theater ??
@@ -324,11 +382,29 @@ export function MemberJourneyPrototype({
     setScreen(next)
   }
   const go = (next: Screen) => {
+    setCalendarBooking(undefined)
     if (next === 'event') {
       setEventId('tempest')
       setTheaterName('Lantern Theater')
     }
     setScreen(next)
+  }
+  const openCalendarEvent = (event: string, bookingId: string) => {
+    const id = `calendar-${event.slice(-1).toLowerCase()}`
+    const url = new URL(window.location.href)
+    url.searchParams.set('screen', 'event')
+    url.searchParams.set('eventId', id)
+    url.searchParams.set('booking', bookingId)
+    window.history.pushState(null, '', url)
+    setCalendarBooking(bookingId)
+    setEventId(id)
+    setTheaterName('Lantern Theater')
+    setScreen('event')
+    window.scrollTo(0, 0)
+  }
+  const returnToCalendar = () => {
+    setCalendarBooking(undefined)
+    setScreen('calendar')
   }
   const action = (label: string, next: Screen) => (
     <button className="mj-link" onClick={() => go(next)} type="button">
@@ -765,6 +841,29 @@ export function MemberJourneyPrototype({
     )
   }
   function calendarScreen() {
+    if (theaterName === 'Lantern Theater') {
+      return (
+        <ProgrammingCalendarPrototype
+          embedded
+          initialBooking={calendarBooking}
+          onOpenEvent={openCalendarEvent}
+          onBackToCalendar={returnToCalendar}
+          embeddedPersona={
+            persona === 'operator'
+              ? 'operator'
+              : persona === 'leader'
+                ? 'leader'
+                : persona === 'member' || persona === 'multi'
+                  ? 'cast'
+                  : 'member'
+          }
+          variant={calendarView}
+          onVariant={(next) => {
+            if (next === 'A' || next === 'C') setCalendarView(next)
+          }}
+        />
+      )
+    }
     const harbor = theaterName === 'Harbor Stage'
     const days = harbor
       ? ['Mon 19', 'Tue 20', 'Wed 21', 'Thu 22', 'Fri 23', 'Sat 24', 'Sun 25']
@@ -875,6 +974,29 @@ export function MemberJourneyPrototype({
   }
 
   function eventScreen() {
+    if (eventId.startsWith('calendar-'))
+      return (
+        <ProgrammingCalendarPrototype
+          embedded
+          workspaceEvent={selectedEvent.title}
+          initialBooking={calendarBooking}
+          onOpenEvent={openCalendarEvent}
+          onBackToCalendar={returnToCalendar}
+          embeddedPersona={
+            persona === 'operator'
+              ? 'operator'
+              : persona === 'leader'
+                ? 'leader'
+                : persona === 'member' || persona === 'multi'
+                  ? 'cast'
+                  : 'member'
+          }
+          variant={calendarView}
+          onVariant={(next) => {
+            if (next === 'A' || next === 'C') setCalendarView(next)
+          }}
+        />
+      )
     if (eventId !== 'tempest')
       return (
         <>
@@ -1265,7 +1387,13 @@ export function MemberJourneyPrototype({
               value={persona}
               onChange={(changeEvent) => {
                 setPersona(changeEvent.target.value as Persona)
-                setScreen('home')
+                setScreen(
+                  (screen === 'calendar' ||
+                    (screen === 'event' && eventId.startsWith('calendar-'))) &&
+                    theaterName === 'Lantern Theater'
+                    ? screen
+                    : 'home',
+                )
                 setTheaterName('Lantern Theater')
               }}
             >
@@ -1386,7 +1514,7 @@ export function MemberJourneyPrototype({
           {posts.length}
         </span>
       </aside>
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && screen !== 'calendar' && (
         <div className="mj-switcher" aria-label="Prototype layout switcher">
           <button
             aria-label="Previous layout"
