@@ -11,7 +11,9 @@ Start the independent review with [the review handoff](theater-workspace-review-
 
 Source: maintainer’s visual-playground review and subsequent decisions. Evidence:
 `docs/design/visual-playground-review-round-1.md` and the isolated
-`prototype/visual-playground` worktree. Team and Team Owner are proposed glossary additions in the prototype worktree;
+[`prototype/visual-playground` archive at bfdb4f1](https://github.com/austinkylescott/stagecom-react/tree/bfdb4f1844ac52aea5ddf36fdaa595d4a7a7c1c2).
+The runnable prototype and screenshots are review evidence kept outside `main`;
+see the handoff for reproduction instructions. Team and Team Owner are proposed glossary additions in the prototype worktree;
 the source workspace glossary has not yet adopted them. Existing domain, authorization, approval and Publication contracts remain
 in force; this specification describes composition and proposed new workflows.
 

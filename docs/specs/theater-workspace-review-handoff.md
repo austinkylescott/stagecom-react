@@ -71,11 +71,14 @@ content in the skeleton using the existing 4:5 format.
 Prototype worktree:
 `/Users/akscott/orca/workspaces/stagecom-react/visual-playground`
 
-Branch: `prototype/visual-playground`. The evidence includes uncommitted files;
-checking out the branch alone will not reproduce the artifact. No capture commit
-or publication has occurred. Review in this local worktree without discarding it.
+Branch: `prototype/visual-playground`, captured and pushed at
+[`bfdb4f1`](https://github.com/austinkylescott/stagecom-react/tree/bfdb4f1844ac52aea5ddf36fdaa595d4a7a7c1c2).
+The runnable code, fictional assets, screenshots and workshop notes are preserved
+in that revision. The prototype implementation remains separate from `main`.
+The branch's earlier spec is historical; this main-branch review package is canonical.
 
-From that directory run `npm run prototype:visual-playground`, then open
+Use the local worktree above, or check out the captured revision in a separate
+checkout and run `npm ci --ignore-scripts`. Run `npm run prototype:visual-playground`, then open
 <http://localhost:3100/dev/visual-playground>. Choose A and use the lab's screen/
 scenario controls; workshop links are listed in the workshop document. Start
 with `src/features/visual-playground-prototype/README.md`. Screenshots and notes
@@ -85,7 +88,8 @@ The prototype uses fictional fixtures and resettable memory. It is evidence of
 composition and scripted interaction, not real consent, persistence, notification
 delivery, production authorization or concurrency. Browser checks passed as
 recorded in the workshop, but uncoached usability and real software-keyboard
-operation have not been established.
+operation have not been established. Typecheck and production build passed again
+before the archive was captured; these do not establish production readiness.
 
 ## Review completion
 
