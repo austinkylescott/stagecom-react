@@ -6,7 +6,21 @@ Status: active rebuild workflow
 
 The shared remote Supabase dev project is the default source of truth for app integration, schema verification, and generated TypeScript database types.
 
+The connected Stagecom integration project is `stagecom`
+(`obufimjayisdhkjjxhfd`). Before integration work, compare its migration history
+with the latest fetched `origin/main` and the current implementation branch.
+Review and locally verify pending migrations before applying approved remote
+updates; record any schema drift instead of assuming matching version numbers
+prove identical SQL.
+
 Local Supabase remains supported for isolated development, resets, experiments, and seed work. Local commands are named with `:local` and should be chosen explicitly.
+
+Evolve the existing application with its Supabase Auth, schema, authorized
+feature commands/queries and public reads. Inspect those contracts before
+extending data behavior. Verify forward migrations locally, then integrate
+approved changes into remote dev and reconcile generated types with that
+schema. Applying remote migrations or seeding requires explicit approval for
+the operation; choosing remote dev as the integration target does not grant it.
 
 For deterministic user-testing data and persona access, see
 `docs/development/demo-environment.md`. Demo data is intentionally separate
@@ -135,7 +149,7 @@ Recommended order for schema work:
 
 1. Create or edit a forward migration.
 2. Apply and test it locally with `npm run db:reset:local` or `npm run db:migrate:local`.
-3. Push it to the linked remote dev project with `npm run db:migrate:remote`.
+3. After explicit approval, push it to the linked remote dev project with `npm run db:migrate:remote`.
 4. Regenerate committed database types from remote with `npm run db:types`.
 5. Update `docs/` and `wiki/` when behavior, schema, roles, or permissions change.
 
