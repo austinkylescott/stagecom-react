@@ -12,6 +12,13 @@ _Avoid_: Company, tenant, account, organization
 A person with active membership in a Theater. A person may belong to multiple Theaters.
 _Avoid_: User, performer, employee
 
+**Team**:
+A named grouping of Theater Members. A Theater Member may belong to multiple Teams; Team membership is distinct from Event Cast participation.
+_Avoid_: Troupe, Group, when referring to this grouping
+
+**Team Owner**:
+The Theater Member with primary responsibility for a Team. Team ownership is distinct from Theater ownership and Event leadership.
+
 **Former Theater Member**:
 A person whose Theater membership has ended while their Theater-local participation and history remain preserved.
 _Avoid_: Inactive Member

@@ -53,7 +53,8 @@ function RootRoute() {
         state.location.pathname === '/app' ||
         state.location.pathname.startsWith('/app/'),
       isOperationalPrototype:
-        state.location.pathname === '/dev/operational-workspaces-prototype',
+        state.location.pathname === '/dev/operational-workspaces-prototype' ||
+        state.location.pathname === '/dev/visual-playground',
     }),
   })
 

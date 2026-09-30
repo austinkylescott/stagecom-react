@@ -30,7 +30,8 @@
     "test:e2e": "playwright test",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
-    "check": "prettier --check ."
+    "check": "prettier --check .",
+    "prototype:visual-playground": "vite dev --port 3100 --open '/dev/visual-playground'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

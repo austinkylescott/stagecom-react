@@ -33,6 +33,7 @@ Every wiki page declares one of these implementation states:
 - Permissions: `wiki/data/permissions-model.md`
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
+- Mobile-first visual redesign playground brief: `docs/design/visual-playground-brief.md`
 - Selected Member Home prototype direction (STA-64): `wiki/design/member-home-direction.md`
 - Reviewed programming Calendar and move prototype direction (STA-63): `src/features/programming-calendar-prototype/README.md`
 - Operational actor/state matrix: `docs/design/operational-actor-state-matrix.md`

@@ -21,6 +21,7 @@ import { Route as TheaterTheaterSlugRouteImport } from './routes/theater.$theate
 import { Route as OnboardingTheaterRouteImport } from './routes/onboarding.theater'
 import { Route as JoinInviteTokenRouteImport } from './routes/join.$inviteToken'
 import { Route as JoinLinkJoinTokenRouteImport } from './routes/join-link.$joinToken'
+import { Route as DevVisualPlaygroundRouteImport } from './routes/dev.visual-playground'
 import { Route as DevProgrammingCalendarPrototypeRouteImport } from './routes/dev.programming-calendar-prototype'
 import { Route as DevOperationalWorkspacesPrototypeRouteImport } from './routes/dev.operational-workspaces-prototype'
 import { Route as DevMemberJourneyPrototypeRouteImport } from './routes/dev.member-journey-prototype'
@@ -103,6 +104,11 @@ const JoinInviteTokenRoute = JoinInviteTokenRouteImport.update({
 const JoinLinkJoinTokenRoute = JoinLinkJoinTokenRouteImport.update({
   id: '/join-link/$joinToken',
   path: '/join-link/$joinToken',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevVisualPlaygroundRoute = DevVisualPlaygroundRouteImport.update({
+  id: '/dev/visual-playground',
+  path: '/dev/visual-playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevProgrammingCalendarPrototypeRoute =
@@ -249,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/dev/member-journey-prototype': typeof DevMemberJourneyPrototypeRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
   '/dev/programming-calendar-prototype': typeof DevProgrammingCalendarPrototypeRoute
+  '/dev/visual-playground': typeof DevVisualPlaygroundRoute
   '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/dev/member-journey-prototype': typeof DevMemberJourneyPrototypeRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
   '/dev/programming-calendar-prototype': typeof DevProgrammingCalendarPrototypeRoute
+  '/dev/visual-playground': typeof DevVisualPlaygroundRoute
   '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/dev/member-journey-prototype': typeof DevMemberJourneyPrototypeRoute
   '/dev/operational-workspaces-prototype': typeof DevOperationalWorkspacesPrototypeRoute
   '/dev/programming-calendar-prototype': typeof DevProgrammingCalendarPrototypeRoute
+  '/dev/visual-playground': typeof DevVisualPlaygroundRoute
   '/join-link/$joinToken': typeof JoinLinkJoinTokenRoute
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/dev/member-journey-prototype'
     | '/dev/operational-workspaces-prototype'
     | '/dev/programming-calendar-prototype'
+    | '/dev/visual-playground'
     | '/join-link/$joinToken'
     | '/join/$inviteToken'
     | '/onboarding/theater'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/dev/member-journey-prototype'
     | '/dev/operational-workspaces-prototype'
     | '/dev/programming-calendar-prototype'
+    | '/dev/visual-playground'
     | '/join-link/$joinToken'
     | '/join/$inviteToken'
     | '/onboarding/theater'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/dev/member-journey-prototype'
     | '/dev/operational-workspaces-prototype'
     | '/dev/programming-calendar-prototype'
+    | '/dev/visual-playground'
     | '/join-link/$joinToken'
     | '/join/$inviteToken'
     | '/onboarding/theater'
@@ -467,6 +479,7 @@ export interface RootRouteChildren {
   DevMemberJourneyPrototypeRoute: typeof DevMemberJourneyPrototypeRoute
   DevOperationalWorkspacesPrototypeRoute: typeof DevOperationalWorkspacesPrototypeRoute
   DevProgrammingCalendarPrototypeRoute: typeof DevProgrammingCalendarPrototypeRoute
+  DevVisualPlaygroundRoute: typeof DevVisualPlaygroundRoute
   JoinLinkJoinTokenRoute: typeof JoinLinkJoinTokenRoute
   JoinInviteTokenRoute: typeof JoinInviteTokenRoute
 }
@@ -555,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/join-link/$joinToken'
       fullPath: '/join-link/$joinToken'
       preLoaderRoute: typeof JoinLinkJoinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/visual-playground': {
+      id: '/dev/visual-playground'
+      path: '/dev/visual-playground'
+      fullPath: '/dev/visual-playground'
+      preLoaderRoute: typeof DevVisualPlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/programming-calendar-prototype': {
@@ -847,6 +867,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevOperationalWorkspacesPrototypeRoute:
     DevOperationalWorkspacesPrototypeRoute,
   DevProgrammingCalendarPrototypeRoute: DevProgrammingCalendarPrototypeRoute,
+  DevVisualPlaygroundRoute: DevVisualPlaygroundRoute,
   JoinLinkJoinTokenRoute: JoinLinkJoinTokenRoute,
   JoinInviteTokenRoute: JoinInviteTokenRoute,
 }
