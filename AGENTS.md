@@ -56,6 +56,8 @@ Use the five canonical Matt Pocock triage labels without renaming. See `docs/age
 
 This is a single-context repository using a root `CONTEXT.md` and system-wide ADRs under `docs/adr/`. See `docs/agents/domain.md`.
 
+Upstream skills refer to `GLOSSARY.md`; use `CONTEXT.md` for that role here.
+
 <!-- intent-skills:start -->
 
 # Skill mappings - load `use` with `npx @tanstack/intent@latest load <use>`.
