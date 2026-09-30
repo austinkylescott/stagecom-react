@@ -33,6 +33,7 @@ Every wiki page declares one of these implementation states:
 - Permissions: `wiki/data/permissions-model.md`
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
+- Mobile-first visual redesign playground brief: `docs/design/visual-playground-brief.md`
 - Selected Member Home prototype direction (STA-64): `wiki/design/member-home-direction.md`
 - Reviewed programming Calendar and move prototype direction (STA-63): `src/features/programming-calendar-prototype/README.md`
 - Operational actor/state matrix: `docs/design/operational-actor-state-matrix.md`
@@ -52,5 +53,6 @@ Stagecom is being rebuilt as a TanStack Start, React, TypeScript, and Supabase a
 - Coding rules: `docs/development/coding-rules.md`
 - First slice spec: `docs/specs/first-slice.md`
 - Operational workspaces spec: `docs/specs/operational-workspaces.md`
+- Theater workspace skeleton review spec: [review draft](../docs/specs/theater-workspace-skeleton-draft.md) and [independent review handoff](../docs/specs/theater-workspace-review-handoff.md). Neutral shadcn foundation, Availability polls and self-service Teams; review before issue creation.
 - Event publication milestone decision: `docs/product/event-publication-milestone.md`
 - Rebuild planning index: `docs/rebuild/00-index.md`

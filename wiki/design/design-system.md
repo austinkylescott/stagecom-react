@@ -6,7 +6,18 @@ Implementation status: implemented
 
 The design system starts from `docs/design/design-baseline.md` and the living `/dev/components` route.
 
+The [visual playground brief](../../docs/design/visual-playground-brief.md)
+reopens fonts, colors, spacing, styling, and layouts in a separate mobile-first
+shadcn exploration. The prescriptions below describe the existing implementation;
+they do not constrain that playground. Production adoption follows visual review.
+
 ## Direction
+
+The maintainer's reviewed next step is a neutral shadcn component skeleton,
+followed by layout review and then branding. The
+[review specification](../../docs/specs/theater-workspace-skeleton-draft.md)
+captures that sequence and its production boundaries; existing production tokens
+remain the implemented baseline while the new foundation is reviewed.
 
 - Public pages: civic poster/playbill energy.
 - Authenticated app: calm theater operations.
