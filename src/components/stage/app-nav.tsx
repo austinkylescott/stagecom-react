@@ -335,7 +335,12 @@ export function TheaterNav({
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:justify-end"
         >
           {theaterNavItems
-            .filter((item) => availableLabels.includes(item.id))
+            .filter(
+              (item) =>
+                availableLabels.includes(item.id) &&
+                item.id !== 'calendar' &&
+                item.id !== 'people',
+            )
             .map((item) => (
               <TheaterNavLink
                 item={item}

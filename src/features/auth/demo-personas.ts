@@ -3,6 +3,7 @@ export const DEMO_PERSONA_KEYS = [
   'admin',
   'producer',
   'member',
+  'multi',
   'newcomer',
 ] as const
 
@@ -11,13 +12,13 @@ export const DEMO_PERSONAS = {
     description: 'Manage members and reusable Join Links.',
     email: 'owner@demo.stagecom.test',
     label: 'Theater Owner',
-    path: '/app/compass-rose/members',
+    path: '/app/callsheet',
   },
   admin: {
     description: 'Exercise Theater administration without ownership.',
     email: 'admin@demo.stagecom.test',
     label: 'Theater Admin',
-    path: '/app/compass-rose/members',
+    path: '/app/callsheet',
   },
   producer: {
     description: 'Work on the seeded Event as its Producer.',
@@ -29,7 +30,13 @@ export const DEMO_PERSONAS = {
     description: 'See the workspace as a base Theater Member.',
     email: 'member@demo.stagecom.test',
     label: 'Theater Member',
-    path: '/app/compass-rose/events/a-midsummer-nights-dream',
+    path: '/app/callsheet',
+  },
+  multi: {
+    description: 'Review personal actions and Calls across two Theaters.',
+    email: 'multi@demo.stagecom.test',
+    label: 'Multi-Theater Member',
+    path: '/app/callsheet',
   },
   newcomer: {
     description: 'Open an active Join Link without existing membership.',

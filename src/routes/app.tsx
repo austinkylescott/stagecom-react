@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 
-import { AppNav } from '@/components/stage/app-nav'
+import { WorkspaceNav } from '@/components/stage/workspace-nav'
 import {
   WorkspaceErrorState,
   WorkspaceLoadingState,
@@ -46,9 +46,11 @@ function AppLayout() {
   const { currentUser, theaters } = Route.useRouteContext()
 
   return (
-    <>
-      <AppNav email={currentUser.email} theaters={theaters} />
-      <Outlet />
-    </>
+    <div className="neutral-workspace min-h-screen md:pl-60">
+      <WorkspaceNav email={currentUser.email} theaters={theaters} />
+      <div className="min-w-0">
+        <Outlet />
+      </div>
+    </div>
   )
 }

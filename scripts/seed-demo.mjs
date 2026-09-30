@@ -16,6 +16,12 @@ const DEMO_THEATER = {
   websiteUrl: 'https://example.com/compass-rose',
 }
 
+const SECOND_DEMO_THEATER = {
+  ...DEMO_THEATER,
+  name: 'Harbor Stage',
+  slug: 'harbor-stage',
+}
+
 const DEMO_EVENT = {
   slug: 'a-midsummer-nights-dream',
   title: "A Midsummer Night's Dream",
@@ -37,6 +43,10 @@ const DEMO_PERSONAS = {
   member: {
     displayName: 'Morgan Member',
     email: 'member@demo.stagecom.test',
+  },
+  multi: {
+    displayName: 'Casey Multi-Theater',
+    email: 'multi@demo.stagecom.test',
   },
   newcomer: {
     displayName: 'Noah Newcomer',
@@ -93,8 +103,25 @@ if (resetOnly) {
 
 const personas = await ensureDemoUsers()
 const theater = await createDemoTheater(personas)
-const event = await createDemoEvent(theater.id, personas)
+const event = await createDemoEvent(theater.id, personas, [
+  personas.member,
+  personas.multi,
+])
 await createDemoJoinLinks(theater.id, personas.owner.id)
+const secondTheater = await createDemoTheater(personas, SECOND_DEMO_THEATER)
+await createDemoEvent(secondTheater.id, personas, [personas.multi])
+for (const [theaterId, persona] of [
+  [theater.id, 'member'],
+  [secondTheater.id, 'multi'],
+]) {
+  const { error } = await supabase.rpc('invite_theater_admin', {
+    p_actor_user_id: personas.owner.id,
+    p_command_id: crypto.randomUUID(),
+    p_member_user_id: personas[persona].id,
+    p_theater_id: theaterId,
+  })
+  throwIfError('create Callsheet response scenario', error)
+}
 
 console.log(`
 Stagecom demo seeded successfully.
@@ -128,10 +155,36 @@ function requireEnv(name) {
 }
 
 async function clearDemoTheater() {
+  const { data: ownedTheaters, error: lookupError } = await supabase
+    .from('theaters')
+    .select('id')
+    .in('slug', [DEMO_THEATER.slug, SECOND_DEMO_THEATER.slug])
+  throwIfError('find owned demo Theaters', lookupError)
+  if (ownedTheaters.length) {
+    const { data: events, error } = await supabase
+      .from('shows')
+      .select('id')
+      .in(
+        'theater_id',
+        ownedTheaters.map((item) => item.id),
+      )
+    throwIfError('find owned demo Events', error)
+    if (events.length) {
+      // Remove leadership while its Event still exists: its risk trigger reads that Event.
+      const { error: leadershipError } = await supabase
+        .from('show_leadership')
+        .delete()
+        .in(
+          'show_id',
+          events.map((item) => item.id),
+        )
+      throwIfError('clear owned demo Event leadership', leadershipError)
+    }
+  }
   const { error } = await supabase
     .from('theaters')
     .delete()
-    .eq('slug', DEMO_THEATER.slug)
+    .in('slug', [DEMO_THEATER.slug, SECOND_DEMO_THEATER.slug])
 
   throwIfError('clear the existing demo Theater', error)
 }
@@ -207,14 +260,14 @@ async function listAllUsers() {
   }
 }
 
-async function createDemoTheater(personas) {
+async function createDemoTheater(personas, theaterConfig = DEMO_THEATER) {
   const { data: createdRows, error: createError } = await supabase.rpc(
     'create_theater_with_owner',
     {
       p_actor_user_id: personas.owner.id,
-      p_name: DEMO_THEATER.name,
-      p_slug: DEMO_THEATER.slug,
-      p_timezone: DEMO_THEATER.timezone,
+      p_name: theaterConfig.name,
+      p_slug: theaterConfig.slug,
+      p_timezone: theaterConfig.timezone,
     },
   )
   throwIfError('create the demo Theater', createError)
@@ -225,9 +278,12 @@ async function createDemoTheater(personas) {
   const membershipRows = [
     { persona: 'admin', roles: ['admin'] },
     { persona: 'producer', roles: ['member'] },
-    { persona: 'member', roles: ['member'] },
+    ...(theaterConfig.slug === DEMO_THEATER.slug
+      ? [{ persona: 'member', roles: ['member'] }]
+      : []),
+    { persona: 'multi', roles: ['member'] },
   ].map(({ persona, roles }) => ({
-    is_home: true,
+    is_home: theaterConfig.slug === DEMO_THEATER.slug,
     roles,
     status: 'active',
     theater_id: theater.id,
@@ -238,28 +294,30 @@ async function createDemoTheater(personas) {
     .upsert(membershipRows, { onConflict: 'theater_id,user_id' })
   throwIfError('create demo Theater memberships', membershipError)
 
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ home_theater_id: theater.id })
-    .in(
-      'id',
-      membershipRows.map(({ user_id }) => user_id),
-    )
-  throwIfError('set demo home Theaters', profileError)
+  if (theaterConfig.slug === DEMO_THEATER.slug) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ home_theater_id: theater.id })
+      .in(
+        'id',
+        membershipRows.map(({ user_id }) => user_id),
+      )
+    throwIfError('set demo home Theaters', profileError)
+  }
 
   const { error: setupError } = await supabase.rpc('update_theater_setup', {
     p_actor_user_id: personas.owner.id,
     p_changes: {
-      city: DEMO_THEATER.city,
-      country: DEMO_THEATER.country,
-      name: DEMO_THEATER.name,
-      postalCode: DEMO_THEATER.postalCode,
-      slug: DEMO_THEATER.slug,
-      stateRegion: DEMO_THEATER.stateRegion,
-      street: DEMO_THEATER.street,
-      tagline: DEMO_THEATER.tagline,
-      timezone: DEMO_THEATER.timezone,
-      websiteUrl: DEMO_THEATER.websiteUrl,
+      city: theaterConfig.city,
+      country: theaterConfig.country,
+      name: theaterConfig.name,
+      postalCode: theaterConfig.postalCode,
+      slug: theaterConfig.slug,
+      stateRegion: theaterConfig.stateRegion,
+      street: theaterConfig.street,
+      tagline: theaterConfig.tagline,
+      timezone: theaterConfig.timezone,
+      websiteUrl: theaterConfig.websiteUrl,
     },
     p_theater_id: theater.id,
   })
@@ -289,12 +347,12 @@ async function createDemoTheater(personas) {
   return theater
 }
 
-async function createDemoEvent(theaterId, personas) {
+async function createDemoEvent(theaterId, personas, participants) {
   const { data: eventRows, error: eventError } = await supabase.rpc(
     'create_managed_event',
     {
       p_actor_user_id: personas.owner.id,
-      p_director_user_id: personas.member.id,
+      p_director_user_id: personas.producer.id,
       p_producer_user_ids: [personas.producer.id],
       p_slug: DEMO_EVENT.slug,
       p_theater_id: theaterId,
@@ -319,7 +377,7 @@ async function createDemoEvent(theaterId, personas) {
   const startsAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 21)
   startsAt.setUTCHours(23, 0, 0, 0)
   const endsAt = new Date(startsAt.getTime() + 1000 * 60 * 150)
-  const { error: occurrenceError } = await supabase
+  const { data: occurrence, error: occurrenceError } = await supabase
     .from('show_occurrences')
     .insert({
       ends_at: endsAt.toISOString(),
@@ -327,17 +385,55 @@ async function createDemoEvent(theaterId, personas) {
       starts_at: startsAt.toISOString(),
       status: 'scheduled',
     })
+    .select('id')
+    .single()
   throwIfError('schedule the demo Event', occurrenceError)
 
-  const { error: castError } = await supabase.from('show_cast').insert({
-    invited_by_user_id: personas.producer.id,
-    note: 'Seeded cast membership for demo exploration.',
-    show_id: event.id,
-    source: 'invited',
-    status: 'accepted',
-    user_id: personas.member.id,
-  })
+  const { error: castError } = await supabase.from('show_cast').insert(
+    participants.map((persona) => ({
+      invited_by_user_id: personas.producer.id,
+      note: 'Seeded cast membership for demo exploration.',
+      show_id: event.id,
+      source: 'invited',
+      status: 'accepted',
+      public_credit_enabled: false,
+      user_id: persona.id,
+    })),
+  )
   throwIfError('add demo cast membership', castError)
+  const localTime = startsAt.toISOString().slice(0, 19)
+  const { data: slot, error: slotError } = await supabase
+    .from('show_candidate_slots')
+    .insert({
+      occurrence_id: occurrence.id,
+      starts_at: startsAt.toISOString(),
+      local_starts_at: localTime,
+      duration_minutes: 150,
+      location_kind: 'off_site',
+      location_name: 'Community Studio',
+      off_site_approved: true,
+      timezone_name: 'UTC',
+      timezone_source: 'manual',
+      utc_offset_minutes: 0,
+    })
+    .select('id')
+    .single()
+  throwIfError('create demo Confirmed Slot', slotError)
+  const { error: confirmError } = await supabase
+    .from('show_occurrences')
+    .update({ confirmed_candidate_slot_id: slot.id })
+    .eq('id', occurrence.id)
+  throwIfError('confirm demo Slot', confirmError)
+  for (const persona of participants) {
+    const { error } = await supabase.rpc('set_occurrence_call', {
+      p_actor_user_id: personas.producer.id,
+      p_call: 'required',
+      p_command_id: crypto.randomUUID(),
+      p_occurrence_id: occurrence.id,
+      p_participant_user_id: persona.id,
+    })
+    throwIfError('assign demo Call', error)
+  }
 
   return event
 }

@@ -19,14 +19,20 @@ changes; executing remote seeds still requires approval for the target operation
 
 The seed creates the published **Compass Rose Players** Theater, a draft Event
 for **A Midsummer Night's Dream**, explicit leadership and cast assignments,
-and active, expired, exhausted, and revoked Reusable Join Links.
+and active, expired, exhausted, and revoked Reusable Join Links. It also creates
+**Harbor Stage**, confirmed Calls for Members, and pending Admin Invitations
+for response-clearing review. The Multi-Theater Member has Calls in both
+Theaters; the base Member belongs only to Compass Rose. Owner, Admin, Member
+and Multi-Theater Member enter through Callsheet. Persona controls remain on
+the development-only login chooser, outside authenticated product pages.
 
-Five personas are available:
+Six personas are available:
 
 - Theater Owner
 - Theater Admin
 - Event Producer
 - Theater Member
+- Multi-Theater Member
 - Newcomer without Theater membership
 
 The login page displays a persona chooser only when server-side demo mode is
@@ -58,7 +64,7 @@ npm run dev
 ```
 
 Open `http://localhost:3000/login` and choose a persona. Running
-`npm run demo:seed` again resets only the Compass Rose Theater and restores its
+`npm run demo:seed` again resets only the Compass Rose and Harbor Stage Theaters and restores its
 known state while preserving and updating the five demo Auth users.
 
 Remove all exact-target demo data with:

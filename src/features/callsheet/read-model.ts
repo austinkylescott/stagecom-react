@@ -104,3 +104,18 @@ function getUrgencyReason(commitment: CallsheetCommitmentInput, now: Date) {
 
   return undefined
 }
+
+export type CallsheetTheater = {
+  id: string
+  isDefault: boolean
+  name: string
+  slug: string
+  status: string
+}
+
+export type CallsheetEvent = {
+  id: string
+  title: string
+  href: string
+  theaterName: string
+}

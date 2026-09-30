@@ -446,7 +446,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
 
     await multiRole.page.goto('/app/callsheet')
     const personalWork = multiRole.page.getByRole('region', {
-      name: 'Your commitments',
+      name: 'Response needed',
     })
     const sharedWork = multiRole.page.getByRole('region', {
       name: 'Theater needs attention',
@@ -533,6 +533,10 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toBeVisible()
 
     await producer.page.reload()
+    await waitForReactHandler(
+      producer.page.getByRole('link', { name: 'Public Page' }),
+      'onClick',
+    )
     await producer.page.getByRole('link', { name: 'Public Page' }).click()
     await expect(producer.page.getByLabel('Public title')).toBeVisible()
     await waitForReactHandler(

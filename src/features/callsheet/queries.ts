@@ -1,3 +1,6 @@
+import { getEventPortfolio } from '@/features/events/event-portfolio/query'
+import { getPublishedTheaterEvents } from '@/features/theaters/public-queries'
+import type { CallsheetEvent } from './read-model'
 import { appError, err, ok } from '@/server/errors'
 import { getBearerTokenFromRequest } from '@/server/auth/session'
 import { createSupabaseServiceRoleClient } from '@/server/supabase/client'
@@ -13,7 +16,13 @@ export async function getMyCallsheet() {
   const theaterById = new Map(theaters.map((theater) => [theater.id, theater]))
 
   if (theaters.length === 0)
-    return ok({ commitments: [], sharedWork, theaters })
+    return ok({
+      commitments: [],
+      sharedWork,
+      theaters,
+      events: [],
+      discovery: [],
+    })
 
   const supabase = createSupabaseServiceRoleClient()
   const { data: adminInvitations, error: adminInvitationError } = await supabase
@@ -95,6 +104,45 @@ export async function getMyCallsheet() {
     scope: { kind: 'all_active_theaters' },
   })
   if (!eventCommitments.ok) return eventCommitments
+  // Reuse each Theater's authorized portfolio and anonymous-safe published snapshots.
+  const events: CallsheetEvent[] = []
+  const discovery: CallsheetEvent[] = []
+  const summaries = await Promise.all(
+    theaters.map(async (theater) => ({
+      theater,
+      portfolio: await getEventPortfolio({ theaterSlug: theater.slug }),
+      published: await getPublishedTheaterEvents({ theaterSlug: theater.slug }),
+    })),
+  )
+  for (const { theater, portfolio, published } of summaries) {
+    if (!portfolio.ok) return portfolio
+    if (!published.ok) return published
+    const workspaceIds = new Set(portfolio.data.workspaceEventIds)
+    const related = portfolio.data.portfolio.events.filter((event) =>
+      workspaceIds.has(event.id),
+    )
+    events.push(
+      ...related.map((event) => ({
+        id: `${theater.id}:${event.id}`,
+        title: event.title,
+        href: event.overviewHref,
+        theaterName: theater.name,
+      })),
+    )
+    const relatedPublicDestinations = new Set(
+      related.map((event) => `/theater/${theater.slug}/${event.slug}`),
+    )
+    discovery.push(
+      ...published.data.events
+        .filter((event) => !relatedPublicDestinations.has(event.href))
+        .map((event) => ({
+          id: event.href,
+          title: event.title,
+          href: event.href,
+          theaterName: theater.name,
+        })),
+    )
+  }
   return ok({
     ...createCallsheetReadModel({
       commitments: [
@@ -105,5 +153,7 @@ export async function getMyCallsheet() {
       sharedWork,
     }),
     theaters,
+    events,
+    discovery,
   })
 }
