@@ -96,3 +96,15 @@ aliases remove the remaining inherited accent choices from workspace
 compositions. Typecheck, production build, and all four database-backed
 workspace browser journeys passed after this change; updated phone screenshots
 were visually inspected. Both review axes reported zero findings.
+
+### Design lint setup
+
+At the maintainer's request, `@shadcn/lint` 0.2.0 is registered in the existing
+ESLint configuration. The TanStack TypeScript parser, lint scripts and rule
+policies remain in place. Following the package's setup guide, no shadcn rules
+are enabled; enforcement requires choosing design policies separately.
+
+Configuration inspection confirms the plugin loads for TSX with the existing
+parser and zero enabled shadcn rules. `npm run lint` reports 93 errors and one
+warning, matching a baseline run with the plugin registration removed.
+Formatting checks for the configuration and package files passed.
