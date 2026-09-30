@@ -33,7 +33,9 @@ context.
 
 ## Safety
 
-- Local Supabase is the default development target.
+- Remote Supabase dev is the integration source of truth. Use local Supabase
+  for isolated migration tests and disposable seed/reset work. Before database
+  work, read `docs/development/database-workflow.md`.
 - Remote migrations, remote seeding, production changes, merges, and releases
   always require explicit approval for that operation.
 - Never print, commit, or expose credentials or service-role keys.

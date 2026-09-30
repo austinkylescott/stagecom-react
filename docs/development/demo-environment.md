@@ -9,6 +9,12 @@ testing, stakeholder walkthroughs, and manual QA. It must run against either
 the local Supabase stack or a dedicated hosted demo project. Do not point the
 demo commands at production or the shared development project.
 
+Agents may extend the demo seed and persona scenarios as feature work requires.
+Use the existing Supabase schema and Auth workflow, and create required schema
+extensions through forward migrations. Keep resets limited to explicitly owned
+demo records and verify reruns remain deterministic. This authorizes seed-code
+changes; executing remote seeds still requires approval for the target operation.
+
 ## Seeded Story
 
 The seed creates the published **Compass Rose Players** Theater, a draft Event
