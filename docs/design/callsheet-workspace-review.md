@@ -24,7 +24,11 @@ Failures keep the response available and display retry feedback. Event-specific
 responses continue through existing Event destinations. Notifications remain a
 separate personal inbox whose dismissal does not resolve domain work.
 
-The neutral styles are scoped to the authenticated workspace. Public pages,
+The neutral styles use the [shadcn/ui default Neutral light tokens](https://ui.shadcn.com/docs/theming),
+including input, focus, secondary, destructive, chart and sidebar tokens, with
+system sans typography. Legacy feature variables alias those semantic tokens
+so the existing compositions share the same baseline. The styles are scoped
+to the authenticated workspace and its portaled controls. Public pages,
 Supabase Auth, callback behavior, database schema, authorization and Notification
 projection contracts retain their existing implementations. This delivery does
 not constitute branding approval or page-by-page human presentation approval.
@@ -82,3 +86,13 @@ reported zero remaining standards findings.
 Review initially found one P2: active Theater scope could reset after entering
 from a Callsheet card. Route-derived selection retention and a real browser
 regression resolved it. Follow-up review reported zero remaining spec findings.
+
+### Default-token follow-up
+
+At the maintainer's request, the workspace adopts the documented shadcn/ui
+Neutral light token set as a fresh baseline. `components.json` now selects
+`neutral` for future component generation. System sans typography and semantic
+aliases remove the remaining inherited accent choices from workspace
+compositions. Typecheck, production build, and all four database-backed
+workspace browser journeys passed after this change; updated phone screenshots
+were visually inspected. Both review axes reported zero findings.

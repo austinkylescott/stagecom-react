@@ -188,7 +188,7 @@ export function WorkspaceNav({
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r bg-background p-4 md:flex">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground p-4 md:flex">
         <Link
           to="/app/callsheet"
           className="mb-6 px-3 py-2 text-lg font-semibold no-underline"
