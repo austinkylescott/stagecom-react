@@ -34,7 +34,7 @@ Every wiki page declares one of these implementation states:
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
 - Mobile-first visual redesign playground brief: `docs/design/visual-playground-brief.md`
-- Neutral Callsheet workspace foundation (STA-66): `docs/design/callsheet-workspace-review.md`
+- Stock shadcn Callsheet workspace foundation (STA-66): `docs/design/callsheet-workspace-review.md`
 - Selected Member Home prototype direction (STA-64): `wiki/design/member-home-direction.md`
 - Programming and community design synthesis (STA-58): `wiki/design/programming-and-community-direction.md`
 - Reviewed programming Calendar and move prototype direction (STA-63): `src/features/programming-calendar-prototype/README.md`

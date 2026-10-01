@@ -9,10 +9,10 @@ export function WorkQueue({
 }) {
   return (
     <section aria-labelledby="work-queue" className="mt-8">
-      <h2 id="work-queue" className="text-2xl font-extrabold">
+      <h2 id="work-queue" className="text-2xl font-semibold">
         Work Queue
       </h2>
-      <p className="mt-2 text-[var(--sea-ink-soft)]">
+      <p className="mt-2 text-muted-foreground">
         Shared decisions you can resolve, highest priority first. Open an item
         to act on its current state.
       </p>
@@ -23,7 +23,7 @@ export function WorkQueue({
           ))}
         </ol>
       ) : (
-        <p className="island-shell mt-5 rounded-lg p-4">
+        <p className="mt-5 rounded-lg p-4">
           No decisions are ready for you right now.
         </p>
       )}
@@ -45,14 +45,14 @@ export function WorkQueue({
 
 function WorkQueueRow({ item }: { item: WorkQueueItem }) {
   return (
-    <li key={item.id} className="island-shell rounded-lg p-4">
-      <p className="text-sm font-semibold text-[var(--sea-ink-soft)]">
+    <li key={item.id} className="rounded-lg p-4">
+      <p className="text-sm font-semibold text-muted-foreground">
         {item.theaterName}
         {item.eventTitle ? ` · ${item.eventTitle}` : ''}
       </p>
       <a
         href={item.href}
-        className="mt-2 inline-block text-lg font-bold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+        className="mt-2 inline-block text-lg font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
       >
         {item.label}
       </a>

@@ -3,12 +3,13 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import {
   Bell,
   CalendarDays,
-  ChevronDown,
+  ChevronsUpDown,
   ClipboardList,
-  Menu,
+  LogOut,
   Theater,
   UsersRound,
 } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -19,18 +20,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar'
 import type { CallsheetTheater } from '@/features/callsheet/read-model'
-
-const linkClass =
-  'flex min-h-11 min-w-0 items-center gap-3 rounded-md px-3 text-sm no-underline hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 [&.is-active]:bg-muted [&.is-active]:font-semibold'
 
 export function WorkspaceNav({
   email,
@@ -39,7 +42,7 @@ export function WorkspaceNav({
   email?: string
   theaters: CallsheetTheater[]
 }) {
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const { setOpenMobile } = useSidebar()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -60,173 +63,218 @@ export function WorkspaceNav({
     : pathname.endsWith('/members')
       ? '/app/$theaterSlug/members'
       : '/app/$theaterSlug'
+  const close = () => setOpenMobile(false)
+  return (
+    <Sidebar>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild size="lg">
+              <Link to="/app/callsheet" onClick={close}>
+                <div className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <Theater className="size-4" />
+                </div>
+                <span className="font-semibold">Stagecom</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton aria-label="Change Theater">
+                  <span className="truncate">
+                    {current?.name ?? 'Choose a Theater'}
+                  </span>
+                  <ChevronsUpDown className="ml-auto" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64" align="start">
+                <DropdownMenuLabel>Theaters</DropdownMenuLabel>
+                {theaters.map((theater) => (
+                  <DropdownMenuItem asChild key={theater.id}>
+                    <Link
+                      to={destination}
+                      params={{ theaterSlug: theater.slug }}
+                      onClick={() => {
+                        setSelectedSlug(theater.slug)
+                        close()
+                      }}
+                    >
+                      {theater.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                {!theaters.length && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/onboarding/theater">Create a Theater</Link>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <nav aria-label="Workspace navigation">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/app/callsheet'}
+                  >
+                    <Link to="/app/callsheet" onClick={close}>
+                      <ClipboardList />
+                      <span>Callsheet</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {current && (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.endsWith('/calendar')}
+                      >
+                        <Link
+                          to="/app/$theaterSlug/calendar"
+                          params={{ theaterSlug: current.slug }}
+                          onClick={close}
+                        >
+                          <CalendarDays />
+                          <span>Calendar</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === `/app/${current.slug}`}
+                      >
+                        <Link
+                          to="/app/$theaterSlug"
+                          params={{ theaterSlug: current.slug }}
+                          onClick={close}
+                        >
+                          <Theater />
+                          <span>{current.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.endsWith('/members')}
+                      >
+                        <Link
+                          to="/app/$theaterSlug/members"
+                          params={{ theaterSlug: current.slug }}
+                          onClick={close}
+                        >
+                          <UsersRound />
+                          <span>People</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+                )}
+              </SidebarMenu>
+            </nav>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="hidden md:flex">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === '/app/notifications'}
+            >
+              <Link to="/app/notifications">
+                <Bell />
+                <span>Notifications</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <WorkspaceAccount email={email} />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
 
-  function navigation(close = false) {
-    const links = [
-      <Link
-        activeProps={{ className: 'is-active' }}
-        className={linkClass}
-        to="/app/callsheet"
-      >
-        <ClipboardList className="size-4 shrink-0" />
-        Callsheet
-      </Link>,
-      ...(current
-        ? [
-            <Link
-              activeProps={{ className: 'is-active' }}
-              className={linkClass}
-              to="/app/$theaterSlug/calendar"
-              params={{ theaterSlug: current.slug }}
-            >
-              <CalendarDays className="size-4 shrink-0" />
-              Calendar
-            </Link>,
-            <Link
-              activeOptions={{ exact: true }}
-              activeProps={{ className: 'is-active' }}
-              className={linkClass}
-              to="/app/$theaterSlug"
-              params={{ theaterSlug: current.slug }}
-            >
-              <Theater className="size-4 shrink-0" />
-              <span className="truncate">{current.name}</span>
-            </Link>,
-            <Link
-              activeProps={{ className: 'is-active' }}
-              className={linkClass}
-              to="/app/$theaterSlug/members"
-              params={{ theaterSlug: current.slug }}
-            >
-              <UsersRound className="size-4 shrink-0" />
-              People
-            </Link>,
-          ]
-        : []),
-    ]
-    return (
-      <nav aria-label="Workspace navigation" className="grid gap-1">
-        {links.map((link, index) =>
-          close ? (
-            <SheetClose asChild key={index}>
-              {link}
-            </SheetClose>
-          ) : (
-            <span key={index}>{link}</span>
-          ),
-        )}
-      </nav>
-    )
-  }
+export function WorkspaceHeader({ email }: { email?: string }) {
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarTrigger aria-label="Open navigation" />
+      <span className="text-sm font-medium">Workspace</span>
+      <div className="ml-auto flex items-center gap-2 md:hidden">
+        <Button variant="ghost" size="icon" asChild>
+          <Link aria-label="Notifications" to="/app/notifications">
+            <Bell />
+          </Link>
+        </Button>
+        <WorkspaceAccount email={email} compact />
+      </div>
+    </header>
+  )
+}
 
-  const switcher = (
+function WorkspaceAccount({
+  email,
+  compact = false,
+}: {
+  email?: string
+  compact?: boolean
+}) {
+  return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          aria-label="Change Theater"
-          className="w-full justify-between"
-        >
-          <span className="truncate">
-            {current?.name ?? 'Choose a Theater'}
-          </span>
-          <ChevronDown className="size-4 shrink-0" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="neutral-workspace w-64 max-w-[calc(100vw-2rem)]">
-        <DropdownMenuLabel>Theaters</DropdownMenuLabel>
-        {theaters.map((theater) => (
-          <DropdownMenuItem asChild key={theater.id}>
-            <Link
-              to={destination}
-              params={{ theaterSlug: theater.slug }}
-              onClick={() => {
-                setSelectedSlug(theater.slug)
-                setDrawerOpen(false)
-              }}
-            >
-              {theater.name}
-            </Link>
-          </DropdownMenuItem>
-        ))}
-        {!theaters.length && (
-          <DropdownMenuItem asChild>
-            <Link to="/onboarding/theater">Create a Theater</Link>
-          </DropdownMenuItem>
+        {compact ? (
+          <Button variant="ghost" size="icon" aria-label="Account">
+            <Avatar className="size-7">
+              <AvatarFallback>
+                {email?.charAt(0).toUpperCase() ?? 'A'}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        ) : (
+          <SidebarMenuButton size="lg" aria-label="Account">
+            <Avatar className="size-8 rounded-lg">
+              <AvatarFallback className="rounded-lg">
+                {email?.charAt(0).toUpperCase() ?? 'A'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="grid min-w-0 text-left text-sm">
+              <span className="font-medium">Account</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {email}
+              </span>
+            </div>
+            <ChevronsUpDown className="ml-auto size-4" />
+          </SidebarMenuButton>
         )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side={compact ? 'bottom' : 'top'}
+        align="end"
+        className="w-64"
+      >
+        <DropdownMenuLabel className="break-all">
+          {email ?? 'Account'}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/logout">
+            <LogOut />
+            Sign out
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-  const controls = (
-    <>
-      <Button variant="ghost" size="icon" asChild>
-        <Link aria-label="Notifications" to="/app/notifications">
-          <Bell className="size-4" />
-        </Link>
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" aria-label="Account">
-            Account
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="neutral-workspace max-w-[calc(100vw-2rem)]"
-        >
-          <DropdownMenuLabel className="break-all">
-            {email ?? 'Account'}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link to="/logout">Sign out</Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  )
-
-  return (
-    <>
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground p-4 md:flex">
-        <Link
-          to="/app/callsheet"
-          className="mb-6 px-3 py-2 text-lg font-semibold no-underline"
-        >
-          Stagecom
-        </Link>
-        <div className="mb-4">{switcher}</div>
-        {navigation()}
-        <div className="mt-auto flex items-center gap-2 border-t pt-4">
-          {controls}
-        </div>
-      </aside>
-      <header className="flex min-h-16 items-center justify-between gap-2 border-b bg-background px-4 md:hidden">
-        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetTrigger asChild>
-            <Button aria-label="Open navigation" size="icon" variant="ghost">
-              <Menu className="size-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent
-            side="left"
-            className="neutral-workspace w-72 max-w-[85vw]"
-          >
-            <SheetHeader>
-              <SheetTitle>Stagecom</SheetTitle>
-              <SheetDescription>Workspace navigation</SheetDescription>
-            </SheetHeader>
-            <div className="grid gap-4 px-4">
-              {switcher}
-              {navigation(true)}
-            </div>
-          </SheetContent>
-        </Sheet>
-        <Link to="/app/callsheet" className="font-semibold no-underline">
-          Stagecom
-        </Link>
-        <div className="flex items-center gap-1">{controls}</div>
-      </header>
-    </>
   )
 }

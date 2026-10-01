@@ -1,3 +1,9 @@
+import { Textarea } from '@/components/ui/textarea'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useEffect, useState } from 'react'
 
 import {
@@ -72,21 +78,21 @@ export function CreateManagedEventPage({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   return (
-    <main className="page-wrap py-8 sm:py-12">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+    <main className="page-wrap py-6">
+      <p className="text-xs font-medium tracking-normal text-muted-foreground">
         Events · {theater.name}
       </p>
-      <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
+      <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
         Create a managed Event
       </h1>
       {!actorEligible ? (
-        <p className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-950">
+        <p className="mt-5 rounded-md border border-border bg-muted px-4 py-3 font-semibold text-foreground">
           Current Theater policy does not allow you to use the Producer
           workflow.
         </p>
       ) : null}
       <form
-        className="island-shell mt-6 grid gap-5 rounded-lg px-6 py-6"
+        className="mt-6 grid gap-5 rounded-lg px-6 py-6"
         onSubmit={async (event) => {
           event.preventDefault()
           setError(null)
@@ -116,10 +122,9 @@ export function CreateManagedEventPage({
           }
         }}
       >
-        <label className="grid gap-2 text-sm font-bold">
+        <Label className="grid gap-2 text-sm font-medium">
           Event title
-          <input
-            className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+          <Input
             onChange={(event) => {
               setTitle(event.target.value)
               if (!slug) {
@@ -128,21 +133,20 @@ export function CreateManagedEventPage({
             }}
             value={title}
           />
-        </label>
-        <label className="grid gap-2 text-sm font-bold">
+        </Label>
+        <Label className="grid gap-2 text-sm font-medium">
           Event slug
-          <input
-            className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+          <Input
             onChange={(event) => setSlug(event.target.value)}
             value={slug}
           />
-        </label>
+        </Label>
         <fieldset className="grid gap-2">
-          <legend className="text-sm font-bold">Co-Producers</legend>
+          <legend className="text-sm font-medium">Co-Producers</legend>
           {members
             .filter((member) => member.isEligibleProducer)
             .map((member) => (
-              <label className="flex items-center gap-3" key={member.userId}>
+              <Label className="flex items-center gap-3" key={member.userId}>
                 <input
                   checked={producerUserIds.includes(member.userId)}
                   onChange={(event) =>
@@ -155,13 +159,12 @@ export function CreateManagedEventPage({
                   type="checkbox"
                 />
                 {member.displayName}
-              </label>
+              </Label>
             ))}
         </fieldset>
-        <label className="grid gap-2 text-sm font-bold">
+        <Label className="grid gap-2 text-sm font-medium">
           Director
-          <select
-            className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+          <NativeSelect
             onChange={(event) => setDirectorUserId(event.target.value)}
             value={directorUserId}
           >
@@ -171,16 +174,17 @@ export function CreateManagedEventPage({
                 {member.displayName}
               </option>
             ))}
-          </select>
-        </label>
-        {error ? <p className="font-semibold text-red-800">{error}</p> : null}
-        <button
-          className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
+          </NativeSelect>
+        </Label>
+        {error ? (
+          <p className="font-semibold text-foreground">{error}</p>
+        ) : null}
+        <Button
           disabled={!actorEligible || !title.trim() || !slug || isSubmitting}
           type="submit"
         >
           {isSubmitting ? 'Creating…' : 'Create Event draft'}
-        </button>
+        </Button>
       </form>
     </main>
   )
@@ -214,16 +218,16 @@ export function PublishedEventPage({
   theater: { name: string; slug: string }
 }) {
   return (
-    <main className="page-wrap py-8 sm:py-12">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+    <main className="page-wrap py-6">
+      <p className="text-xs font-medium tracking-normal text-muted-foreground">
         {theater.name} · Event
       </p>
-      <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
+      <h1 className="display-title mt-3 text-2xl font-medium text-foreground sm:text-5xl">
         {content.title}
       </h1>
       {event.lifecycleStatus === 'cancelled' ? (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 px-5 py-4 text-red-950">
-          <p className="font-extrabold">This Event has been cancelled.</p>
+        <div className="mt-6 rounded-md border border-border bg-muted px-5 py-4 text-foreground">
+          <p className="font-semibold">This Event has been cancelled.</p>
           <p className="mt-1 text-sm">
             The published listing remains available so audience members can see
             the definitive cancellation notice.
@@ -238,11 +242,11 @@ export function PublishedEventPage({
         />
       ) : null}
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <section className="island-shell rounded-lg px-6 py-6">
+        <Card className=" px-6 py-6 gap-0">
           <p className="whitespace-pre-wrap text-lg">{content.description}</p>
           {content.castCredits.length > 0 ? (
             <div className="mt-6">
-              <h2 className="text-xl font-extrabold">Cast</h2>
+              <h2 className="text-xl font-semibold">Cast</h2>
               <ul className="mt-2 grid gap-1">
                 {content.castCredits.map((credit) => (
                   <li key={`${credit.position}-${credit.displayName}`}>
@@ -252,14 +256,14 @@ export function PublishedEventPage({
               </ul>
             </div>
           ) : null}
-        </section>
-        <aside className="island-shell rounded-lg px-6 py-6">
-          <h2 className="text-xl font-extrabold">Performances</h2>
+        </Card>
+        <aside className="rounded-lg px-6 py-6">
+          <h2 className="text-xl font-semibold">Performances</h2>
           <ul className="mt-3 grid gap-4">
             {content.occurrences.map((occurrence) => (
               <li key={`${occurrence.startsAt}-${occurrence.locationName}`}>
-                <p className="font-bold">{occurrence.localStartsAt}</p>
-                <p className="text-sm text-[var(--sea-ink-soft)]">
+                <p className="font-medium">{occurrence.localStartsAt}</p>
+                <p className="text-sm text-muted-foreground">
                   {occurrence.locationName} · {occurrence.durationMinutes}{' '}
                   minutes · {occurrence.timezoneName}
                 </p>
@@ -267,23 +271,21 @@ export function PublishedEventPage({
             ))}
           </ul>
           {event.lifecycleStatus === 'cancelled' ? (
-            <p className="mt-6 font-extrabold text-red-900">
+            <p className="mt-6 font-semibold text-foreground">
               Admission is closed because this Event was cancelled.
             </p>
           ) : (
-            <p className="mt-6 text-lg font-extrabold">
+            <p className="mt-6 text-lg font-semibold">
               {formatAdmissionPrice(content.admissionPriceCents)}
             </p>
           )}
           {event.lifecycleStatus !== 'cancelled' &&
           content.admissionCallToAction.href ? (
-            <a
-              className="mt-3 inline-flex rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white"
-              href={content.admissionCallToAction.href}
-              rel="noreferrer"
-            >
-              {content.admissionCallToAction.label}
-            </a>
+            <Button asChild variant="outline" className="mt-3">
+              <a href={content.admissionCallToAction.href} rel="noreferrer">
+                {content.admissionCallToAction.label}
+              </a>
+            </Button>
           ) : event.lifecycleStatus !== 'cancelled' ? (
             <p className="mt-3 font-semibold">
               {content.admissionCallToAction.label}
@@ -640,11 +642,11 @@ export function ManagedEventWorkspace({
   }, [overview.sections])
 
   const content = (
-    <main className="page-wrap py-8 sm:py-12">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+    <main className="page-wrap py-6">
+      <p className="text-xs font-medium tracking-normal text-muted-foreground">
         Event workspace
       </p>
-      <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
+      <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
         {event.title}
       </h1>
       <EventWorkspaceNavigation
@@ -663,15 +665,15 @@ export function ManagedEventWorkspace({
         <ProposalPreparation.PlanSection />
       ) : null}
       {activeSection === 'overview' && lifecycleStatus === 'cancelled' ? (
-        <section className="mt-5 rounded-lg border border-red-300 bg-red-50 px-6 py-5 text-red-950">
-          <h2 className="text-xl font-extrabold">Event cancelled</h2>
+        <section className="mt-5 rounded-lg border border-border bg-muted px-6 py-5 text-foreground">
+          <h2 className="text-xl font-semibold">Event cancelled</h2>
           <p className="mt-2 text-sm">
             Future Occurrences and schedule commitments have ended. The Event,
             Proposal Revisions, decisions, cast credits, and factual history are
             preserved.
           </p>
           {event.publication_status === 'published' ? (
-            <p className="mt-2 text-sm font-bold">
+            <p className="mt-2 text-sm font-medium">
               Its public route remains available with a cancellation notice.
             </p>
           ) : null}
@@ -680,24 +682,22 @@ export function ManagedEventWorkspace({
       {activeSection === 'overview' &&
       (allowedActions.requestCancellation || allowedActions.cancelEvent) &&
       lifecycleStatus !== 'cancelled' ? (
-        <section className="island-shell mt-5 rounded-lg px-6 py-5">
-          <h2 className="text-xl font-extrabold">Cancellation</h2>
-          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+        <Card className="mt-5  px-6 py-5 gap-0">
+          <h2 className="text-xl font-semibold">Cancellation</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
             Producers may recommend cancellation. Only an active Owner or Admin
             can make the final decision.
           </p>
-          <label className="mt-4 grid gap-2 text-sm font-bold">
+          <Label className="mt-4 grid gap-2 text-sm font-medium">
             Cancellation reason
-            <textarea
-              className="min-h-24 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+            <Textarea
               onChange={(change) => setCancellationReason(change.target.value)}
               value={cancellationReason}
             />
-          </label>
+          </Label>
           <div className="mt-4 flex flex-wrap gap-3">
             {allowedActions.requestCancellation ? (
-              <button
-                className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-60"
+              <Button
                 disabled={
                   !cancellationReason.trim() || isRequestingCancellation
                 }
@@ -740,11 +740,12 @@ export function ManagedEventWorkspace({
                 {isRequestingCancellation
                   ? 'Requesting…'
                   : 'Request cancellation'}
-              </button>
+              </Button>
             ) : null}
             {allowedActions.cancelEvent ? (
-              <button
-                className="rounded-md bg-red-800 px-4 py-3 font-extrabold text-white disabled:opacity-60"
+              <Button
+                variant="destructive"
+
                 disabled={!cancellationReason.trim() || isCancelling}
                 onClick={async () => {
                   setCancellationError(null)
@@ -780,18 +781,20 @@ export function ManagedEventWorkspace({
                 type="button"
               >
                 {isCancelling ? 'Cancelling…' : 'Cancel Event'}
-              </button>
+              </Button>
             ) : null}
           </div>
           {cancellationResult ? (
-            <p className="mt-4 font-bold">{cancellationResult}</p>
+            <p className="mt-4 font-medium">{cancellationResult}</p>
           ) : null}
           {cancellationError ? (
-            <p className="mt-4 font-bold text-red-800">{cancellationError}</p>
+            <p className="mt-4 font-medium text-foreground">
+              {cancellationError}
+            </p>
           ) : null}
           {cancellationRequests.length > 0 ? (
-            <div className="mt-5 border-t border-[var(--line)] pt-4">
-              <h3 className="font-extrabold">Cancellation requests</h3>
+            <div className="mt-5 border-t border-border pt-4">
+              <h3 className="font-semibold">Cancellation requests</h3>
               <ul className="mt-2 grid gap-2 text-sm">
                 {cancellationRequests.map((request) => (
                   <li key={request.id}>{request.reason}</li>
@@ -799,30 +802,29 @@ export function ManagedEventWorkspace({
               </ul>
             </div>
           ) : null}
-        </section>
+        </Card>
       ) : null}
       {activeSection === 'overview' && operationalHealth === 'at_risk' ? (
         <section
-          className="mt-5 rounded-lg border border-amber-300 bg-amber-50 px-6 py-5 text-amber-950"
+          className="mt-5 rounded-lg border border-border bg-muted px-6 py-5 text-foreground"
           id="operational-health"
         >
-          <h2 className="text-xl font-extrabold">Event is At Risk</h2>
+          <h2 className="text-xl font-semibold">Event is At Risk</h2>
           <p className="mt-2 text-sm">
             Operational Approval and Publication remain unchanged. Management
             must explicitly revise, reschedule, allow, or cancel this Event.
           </p>
           {allowedActions.manageAtRisk ? (
             <div className="mt-5 grid gap-4">
-              <label className="grid gap-2 text-sm font-bold">
+              <Label className="grid gap-2 text-sm font-medium">
                 At Risk management reason
-                <textarea
-                  className="min-h-24 rounded-md border border-amber-400 bg-white px-4 py-3"
+                <Textarea
                   onChange={(change) =>
                     setRiskManagementReason(change.target.value)
                   }
                   value={riskManagementReason}
                 />
-              </label>
+              </Label>
               <div className="flex flex-wrap gap-3">
                 {(
                   [
@@ -831,8 +833,7 @@ export function ManagedEventWorkspace({
                     ['reschedule', 'Reschedule Event'],
                   ] as const
                 ).map(([action, label]) => (
-                  <button
-                    className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-60"
+                  <Button
                     disabled={!riskManagementReason.trim() || isManagingRisk}
                     key={action}
                     onClick={async () => {
@@ -870,24 +871,26 @@ export function ManagedEventWorkspace({
                     type="button"
                   >
                     {label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
           ) : null}
           {riskManagementResult ? (
-            <p className="mt-4 font-bold">{riskManagementResult}</p>
+            <p className="mt-4 font-medium">{riskManagementResult}</p>
           ) : null}
           {riskManagementError ? (
-            <p className="mt-4 font-bold text-red-800">{riskManagementError}</p>
+            <p className="mt-4 font-medium text-foreground">
+              {riskManagementError}
+            </p>
           ) : null}
           {event.show_risk_management_decisions.length > 0 ? (
-            <div className="mt-5 border-t border-amber-300 pt-4">
-              <h3 className="font-extrabold">Management history</h3>
+            <div className="mt-5 border-t border-border pt-4">
+              <h3 className="font-semibold">Management history</h3>
               <ul className="mt-2 grid gap-2 text-sm">
                 {event.show_risk_management_decisions.map((decision) => (
                   <li key={decision.id}>
-                    <span className="font-bold capitalize">
+                    <span className="font-medium capitalize">
                       {decision.action}
                     </span>{' '}
                     — {decision.reason}
@@ -899,14 +902,11 @@ export function ManagedEventWorkspace({
         </section>
       ) : null}
       {activeSection === 'public-page' && publicContent && publicDraft ? (
-        <section
-          className="island-shell mt-5 rounded-lg px-6 py-6"
-          id="public-page"
-        >
+        <Card className="mt-5  px-6 py-6 gap-0" id="public-page">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-extrabold">Public Page</h2>
-              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+              <h2 className="text-2xl font-semibold">Public Page</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
                 {publicDraft.revisionNumber
                   ? `Unpublished revision ${publicDraft.revisionNumber}, version ${publicDraft.version}.`
                   : 'No public-content revision has been saved yet.'}{' '}
@@ -914,25 +914,25 @@ export function ManagedEventWorkspace({
               </p>
             </div>
             {publicContent.publishedRevisionId ? (
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-900">
+              <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-foreground">
                 Published snapshot preserved
               </span>
             ) : null}
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-md border border-[var(--line)] bg-white px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+            <div className="rounded-md border border-border bg-white px-4 py-3">
+              <p className="text-xs font-medium tracking-normal text-muted-foreground">
                 Operational Approval
               </p>
-              <p className="mt-1 font-extrabold capitalize">
+              <p className="mt-1 font-semibold capitalize">
                 {lifecycleStatus === 'approved' ? 'approved' : 'not approved'}
               </p>
             </div>
-            <div className="rounded-md border border-[var(--line)] bg-white px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+            <div className="rounded-md border border-border bg-white px-4 py-3">
+              <p className="text-xs font-medium tracking-normal text-muted-foreground">
                 Publication
               </p>
-              <p className="mt-1 font-extrabold capitalize">
+              <p className="mt-1 font-semibold capitalize">
                 {event.publication_status === 'published'
                   ? 'Published'
                   : 'Unpublished'}
@@ -940,9 +940,11 @@ export function ManagedEventWorkspace({
             </div>
           </div>
           {publicReadiness?.producer.length ? (
-            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-              <p className="font-bold text-amber-950">Producer work needed</p>
-              <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
+            <div className="mt-4 rounded-md border border-border bg-muted px-4 py-3">
+              <p className="font-medium text-foreground">
+                Producer work needed
+              </p>
+              <ul className="mt-2 list-disc pl-5 text-sm text-foreground">
                 {publicReadiness.producer.map((blocker) => (
                   <li key={blocker.code}>{blocker.message}</li>
                 ))}
@@ -950,11 +952,11 @@ export function ManagedEventWorkspace({
             </div>
           ) : null}
           {publicReadiness?.theaterOperator.length ? (
-            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-              <p className="font-bold text-amber-950">
+            <div className="mt-4 rounded-md border border-border bg-muted px-4 py-3">
+              <p className="font-medium text-foreground">
                 Theater Operator conditions
               </p>
-              <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
+              <ul className="mt-2 list-disc pl-5 text-sm text-foreground">
                 {publicReadiness.theaterOperator.map((blocker) => (
                   <li key={blocker.code}>{blocker.message}</li>
                 ))}
@@ -962,13 +964,13 @@ export function ManagedEventWorkspace({
             </div>
           ) : null}
           {publicContent.preview ? (
-            <article className="mt-5 rounded-lg border border-[var(--line)] bg-white px-5 py-5">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+            <article className="mt-5 rounded-lg border border-border bg-white px-5 py-5">
+              <p className="text-xs font-medium tracking-normal text-muted-foreground">
                 {publicContent.blockers.length === 0
                   ? 'Exact eligible anonymous snapshot'
                   : 'Draft anonymous preview'}
               </p>
-              <h3 className="mt-2 text-2xl font-extrabold">
+              <h3 className="mt-2 text-2xl font-semibold">
                 {publicContent.preview.title}
               </h3>
               {publicContent.preview.imageUrl ? (
@@ -981,7 +983,7 @@ export function ManagedEventWorkspace({
               <p className="mt-4 whitespace-pre-wrap">
                 {publicContent.preview.description}
               </p>
-              <p className="mt-4 font-bold">
+              <p className="mt-4 font-medium">
                 {formatAdmissionPrice(
                   publicContent.preview.admissionPriceCents,
                 )}
@@ -1002,12 +1004,11 @@ export function ManagedEventWorkspace({
                 </p>
               ) : null}
               {publicContent.preview.admissionCallToAction.href ? (
-                <a
-                  className="mt-4 inline-flex rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white"
-                  href={publicContent.preview.admissionCallToAction.href}
-                >
-                  {publicContent.preview.admissionCallToAction.label}
-                </a>
+                <Button asChild variant="default" className="mt-4">
+                  <a href={publicContent.preview.admissionCallToAction.href}>
+                    {publicContent.preview.admissionCallToAction.label}
+                  </a>
+                </Button>
               ) : (
                 <p className="mt-4 font-semibold">
                   {publicContent.preview.admissionCallToAction.label}
@@ -1016,18 +1017,18 @@ export function ManagedEventWorkspace({
             </article>
           ) : null}
           {publicContent.atRiskContinuationRequired ? (
-            <p className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-950">
+            <p className="mt-5 rounded-md border border-border bg-muted px-4 py-3 font-semibold text-foreground">
               Record an audited management reason above before continuing this
               At Risk Event to Publication.
             </p>
           ) : null}
-          <section className="mt-5 border-t border-[var(--line)] pt-5">
-            <h3 className="text-xl font-extrabold">Publication</h3>
+          <section className="mt-5 border-t border-border pt-5">
+            <h3 className="text-xl font-semibold">Publication</h3>
             {publicContent.allowedActions.publishEvent &&
             publicDraft.id &&
             publicDraft.version ? (
-              <button
-                className="mt-4 rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              <Button
+                className="mt-4"
                 disabled={isPublishing}
                 onClick={async () => {
                   setPublicContentError(null)
@@ -1055,15 +1056,15 @@ export function ManagedEventWorkspace({
                 {isPublishing
                   ? 'Publishing…'
                   : 'Publish exact anonymous snapshot'}
-              </button>
+              </Button>
             ) : publicContent.allowedActions.isTheaterOperator ? (
-              <p className="mt-2 text-sm font-semibold text-[var(--sea-ink-soft)]">
+              <p className="mt-2 text-sm font-semibold text-muted-foreground">
                 {publicReadiness?.producer.length
                   ? 'Publication is unavailable while Producer work remains above.'
                   : 'Publication is unavailable until the Theater Operator conditions above are resolved.'}
               </p>
             ) : (
-              <p className="mt-2 text-sm font-semibold text-[var(--sea-ink-soft)]">
+              <p className="mt-2 text-sm font-semibold text-muted-foreground">
                 Publication remains a Theater Operator decision after this
                 snapshot is eligible.
               </p>
@@ -1114,10 +1115,9 @@ export function ManagedEventWorkspace({
             }}
           >
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2 text-sm font-bold">
+              <Label className="grid gap-2 text-sm font-medium">
                 Public title
-                <input
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                <Input
                   disabled={!publicContent.allowedActions.editPublicContent}
                   onChange={(change) =>
                     setPublicDraft((current) =>
@@ -1128,11 +1128,10 @@ export function ManagedEventWorkspace({
                   }
                   value={publicDraft.title}
                 />
-              </label>
-              <label className="grid gap-2 text-sm font-bold">
+              </Label>
+              <Label className="grid gap-2 text-sm font-medium">
                 Image URL
-                <input
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                <Input
                   disabled={!publicContent.allowedActions.editPublicContent}
                   onChange={(change) =>
                     setPublicDraft((current) =>
@@ -1144,12 +1143,11 @@ export function ManagedEventWorkspace({
                   type="url"
                   value={publicDraft.imageUrl ?? ''}
                 />
-              </label>
+              </Label>
             </div>
-            <label className="grid gap-2 text-sm font-bold">
+            <Label className="grid gap-2 text-sm font-medium">
               Public description
-              <textarea
-                className="min-h-32 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+              <Textarea
                 disabled={!publicContent.allowedActions.editPublicContent}
                 onChange={(change) =>
                   setPublicDraft((current) =>
@@ -1160,12 +1158,11 @@ export function ManagedEventWorkspace({
                 }
                 value={publicDraft.description}
               />
-            </label>
+            </Label>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2 text-sm font-bold">
+              <Label className="grid gap-2 text-sm font-medium">
                 General-admission price (USD)
-                <input
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                <Input
                   disabled={!publicContent.allowedActions.editPublicContent}
                   min="0"
                   onChange={(change) =>
@@ -1184,11 +1181,10 @@ export function ManagedEventWorkspace({
                   type="number"
                   value={(publicDraft.admissionPriceCents ?? 0) / 100}
                 />
-              </label>
-              <label className="grid gap-2 text-sm font-bold">
+              </Label>
+              <Label className="grid gap-2 text-sm font-medium">
                 Sales Channel
-                <select
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                <NativeSelect
                   disabled={!publicContent.allowedActions.editPublicContent}
                   onChange={(change) =>
                     setPublicDraft((current) =>
@@ -1211,14 +1207,13 @@ export function ManagedEventWorkspace({
                   <option value="no_advance_ticketing">
                     No advance ticketing
                   </option>
-                </select>
-              </label>
+                </NativeSelect>
+              </Label>
             </div>
             {publicDraft.salesChannel === 'external' ? (
-              <label className="grid gap-2 text-sm font-bold">
+              <Label className="grid gap-2 text-sm font-medium">
                 Ticket or reservation URL
-                <input
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                <Input
                   disabled={!publicContent.allowedActions.editPublicContent}
                   onChange={(change) =>
                     setPublicDraft((current) =>
@@ -1234,13 +1229,15 @@ export function ManagedEventWorkspace({
                   type="url"
                   value={publicDraft.externalUrl ?? ''}
                 />
-              </label>
+              </Label>
             ) : null}
             <fieldset className="grid gap-2">
-              <legend className="text-sm font-bold">Public Cast credits</legend>
+              <legend className="text-sm font-medium">
+                Public Cast credits
+              </legend>
               {publicDraft.castCredits.map((credit) => (
-                <label
-                  className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                <Label
+                  className="flex items-center gap-3 rounded-md border border-border bg-white px-4 py-3"
                   key={credit.userId}
                 >
                   <input
@@ -1267,50 +1264,52 @@ export function ManagedEventWorkspace({
                     type="checkbox"
                   />
                   Credit {credit.displayName} for this Event
-                </label>
+                </Label>
               ))}
             </fieldset>
             {publicContentError ? (
-              <p className="font-semibold text-red-800">{publicContentError}</p>
+              <p className="font-semibold text-foreground">
+                {publicContentError}
+              </p>
             ) : null}
             {publicContentSaved ? (
-              <p className="font-semibold text-emerald-800">
+              <p className="font-semibold text-foreground">
                 Unpublished public-content revision saved.
               </p>
             ) : null}
             {publicContent.allowedActions.editPublicContent ? (
-              <button
-                className="w-fit rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+              <Button
+                className="w-fit"
                 disabled={isSavingPublicContent || !publicDraft.title.trim()}
                 type="submit"
               >
                 {isSavingPublicContent
                   ? 'Saving…'
                   : 'Save unpublished revision'}
-              </button>
+              </Button>
             ) : (
-              <p className="text-sm font-semibold text-[var(--sea-ink-soft)]">
+              <p className="text-sm font-semibold text-muted-foreground">
                 Producer access is required to edit this revision.
               </p>
             )}
           </form>
-        </section>
+        </Card>
       ) : null}
       {activeSection === 'cast-team' ? (
         <div aria-labelledby="cast-team-heading" id="cast-team">
-          <section className="island-shell mt-5 rounded-lg px-6 py-6">
-            <h2 className="text-2xl font-extrabold" id="cast-team-heading">
+          <Card className="mt-5  px-6 py-6 gap-0">
+            <h2 className="text-2xl font-semibold" id="cast-team-heading">
               Cast &amp; Team
             </h2>
-            <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-2 text-sm text-muted-foreground">
               Coordinate leadership, Cast participation, named Event staff,
               Availability Responses, Proposed Cast, and Occurrence Calls
               without treating Event staff assignments as Cast membership.
             </p>
-          </section>
+          </Card>
           {event.show_leadership.length > 0 ? (
-            <section className="island-shell mt-5 rounded-lg px-6 py-6">
-              <h2 className="text-2xl font-extrabold">Leadership</h2>
+            <Card className="mt-5  px-6 py-6 gap-0">
+              <h2 className="text-2xl font-semibold">Leadership</h2>
               <ul className="mt-3 grid gap-2">
                 {event.show_leadership.map((leader) => (
                   <li key={`${leader.role}-${leader.user_id}`}>
@@ -1318,26 +1317,23 @@ export function ManagedEventWorkspace({
                   </li>
                 ))}
               </ul>
-              <p className="mt-5 text-sm font-semibold text-[var(--sea-ink-soft)]">
+              <p className="mt-5 text-sm font-semibold text-muted-foreground">
                 Accepted Cast Members:{' '}
                 {cast.filter(({ status }) => status === 'accepted').length}.
                 Leadership never creates Cast membership; casting begins with a
                 separate invitation and acceptance.
               </p>
-            </section>
+            </Card>
           ) : null}
           {(view !== 'accepted_staff' &&
             (view !== 'pending_invitee' ||
               allowedActions.respondToInvitation)) ||
           allowedActions.respondToAvailability ? (
             <>
-              <section
-                className="island-shell mt-5 rounded-lg px-6 py-6"
-                id="cast-participation"
-              >
-                <h2 className="text-2xl font-extrabold">Cast participation</h2>
+              <Card className="mt-5  px-6 py-6 gap-0" id="cast-participation">
+                <h2 className="text-2xl font-semibold">Cast participation</h2>
                 {view === 'pending_invitee' ? (
-                  <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     Your participation response is separate from every Candidate
                     Slot Availability Response.
                   </p>
@@ -1345,29 +1341,28 @@ export function ManagedEventWorkspace({
                 <div className="mt-4 grid gap-2">
                   {cast.map((castMember) => (
                     <div
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-white px-4 py-3"
                       key={castMember.user_id}
                     >
-                      <span className="font-bold">
+                      <span className="font-medium">
                         {castMember.profiles.display_name}
                       </span>
-                      <span className="text-sm font-semibold capitalize text-[var(--sea-ink-soft)]">
+                      <span className="text-sm font-semibold capitalize text-muted-foreground">
                         {castMember.status}
                       </span>
                     </div>
                   ))}
                   {cast.length === 0 ? (
-                    <p className="text-sm text-[var(--sea-ink-soft)]">
+                    <p className="text-sm text-muted-foreground">
                       No Cast invitations yet.
                     </p>
                   ) : null}
                 </div>
                 {allowedActions.inviteCast ? (
                   <div className="mt-5 flex flex-wrap items-end gap-3">
-                    <label className="grid min-w-64 gap-2 text-sm font-bold">
+                    <Label className="grid min-w-64 gap-2 text-sm font-medium">
                       Active Theater Member
-                      <select
-                        className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                      <NativeSelect
                         onChange={(change) =>
                           setInviteeUserId(change.target.value)
                         }
@@ -1387,10 +1382,9 @@ export function ManagedEventWorkspace({
                               {member.displayName}
                             </option>
                           ))}
-                      </select>
-                    </label>
-                    <button
-                      className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                      </NativeSelect>
+                    </Label>
+                    <Button
                       disabled={!inviteeUserId || isCasting}
                       onClick={async () => {
                         setCastingError(null)
@@ -1430,15 +1424,16 @@ export function ManagedEventWorkspace({
                       type="button"
                     >
                       {isCasting ? 'Inviting…' : 'Invite to Cast'}
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
                 {allowedActions.respondToInvitation &&
                 ownInvitation?.status === 'pending' ? (
                   <div className="mt-5 flex flex-wrap gap-3">
                     {(['accepted', 'declined'] as const).map((response) => (
-                      <button
-                        className="rounded-md border border-[var(--line)] bg-white px-5 py-3 font-extrabold capitalize disabled:opacity-60"
+                      <Button
+                        variant="outline"
+
                         disabled={isCasting}
                         key={response}
                         onClick={async () => {
@@ -1464,14 +1459,15 @@ export function ManagedEventWorkspace({
                         {response === 'accepted'
                           ? 'Accept invitation'
                           : 'Decline invitation'}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ) : null}
                 {allowedActions.withdrawFromCast &&
                 ownInvitation?.status === 'accepted' ? (
-                  <button
-                    className="mt-5 rounded-md border border-red-300 bg-white px-5 py-3 font-extrabold text-red-800 disabled:opacity-60"
+                  <Button
+                    variant="destructive"
+                    className="mt-5"
                     disabled={isCasting}
                     onClick={async () => {
                       setCastingError(null)
@@ -1506,22 +1502,21 @@ export function ManagedEventWorkspace({
                     type="button"
                   >
                     Withdraw from Event
-                  </button>
+                  </Button>
                 ) : null}
                 {castingError ? (
-                  <p className="mt-3 font-bold text-red-700">{castingError}</p>
+                  <p className="mt-3 font-medium text-foreground">
+                    {castingError}
+                  </p>
                 ) : null}
-              </section>
+              </Card>
             </>
           ) : null}
           {event.show_resource_requests.length > 0 ||
           event.show_staff_assignments.length > 0 ||
           allowedActions.inviteStaff ? (
-            <section
-              className="island-shell mt-5 rounded-lg px-6 py-6"
-              id="event-staff-assignment"
-            >
-              <h2 className="text-2xl font-extrabold">
+            <Card className="mt-5  px-6 py-6 gap-0" id="event-staff-assignment">
+              <h2 className="text-2xl font-semibold">
                 Event staff assignments and coverage
               </h2>
               {event.show_resource_requests
@@ -1537,11 +1532,11 @@ export function ManagedEventWorkspace({
 
                   return (
                     <div
-                      className="mt-4 rounded-md border border-[var(--line)] bg-[var(--sand)]/40 px-4 py-3"
+                      className="mt-4 rounded-md border border-border bg-muted/40 px-4 py-3"
                       key={request.id}
                     >
-                      <h3 className="font-extrabold">{request.label}</h3>
-                      <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                      <h3 className="font-semibold">{request.label}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
                         Accepted coverage: {acceptedCoverage} of{' '}
                         {request.quantity} requested
                       </p>
@@ -1550,24 +1545,25 @@ export function ManagedEventWorkspace({
                 })}
               {event.show_staff_assignments.map((assignment) => (
                 <div
-                  className="mt-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  className="mt-3 rounded-md border border-border bg-white px-4 py-3"
                   key={assignment.id}
                 >
-                  <p className="font-bold">
+                  <p className="font-medium">
                     {activeMembers.find(
                       (member) => member.userId === assignment.user_id,
                     )?.displayName ?? 'Theater Member'}{' '}
                     · {assignment.responsibility}
                   </p>
-                  <p className="text-sm capitalize text-[var(--sea-ink-soft)]">
+                  <p className="text-sm capitalize text-muted-foreground">
                     {assignment.status}
                   </p>
                   {allowedActions.respondToStaffInvitation &&
                   assignment.user_id === actorUserId ? (
                     <div className="mt-3 flex gap-3">
                       {(['accepted', 'declined'] as const).map((response) => (
-                        <button
-                          className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-bold"
+                        <Button
+                          variant="outline"
+
                           key={response}
                           onClick={async () => {
                             const result =
@@ -1582,25 +1578,21 @@ export function ManagedEventWorkspace({
                           {response === 'accepted'
                             ? 'Accept assignment'
                             : 'Decline'}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   ) : null}
                 </div>
               ))}
-            </section>
+            </Card>
           ) : null}
           {allowedActions.inviteStaff ? (
-            <section
-              className="island-shell mt-5 rounded-lg px-6 py-6"
-              id="event-staff-invitation"
-            >
-              <h2 className="text-2xl font-extrabold">Invite Event staff</h2>
+            <Card className="mt-5  px-6 py-6 gap-0" id="event-staff-invitation">
+              <h2 className="text-2xl font-semibold">Invite Event staff</h2>
               <div className="mt-4 flex flex-wrap items-end gap-3">
-                <label className="grid gap-2 text-sm font-bold">
+                <Label className="grid gap-2 text-sm font-medium">
                   Staffing need
-                  <select
-                    className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  <NativeSelect
                     onChange={(change) =>
                       setStaffRequestId(change.target.value)
                     }
@@ -1614,12 +1606,11 @@ export function ManagedEventWorkspace({
                           {request.label} · {request.quantity} required
                         </option>
                       ))}
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-bold">
+                  </NativeSelect>
+                </Label>
+                <Label className="grid gap-2 text-sm font-medium">
                   Active Theater Member
-                  <select
-                    className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                  <NativeSelect
                     onChange={(change) =>
                       setStaffInviteeUserId(change.target.value)
                     }
@@ -1631,10 +1622,9 @@ export function ManagedEventWorkspace({
                         {member.displayName}
                       </option>
                     ))}
-                  </select>
-                </label>
-                <button
-                  className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                  </NativeSelect>
+                </Label>
+                <Button
                   disabled={!staffInviteeUserId || !staffRequestId || isCasting}
                   onClick={async () => {
                     setCastingError(null)
@@ -1659,23 +1649,20 @@ export function ManagedEventWorkspace({
                   type="button"
                 >
                   Invite staff
-                </button>
+                </Button>
               </div>
-            </section>
+            </Card>
           ) : null}
           {view === 'operational' && proposalPreparation ? (
             <ProposalPreparation.ProposedCastSection />
           ) : null}
           {view === 'accepted_staff' &&
           !allowedActions.respondToAvailability ? (
-            <section
-              className="island-shell mt-5 rounded-lg px-6 py-6"
-              id="assigned-occurrences"
-            >
-              <h2 className="text-2xl font-extrabold">
+            <Card className="mt-5  px-6 py-6 gap-0" id="assigned-occurrences">
+              <h2 className="text-2xl font-semibold">
                 Your assigned Occurrences and Calls
               </h2>
-              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Only Occurrences selected for your Event staff responsibility
                 appear here.
               </p>
@@ -1690,11 +1677,11 @@ export function ManagedEventWorkspace({
                   )
                   return (
                     <article
-                      className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                      className="rounded-md border border-border bg-white px-4 py-3"
                       id={`occurrence-call-${occurrence.id}`}
                       key={occurrence.id}
                     >
-                      <p className="font-bold">
+                      <p className="font-medium">
                         Occurrence {occurrenceIndex + 1} ·{' '}
                         <span className="capitalize">
                           {occurrence.occurrence_type}
@@ -1704,7 +1691,7 @@ export function ManagedEventWorkspace({
                         {call?.call.replace('_', ' ')}
                       </p>
                       {slot ? (
-                        <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {slot.local_starts_at.slice(0, 16).replace('T', ' ')}{' '}
                           · {slot.location_name}
                         </p>
@@ -1713,19 +1700,16 @@ export function ManagedEventWorkspace({
                   )
                 })}
               </div>
-            </section>
+            </Card>
           ) : (
             <>
-              <section
-                className="island-shell mt-5 rounded-lg px-6 py-6"
-                id="availability"
-              >
-                <h2 className="text-2xl font-extrabold">
+              <Card className="mt-5  px-6 py-6 gap-0" id="availability">
+                <h2 className="text-2xl font-semibold">
                   {view === 'pending_invitee'
                     ? 'Your Availability Responses'
                     : 'Collaborative availability matrix'}
                 </h2>
-                <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                <p className="mt-2 text-sm text-muted-foreground">
                   Availability is recorded per Candidate Slot and never changes
                   Event participation.
                 </p>
@@ -1740,22 +1724,21 @@ export function ManagedEventWorkspace({
 
                     return (
                       <article
-                        className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                        className="rounded-md border border-border bg-white px-4 py-4"
                         id={coordinationKey}
                         key={slot.id}
                       >
-                        <h3 className="font-extrabold">
+                        <h3 className="font-semibold">
                           Candidate Slot {slotIndex + 1}
                         </h3>
-                        <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {slot.local_starts_at.slice(0, 16).replace('T', ' ')}{' '}
                           · {slot.location_name}
                         </p>
                         {allowedActions.respondToAvailability ? (
-                          <label className="mt-3 grid max-w-sm gap-2 text-sm font-bold">
+                          <Label className="mt-3 grid max-w-sm gap-2 text-sm font-medium">
                             Availability for Candidate Slot {slotIndex + 1}
-                            <select
-                              className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                            <NativeSelect
                               disabled={
                                 savingCoordinationKey === coordinationKey
                               }
@@ -1809,8 +1792,8 @@ export function ManagedEventWorkspace({
                               <option value="available">Available</option>
                               <option value="unavailable">Unavailable</option>
                               <option value="uncertain">Uncertain</option>
-                            </select>
-                          </label>
+                            </NativeSelect>
+                          </Label>
                         ) : null}
                         {view !== 'pending_invitee' ? (
                           <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1822,10 +1805,10 @@ export function ManagedEventWorkspace({
                               )
                               return (
                                 <div
-                                  className="rounded bg-[var(--sand)]/40 px-3 py-2"
+                                  className="rounded bg-muted/40 px-3 py-2"
                                   key={castMember.user_id}
                                 >
-                                  <dt className="text-xs font-bold">
+                                  <dt className="text-xs font-medium">
                                     {castMember.profiles.display_name}
                                   </dt>
                                   <dd className="text-sm capitalize">
@@ -1842,21 +1825,18 @@ export function ManagedEventWorkspace({
                 </div>
                 {view !== 'pending_invitee' ? (
                   <div className="mt-7">
-                    <h3
-                      className="text-xl font-extrabold"
-                      id="occurrence-calls"
-                    >
+                    <h3 className="text-xl font-semibold" id="occurrence-calls">
                       Occurrence Calls
                     </h3>
                     <div className="mt-3 grid gap-4">
                       {event.show_occurrences.map(
                         (occurrence, occurrenceIndex) => (
                           <article
-                            className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                            className="rounded-md border border-border bg-white px-4 py-4"
                             id={`occurrence-call-${occurrence.id}`}
                             key={occurrence.id}
                           >
-                            <h4 className="font-extrabold">
+                            <h4 className="font-semibold">
                               Occurrence {occurrenceIndex + 1} ·{' '}
                               <span className="capitalize">
                                 {occurrence.occurrence_type}
@@ -1871,14 +1851,13 @@ export function ManagedEventWorkspace({
                                 )
                                 const coordinationKey = `call-${occurrence.id}-${participant.userId}`
                                 return (
-                                  <label
-                                    className="grid gap-2 text-sm font-bold"
+                                  <Label
+                                    className="grid gap-2 text-sm font-medium"
                                     key={participant.userId}
                                   >
                                     Call for {participant.displayName},
                                     Occurrence {occurrenceIndex + 1}
-                                    <select
-                                      className="rounded-md border border-[var(--line)] bg-white px-3 py-2 capitalize"
+                                    <NativeSelect
                                       disabled={
                                         !allowedActions.assignOccurrenceCalls ||
                                         savingCoordinationKey ===
@@ -1946,8 +1925,8 @@ export function ManagedEventWorkspace({
                                       <option value="not_called">
                                         Not called
                                       </option>
-                                    </select>
-                                  </label>
+                                    </NativeSelect>
+                                  </Label>
                                 )
                               })}
                             </div>
@@ -1958,11 +1937,11 @@ export function ManagedEventWorkspace({
                   </div>
                 ) : null}
                 {coordinationError ? (
-                  <p className="mt-3 font-bold text-red-700">
+                  <p className="mt-3 font-medium text-foreground">
                     {coordinationError}
                   </p>
                 ) : null}
-              </section>
+              </Card>
             </>
           )}
         </div>
@@ -1970,21 +1949,18 @@ export function ManagedEventWorkspace({
       {activeSection === 'review' &&
       canViewReview &&
       (proposalRevisions.length > 0 || proposalPreparation) ? (
-        <section
-          className="island-shell mt-5 scroll-mt-6 rounded-lg px-6 py-6"
-          id="review"
-        >
+        <Card className="mt-5 scroll-mt-6  px-6 py-6 gap-0" id="review">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-extrabold">Review</h2>
-              <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+              <h2 className="text-2xl font-semibold">Review</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Each Proposal Revision below is the immutable snapshot that was
                 submitted for review. Decisions and Counteroffers stay attached
                 to that exact revision.
               </p>
             </div>
             <a
-              className="text-sm font-bold underline"
+              className="text-sm font-medium underline"
               href="#proposal-revisions"
             >
               Link to submitted revisions
@@ -1995,28 +1971,28 @@ export function ManagedEventWorkspace({
           <ul className="mt-5 grid gap-4">
             {proposalRevisions.map((revision) => (
               <li
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+                className="rounded-md border border-border bg-white px-4 py-4"
                 id={`proposal-revision-${revision.id}`}
                 key={revision.id}
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="font-extrabold">
+                  <h3 className="font-semibold">
                     Proposal Revision {revision.revision_number}
                   </h3>
-                  <span className="text-sm font-bold capitalize text-[var(--sea-ink-soft)]">
+                  <span className="text-sm font-medium capitalize text-muted-foreground">
                     Current decision:{' '}
                     {revision.decision_state.replace('_', ' ')}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Submitted {new Date(revision.submitted_at).toLocaleString()}.
                 </p>
                 <ProposalRevisionSnapshot snapshot={revision.snapshot} />
-                <div className="mt-4 border-t border-[var(--line)] pt-4">
-                  <h4 className="font-bold">Decision history</h4>
+                <div className="mt-4 border-t border-border pt-4">
+                  <h4 className="font-medium">Decision history</h4>
                   {revision.show_proposal_decisions ? (
-                    <div className="mt-2 rounded-md bg-[var(--sand)]/50 px-3 py-3 text-sm">
-                      <p className="font-bold capitalize">
+                    <div className="mt-2 rounded-md bg-muted/50 px-3 py-3 text-sm">
+                      <p className="font-medium capitalize">
                         {revision.show_proposal_decisions.action.replace(
                           '_',
                           ' ',
@@ -2025,7 +2001,7 @@ export function ManagedEventWorkspace({
                           ? ' · Owner override'
                           : ''}
                       </p>
-                      <p className="mt-1 text-[var(--sea-ink-soft)]">
+                      <p className="mt-1 text-muted-foreground">
                         Recorded{' '}
                         {new Date(
                           revision.show_proposal_decisions.created_at,
@@ -2039,7 +2015,7 @@ export function ManagedEventWorkspace({
                       ) : null}
                     </div>
                   ) : (
-                    <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+                    <p className="mt-2 text-sm text-muted-foreground">
                       No final review decision has been recorded.
                     </p>
                   )}
@@ -2122,27 +2098,24 @@ export function ManagedEventWorkspace({
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       ) : null}
       {activeSection === 'history' &&
       overview.sections.some(({ label }) => label === 'History') ? (
-        <section
-          className="island-shell mt-5 rounded-lg px-6 py-6"
-          id="history"
-        >
-          <h2 className="text-2xl font-extrabold">History</h2>
-          <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+        <Card className="mt-5  px-6 py-6 gap-0" id="history">
+          <h2 className="text-2xl font-semibold">History</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
             Recorded Event facts and preserved decisions. Notifications and
             work-queue projections are intentionally not included here.
           </p>
           <ol className="mt-5 grid gap-3">
             {history.entries.map((entry) => (
               <li
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+                className="rounded-md border border-border bg-white px-4 py-3"
                 key={entry.id}
               >
-                <p className="font-extrabold">{entry.action}</p>
-                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                <p className="font-semibold">{entry.action}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
                   {entry.actor} · {new Date(entry.createdAt).toLocaleString()}
                 </p>
                 {entry.detail ? (
@@ -2151,7 +2124,7 @@ export function ManagedEventWorkspace({
               </li>
             ))}
           </ol>
-        </section>
+        </Card>
       ) : null}
     </main>
   )
@@ -2176,38 +2149,38 @@ function ProposalRevisionSnapshot({ snapshot }: { snapshot: Json }) {
 
   if (!revision) {
     return (
-      <p className="mt-4 text-sm text-[var(--sea-ink-soft)]">
+      <p className="mt-4 text-sm text-muted-foreground">
         This historical Proposal Revision has no readable snapshot payload.
       </p>
     )
   }
 
   return (
-    <details className="mt-4 rounded-md bg-[var(--sand)]/35 px-4 py-3">
-      <summary className="cursor-pointer font-bold">
+    <details className="mt-4 rounded-md bg-muted/35 px-4 py-3">
+      <summary className="cursor-pointer font-medium">
         Immutable submitted snapshot
       </summary>
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
         <div>
-          <dt className="font-bold">Minimum viable Cast</dt>
+          <dt className="font-medium">Minimum viable Cast</dt>
           <dd>{displaySnapshotValue(revision.minimumViableCast)}</dd>
         </div>
         <div>
-          <dt className="font-bold">Target Cast size</dt>
+          <dt className="font-medium">Target Cast size</dt>
           <dd>{displaySnapshotValue(revision.targetCastSize)}</dd>
         </div>
         <div>
-          <dt className="font-bold">Proposed Cast</dt>
+          <dt className="font-medium">Proposed Cast</dt>
           <dd>{proposedCast.length} selected</dd>
         </div>
         <div>
-          <dt className="font-bold">Leadership</dt>
+          <dt className="font-medium">Leadership</dt>
           <dd>{leadership.length} recorded</dd>
         </div>
       </dl>
       <div className="mt-4 grid gap-3">
         <div>
-          <h4 className="font-bold">Occurrences</h4>
+          <h4 className="font-medium">Occurrences</h4>
           {occurrences.length > 0 ? (
             <ul className="mt-2 grid gap-2 text-sm">
               {occurrences.map((occurrence, index) => {
@@ -2239,13 +2212,13 @@ function ProposalRevisionSnapshot({ snapshot }: { snapshot: Json }) {
               })}
             </ul>
           ) : (
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-1 text-sm text-muted-foreground">
               No Occurrences were captured in this snapshot.
             </p>
           )}
         </div>
         <div>
-          <h4 className="font-bold">Requested resources</h4>
+          <h4 className="font-medium">Requested resources</h4>
           {resourceRequests.length > 0 ? (
             <ul className="mt-2 grid gap-2 text-sm">
               {resourceRequests.map((request, index) => (
@@ -2260,17 +2233,17 @@ function ProposalRevisionSnapshot({ snapshot }: { snapshot: Json }) {
               ))}
             </ul>
           ) : (
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-1 text-sm text-muted-foreground">
               No resource requests were captured in this snapshot.
             </p>
           )}
         </div>
       </div>
       <details className="mt-4 rounded bg-white/70 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-bold">
+        <summary className="cursor-pointer text-sm font-medium">
           Exact immutable record
         </summary>
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words text-xs text-[var(--sea-ink-soft)]">
+        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words text-xs text-muted-foreground">
           {JSON.stringify(snapshot, null, 2)}
         </pre>
       </details>
@@ -2321,10 +2294,9 @@ function NumberField({
   value: number
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold">
+    <Label className="grid gap-2 text-sm font-medium">
       {label}
-      <input
-        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+      <Input
         disabled={disabled}
         max={max}
         min={min}
@@ -2332,7 +2304,7 @@ function NumberField({
         type="number"
         value={value}
       />
-    </label>
+    </Label>
   )
 }
 
@@ -2365,12 +2337,11 @@ function ProposalCounterofferForm({
   const [isSaving, setIsSaving] = useState(false)
 
   return (
-    <div className="mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4">
-      <p className="font-extrabold">Scheduling Counteroffer</p>
-      <label className="grid gap-2 text-sm font-bold">
+    <div className="mt-4 grid gap-3 rounded-md border border-border bg-muted/30 px-4 py-4">
+      <p className="font-semibold">Scheduling Counteroffer</p>
+      <Label className="grid gap-2 text-sm font-medium">
         Target Occurrence
-        <select
-          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        <NativeSelect
           onChange={(change) => setOccurrenceId(change.target.value)}
           value={occurrenceId}
         >
@@ -2379,18 +2350,17 @@ function ProposalCounterofferForm({
               Occurrence {index + 1} · {occurrence.occurrence_type}
             </option>
           ))}
-        </select>
-      </label>
+        </NativeSelect>
+      </Label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm font-bold">
+        <Label className="grid gap-2 text-sm font-medium">
           Offered local date and time
-          <input
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          <Input
             onChange={(change) => setLocalStartsAt(change.target.value)}
             type="datetime-local"
             value={localStartsAt}
           />
-        </label>
+        </Label>
         <NumberField
           disabled={isSaving}
           label="Offered duration (minutes)"
@@ -2400,10 +2370,9 @@ function ProposalCounterofferForm({
           value={durationMinutes}
         />
       </div>
-      <label className="grid gap-2 text-sm font-bold">
+      <Label className="grid gap-2 text-sm font-medium">
         Offered location
-        <select
-          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        <NativeSelect
           onChange={(change) => {
             const next = change.target.value as 'primary_venue' | 'off_site'
             setLocationKind(next)
@@ -2417,34 +2386,32 @@ function ProposalCounterofferForm({
         >
           <option value="primary_venue">Primary Venue</option>
           <option value="off_site">Approved off-site location</option>
-        </select>
-      </label>
+        </NativeSelect>
+      </Label>
       {locationKind === 'off_site' ? (
-        <label className="grid gap-2 text-sm font-bold">
+        <Label className="grid gap-2 text-sm font-medium">
           Off-site location name
-          <input
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          <Input
             onChange={(change) => setLocationName(change.target.value)}
             value={locationName}
           />
-        </label>
+        </Label>
       ) : null}
-      <label className="grid gap-2 text-sm font-bold">
+      <Label className="grid gap-2 text-sm font-medium">
         Response deadline override (optional)
-        <input
-          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        <Input
           onChange={(change) => setResponseDeadline(change.target.value)}
           type="datetime-local"
           value={responseDeadline}
         />
-      </label>
-      <p className="text-sm text-[var(--sea-ink-soft)]">
+      </Label>
+      <p className="text-sm text-muted-foreground">
         Blank uses the Theater response window. Times display in{' '}
         {theater.timezone ?? 'the Theater timezone'}.
       </p>
-      {error ? <p className="font-semibold text-red-800">{error}</p> : null}
-      <button
-        className="w-fit rounded-md bg-[var(--sea-ink)] px-4 py-2 font-extrabold text-white disabled:opacity-50"
+      {error ? <p className="font-semibold text-foreground">{error}</p> : null}
+      <Button
+        className="w-fit"
         disabled={
           isSaving || !occurrenceId || !localStartsAt || !locationName.trim()
         }
@@ -2487,7 +2454,7 @@ function ProposalCounterofferForm({
         type="button"
       >
         {isSaving ? 'Issuing…' : 'Issue Counteroffer'}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -2514,10 +2481,10 @@ function ProposalCounterofferCard({
 
   return (
     <div
-      className="mt-3 rounded-md bg-amber-50 px-3 py-3 text-sm text-amber-950"
+      className="mt-3 rounded-md bg-muted px-3 py-3 text-sm text-foreground"
       id={`counteroffer-${counteroffer.id}`}
     >
-      <p className="font-extrabold capitalize">
+      <p className="font-semibold capitalize">
         Counteroffer · {counteroffer.state}
       </p>
       {slot ? (
@@ -2530,13 +2497,14 @@ function ProposalCounterofferCard({
         Respond by {new Date(counteroffer.response_deadline).toLocaleString()}.
       </p>
       {error ? (
-        <p className="mt-2 font-semibold text-red-800">{error}</p>
+        <p className="mt-2 font-semibold text-foreground">{error}</p>
       ) : null}
       {canRespond && counteroffer.state === 'pending' ? (
         <div className="mt-3 flex gap-2">
           {(['accept', 'decline'] as const).map((response) => (
-            <button
-              className="rounded-md border border-amber-950 bg-white px-3 py-2 font-extrabold capitalize disabled:opacity-50"
+            <Button
+              variant="outline"
+
               disabled={isSaving}
               key={response}
               onClick={async () => {
@@ -2562,7 +2530,7 @@ function ProposalCounterofferCard({
               type="button"
             >
               {response} Counteroffer
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}
@@ -2607,7 +2575,7 @@ function ProposalDecisionControls({
 
   if (isAuthor && !canUseOwnerOverride) {
     return (
-      <p className="mt-3 text-sm font-semibold text-[var(--sea-ink-soft)]">
+      <p className="mt-3 text-sm font-semibold text-muted-foreground">
         Separation from authorship prevents you from deciding this revision.
       </p>
     )
@@ -2617,11 +2585,11 @@ function ProposalDecisionControls({
     <div
       className={
         isAuthor
-          ? 'mt-4 grid gap-3 rounded-md border-2 border-amber-400 bg-amber-50 px-4 py-4 text-amber-950'
-          : 'mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4'
+          ? 'mt-4 grid gap-3 rounded-md border-2 border-border bg-muted px-4 py-4 text-foreground'
+          : 'mt-4 grid gap-3 rounded-md border border-border bg-muted/30 px-4 py-4'
       }
     >
-      <p className="font-extrabold">
+      <p className="font-semibold">
         {isAuthor
           ? 'Exceptional Owner self-approval override'
           : 'Record review decision'}
@@ -2632,20 +2600,19 @@ function ProposalDecisionControls({
             Theater policy permits the current Owner to approve their own
             revision only as this separately reasoned and audited exception.
           </p>
-          <label className="flex items-start gap-3 text-sm font-semibold">
+          <Label className="flex items-start gap-3 text-sm font-semibold">
             <input
               checked={ownerOverride}
               onChange={(change) => setOwnerOverride(change.target.checked)}
               type="checkbox"
             />
             Explicitly invoke the audited Owner self-approval override
-          </label>
+          </Label>
         </>
       ) : (
-        <label className="grid gap-2 text-sm font-bold">
+        <Label className="grid gap-2 text-sm font-medium">
           Decision
-          <select
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          <NativeSelect
             onChange={(change) =>
               setAction(
                 change.target.value as 'approve' | 'request_edits' | 'deny',
@@ -2656,23 +2623,22 @@ function ProposalDecisionControls({
             <option value="approve">Approve</option>
             <option value="request_edits">Request edits</option>
             <option value="deny">Deny</option>
-          </select>
-        </label>
+          </NativeSelect>
+        </Label>
       )}
-      <label className="grid gap-2 text-sm font-bold">
+      <Label className="grid gap-2 text-sm font-medium">
         {action === 'approve' && !isAuthor
           ? 'Reason (optional)'
           : 'Reason (required)'}
-        <textarea
-          className="min-h-24 rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        <Textarea
           maxLength={2000}
           onChange={(change) => setReason(change.target.value)}
           value={reason}
         />
-      </label>
-      {error ? <p className="font-semibold text-red-800">{error}</p> : null}
-      <button
-        className="w-fit rounded-md bg-[var(--sea-ink)] px-4 py-2 font-extrabold text-white disabled:opacity-50"
+      </Label>
+      {error ? <p className="font-semibold text-foreground">{error}</p> : null}
+      <Button
+        className="w-fit"
         disabled={
           isSaving ||
           (isAuthor && (!ownerOverride || !reason.trim())) ||
@@ -2708,7 +2674,7 @@ function ProposalDecisionControls({
           : isAuthor
             ? 'Approve with Owner override'
             : `Record ${action.replace('_', ' ')}`}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -2726,34 +2692,33 @@ function DeniedProposalReplacementForm({
   const [isSaving, setIsSaving] = useState(false)
 
   return (
-    <div className="mt-4 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--sand)]/30 px-4 py-4">
-      <p className="font-extrabold">Seed a linked replacement Event</p>
-      <p className="text-sm text-[var(--sea-ink-soft)]">
+    <div className="mt-4 grid gap-3 rounded-md border border-border bg-muted/30 px-4 py-4">
+      <p className="font-semibold">Seed a linked replacement Event</p>
+      <p className="text-sm text-muted-foreground">
         This copies the denied operational plan into a new draft. Cast
         participation is intentionally not carried into the new Event.
       </p>
-      <label className="grid gap-2 text-sm font-bold">
+      <Label className="grid gap-2 text-sm font-medium">
         Replacement title
-        <input
-          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        <Input
           onChange={(change) => {
             setTitle(change.target.value)
             if (!slug) setSlug(toSlug(change.target.value))
           }}
           value={title}
         />
-      </label>
-      <label className="grid gap-2 text-sm font-bold">
+      </Label>
+      <Label className="grid gap-2 text-sm font-medium">
         Replacement slug
-        <input
-          className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        <Input
           onChange={(change) => setSlug(change.target.value)}
           value={slug}
         />
-      </label>
-      {error ? <p className="font-semibold text-red-800">{error}</p> : null}
-      <button
-        className="w-fit rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold disabled:opacity-50"
+      </Label>
+      {error ? <p className="font-semibold text-foreground">{error}</p> : null}
+      <Button
+        variant="outline"
+        className="w-fit"
         disabled={isSaving || !title.trim() || !slug}
         onClick={async () => {
           setError(null)
@@ -2781,7 +2746,7 @@ function DeniedProposalReplacementForm({
         type="button"
       >
         {isSaving ? 'Creating…' : 'Create linked replacement'}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -2806,10 +2771,10 @@ export function EventWorkspaceNavigation({
         return (
           <a
             aria-current={isActive ? 'page' : undefined}
-            className={`rounded-full border px-3 py-2 text-sm font-bold ${
+            className={`rounded-full border px-3 py-2 text-sm font-medium ${
               isActive
-                ? 'border-[var(--sea-ink)] bg-[var(--sea-ink)] text-white'
-                : 'border-[var(--line)] bg-white hover:bg-[var(--sand)]'
+                ? 'border-foreground bg-foreground text-white'
+                : 'border-border bg-white hover:bg-muted'
             }`}
             href={section.target}
             key={section.target}
@@ -2870,19 +2835,18 @@ function EventOverview({
           />
         ))}
       </div>
-      <div className="island-shell mt-5 grid gap-5 rounded-lg px-6 py-6 lg:grid-cols-[1fr_1fr]">
+      <Card className="mt-5 grid gap-5  px-6 py-6 lg:grid-cols-[1fr_1fr] gap-0">
         <div>
-          <h2 className="text-2xl font-extrabold">Overview</h2>
+          <h2 className="text-2xl font-semibold">Overview</h2>
           {overview.primaryAction ? (
-            <a
-              className="mt-4 inline-flex rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white"
-              href={overview.primaryAction.target}
-            >
-              {overview.primaryAction.label} ·{' '}
-              {overview.primaryAction.relationship}
-            </a>
+            <Button asChild variant="outline" className="mt-4">
+              <a href={overview.primaryAction.target}>
+                {overview.primaryAction.label} ·{' '}
+                {overview.primaryAction.relationship}
+              </a>
+            </Button>
           ) : (
-            <p className="mt-3 text-sm font-semibold text-[var(--sea-ink-soft)]">
+            <p className="mt-3 text-sm font-semibold text-muted-foreground">
               No action is currently assigned to your Event relationships.
             </p>
           )}
@@ -2890,10 +2854,10 @@ function EventOverview({
             <ul className="mt-4 grid gap-2 text-sm">
               {overview.secondaryActions.map((action) => (
                 <li key={`${action.label}-${action.relationship}`}>
-                  <a className="font-bold underline" href={action.target}>
+                  <a className="font-medium underline" href={action.target}>
                     {action.label}
                   </a>{' '}
-                  <span className="text-[var(--sea-ink-soft)]">
+                  <span className="text-muted-foreground">
                     · {action.relationship}
                   </span>
                 </li>
@@ -2902,16 +2866,16 @@ function EventOverview({
           ) : null}
           {overview.blockedActions.map((action) => (
             <p
-              className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+              className="mt-4 rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground"
               key={action.label}
             >
-              <span className="font-bold">{action.label}</span> ·{' '}
+              <span className="font-medium">{action.label}</span> ·{' '}
               {action.relationship}. {action.explanation}
             </p>
           ))}
           <div className="mt-4">
-            <h3 className="font-bold">Your Event relationships</h3>
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+            <h3 className="font-medium">Your Event relationships</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               {overview.relationships.length > 0
                 ? overview.relationships.join(' · ')
                 : 'Authorized Event collaborator'}
@@ -2922,34 +2886,34 @@ function EventOverview({
           <div>
             <dl className="grid content-start gap-3 text-sm">
               <div>
-                <dt className="font-bold">Theater</dt>
+                <dt className="font-medium">Theater</dt>
                 <dd>{overview.invitation.theaterName}</dd>
               </div>
               <div>
-                <dt className="font-bold">Invited by</dt>
+                <dt className="font-medium">Invited by</dt>
                 <dd>{overview.invitation.inviterName}</dd>
               </div>
               <div>
-                <dt className="font-bold">Your role</dt>
+                <dt className="font-medium">Your role</dt>
                 <dd>{overview.invitation.role}</dd>
               </div>
               <div>
-                <dt className="font-bold">Invitation status</dt>
+                <dt className="font-medium">Invitation status</dt>
                 <dd>{overview.invitation.status}</dd>
               </div>
               <div>
-                <dt className="font-bold">Planned participation</dt>
+                <dt className="font-medium">Planned participation</dt>
                 <dd>{overview.invitation.planSummary}</dd>
               </div>
             </dl>
-            <p className="mt-3 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-3 text-sm text-muted-foreground">
               Accept to see the details needed for your Event responsibility.
             </p>
           </div>
         ) : (
           <dl className="grid content-start gap-3 text-sm">
             <div>
-              <dt className="font-bold">Next Occurrence</dt>
+              <dt className="font-medium">Next Occurrence</dt>
               <dd>
                 {overview.summary.nextOccurrence
                   ? `${overview.summary.nextOccurrence.localStartsAt.replace('T', ' ')} · ${overview.summary.nextOccurrence.locationName}`
@@ -2957,7 +2921,7 @@ function EventOverview({
               </dd>
             </div>
             <div>
-              <dt className="font-bold">Who leads this Event</dt>
+              <dt className="font-medium">Who leads this Event</dt>
               <dd>
                 {overview.summary.leadership.length > 0
                   ? overview.summary.leadership.join(', ')
@@ -2965,14 +2929,14 @@ function EventOverview({
               </dd>
             </div>
             <div>
-              <dt className="font-bold">Participation</dt>
+              <dt className="font-medium">Participation</dt>
               <dd>
                 {overview.summary.participation.accepted} accepted ·{' '}
                 {overview.summary.participation.pending} pending
               </dd>
             </div>
             <div>
-              <dt className="font-bold">Staffing coverage</dt>
+              <dt className="font-medium">Staffing coverage</dt>
               <dd>
                 {overview.summary.staffing.unfilled > 0
                   ? `${overview.summary.staffing.unfilled} requested position${overview.summary.staffing.unfilled === 1 ? '' : 's'} remain unfilled.`
@@ -2980,7 +2944,7 @@ function EventOverview({
               </dd>
             </div>
             <div>
-              <dt className="font-bold">Viability risk</dt>
+              <dt className="font-medium">Viability risk</dt>
               <dd>
                 {overview.summary.viability
                   ? overview.summary.viability.shortfall > 0
@@ -2990,26 +2954,26 @@ function EventOverview({
               </dd>
             </div>
             <div>
-              <dt className="font-bold">Public status</dt>
+              <dt className="font-medium">Public status</dt>
               <dd className="capitalize">
                 {overview.summary.publicStatus} Public Page
               </dd>
             </div>
           </dl>
         )}
-      </div>
+      </Card>
     </section>
   )
 }
 
 function StateCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="island-shell rounded-lg px-5 py-5">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+    <Card className=" px-5 py-5 gap-0">
+      <p className="text-xs font-medium tracking-normal text-muted-foreground">
         {label}
       </p>
-      <p className="mt-2 text-xl font-extrabold">{value}</p>
-    </div>
+      <p className="mt-2 text-xl font-semibold">{value}</p>
+    </Card>
   )
 }
 

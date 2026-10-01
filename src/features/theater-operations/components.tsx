@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { WorkspaceErrorState } from '@/features/application-shell/components'
 import { OperationalExceptions } from '@/features/operational-exceptions/components'
 import { WorkQueue } from '@/features/work-queue/components'
@@ -69,10 +71,10 @@ export function TheaterOperationsCockpit({
 
       <div className="grid items-start gap-x-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section aria-labelledby="operations-calendar" className="mt-8 min-w-0">
-          <h2 id="operations-calendar" className="text-2xl font-extrabold">
+          <h2 id="operations-calendar" className="text-2xl font-semibold">
             Upcoming Theater Calendar
           </h2>
-          <p className="mt-2 text-[var(--sea-ink-soft)]">
+          <p className="mt-2 text-muted-foreground">
             Next 7 days · Primary Venue
             {theater.primary_venue_name
               ? `: ${theater.primary_venue_name}`
@@ -85,7 +87,7 @@ export function TheaterOperationsCockpit({
             included.
           </p>
           {model.calendar.entries.length ? (
-            <ol className="island-shell mt-4 divide-y divide-[var(--line)] rounded-lg px-4">
+            <ol className="mt-4 divide-y divide-border rounded-lg px-4">
               {model.calendar.entries.map((entry) => (
                 <li key={entry.id} className="py-3">
                   <p className="text-sm">
@@ -114,7 +116,7 @@ export function TheaterOperationsCockpit({
               ))}
             </ol>
           ) : (
-            <p className="island-shell mt-4 rounded-lg p-4">
+            <p className="mt-4 rounded-lg p-4">
               No Primary Venue reservations in the next 7 days.
             </p>
           )}
@@ -130,10 +132,10 @@ export function TheaterOperationsCockpit({
         </section>
 
         <section aria-labelledby="event-pipeline" className="mt-8 min-w-0">
-          <h2 id="event-pipeline" className="text-2xl font-extrabold">
+          <h2 id="event-pipeline" className="text-2xl font-semibold">
             Event pipeline
           </h2>
-          <p className="mt-2 text-[var(--sea-ink-soft)]">
+          <p className="mt-2 text-muted-foreground">
             {model.pipeline.total}{' '}
             {model.pipeline.total === 1 ? 'Event' : 'Events'} · lifecycle
           </p>
@@ -141,33 +143,30 @@ export function TheaterOperationsCockpit({
             <>
               <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {model.pipeline.stages.map((stage) => (
-                  <div
-                    key={stage.label}
-                    className="island-shell rounded-lg p-3"
-                  >
+                  <Card role="article" key={stage.label} className=" p-3 gap-0">
                     <dt className="text-sm">{stage.label}</dt>
-                    <dd className="mt-1 text-2xl font-bold">{stage.count}</dd>
-                  </div>
+                    <dd className="mt-1 text-2xl font-medium">{stage.count}</dd>
+                  </Card>
                 ))}
               </dl>
-              <p className="mt-4 text-sm text-[var(--sea-ink-soft)]">
+              <p className="mt-4 text-sm text-muted-foreground">
                 Active Events only · these counts overlap; Publication and
                 health are independent of lifecycle.
               </p>
-              <dl className="mt-2 divide-y divide-[var(--line)]">
+              <dl className="mt-2 divide-y divide-border">
                 {model.pipeline.context.map((state) => (
                   <div
                     key={state.label}
                     className="flex justify-between gap-3 py-2"
                   >
                     <dt>{state.label}</dt>
-                    <dd className="font-bold">{state.count}</dd>
+                    <dd className="font-medium">{state.count}</dd>
                   </div>
                 ))}
               </dl>
             </>
           ) : (
-            <p className="island-shell mt-4 rounded-lg p-4">
+            <p className="mt-4 rounded-lg p-4">
               No Events yet. Open Events to start a plan.
             </p>
           )}
@@ -178,15 +177,15 @@ export function TheaterOperationsCockpit({
       </div>
 
       <section aria-labelledby="recent-activity" className="mt-8">
-        <h2 id="recent-activity" className="text-2xl font-extrabold">
+        <h2 id="recent-activity" className="text-2xl font-semibold">
           Recent activity
         </h2>
-        <p className="mt-2 text-[var(--sea-ink-soft)]">
+        <p className="mt-2 text-muted-foreground">
           Latest factual changes across this Theater. Activity does not resolve
           shared work.
         </p>
         {model.activity.length ? (
-          <ol className="island-shell mt-4 divide-y divide-[var(--line)] rounded-lg px-4">
+          <ol className="mt-4 divide-y divide-border rounded-lg px-4">
             {model.activity.map((entry) => (
               <li
                 key={entry.id}
@@ -206,7 +205,7 @@ export function TheaterOperationsCockpit({
                   ) : null}
                 </div>
                 <time
-                  className="shrink-0 text-sm text-[var(--sea-ink-soft)]"
+                  className="shrink-0 text-sm text-muted-foreground"
                   dateTime={entry.createdAt}
                 >
                   {formatTime(entry.createdAt)}
@@ -215,9 +214,7 @@ export function TheaterOperationsCockpit({
             ))}
           </ol>
         ) : (
-          <p className="island-shell mt-4 rounded-lg p-4">
-            No recent Theater activity.
-          </p>
+          <p className="mt-4 rounded-lg p-4">No recent Theater activity.</p>
         )}
       </section>
     </>
@@ -232,7 +229,7 @@ export function TheaterOperationsErrorState({ error }: { error: unknown }) {
     return <WorkspaceErrorState error={error} />
   return (
     <main className="page-wrap py-10">
-      <h1 className="display-title text-3xl font-bold">
+      <h1 className="display-title text-2xl font-medium">
         Theater Operations could not be loaded
       </h1>
       <p role="alert" className="mt-4">
@@ -240,13 +237,13 @@ export function TheaterOperationsErrorState({ error }: { error: unknown }) {
         schedule.
       </p>
       <div className="mt-4 flex flex-wrap gap-6">
-        <button
+        <Button
           className={destinationClass}
           type="button"
           onClick={() => window.location.reload()}
         >
           Try again
-        </button>
+        </Button>
         <a className={destinationClass} href="/app/callsheet">
           Return to Callsheet
         </a>

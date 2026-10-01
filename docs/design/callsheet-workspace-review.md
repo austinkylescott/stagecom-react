@@ -24,13 +24,13 @@ Failures keep the response available and display retry feedback. Event-specific
 responses continue through existing Event destinations. Notifications remain a
 separate personal inbox whose dismissal does not resolve domain work.
 
-The neutral styles use the [shadcn/ui default Neutral light tokens](https://ui.shadcn.com/docs/theming),
+The global styles use the [shadcn/ui default Neutral light tokens](https://ui.shadcn.com/docs/theming),
 including input, focus, secondary, destructive, chart and sidebar tokens, with
-system sans typography. Legacy feature variables alias those semantic tokens
-so the existing compositions share the same baseline. The styles are scoped
-to the authenticated workspace and its portaled controls. Public pages,
-Supabase Auth, callback behavior, database schema, authorization and Notification
-projection contracts retain their existing implementations. This delivery does
+system sans typography. Stock registry primitives and the Sidebar composition
+replace the previous custom presentation. Public pages and Auth presentation
+share the same generic baseline. Supabase Auth, callback behavior, database
+schema, authorization and Notification projection contracts retain their
+existing behavior. This delivery does
 not constitute branding approval or page-by-page human presentation approval.
 
 ## Review data and evidence
@@ -108,3 +108,24 @@ Configuration inspection confirms the plugin loads for TSX with the existing
 parser and zero enabled shadcn rules. `npm run lint` reports 93 errors and one
 warning, matching a baseline run with the plugin registration removed.
 Formatting checks for the configuration and package files passed.
+
+### Stock-component reset
+
+Following the maintainer's visual walkthrough, the presentation is rebuilt from
+stock New York registry components. The custom sidebar, branded CSS, typography,
+legacy aliases, background effects, and control restyling are removed. Product
+forms use stock primitives; the People Directory uses Table and Badge inside a
+Card. The component gallery and active design documentation use this baseline.
+Application commands, queries, schema and authorization are unchanged.
+
+The Sidebar integration preserves mobile keyboard focus return, active routes,
+Theater selection, and phone/desktop account-control placement. Named card
+regions and repeated articles retain accessible semantics. Demo chooser labels
+wrap at 360px and 390px without page-wide overflow. Human presentation approval
+and branding remain pending.
+
+Final reset verification: typecheck and production build passed; all 170
+unit/integration tests passed. Four workspace browser journeys and the full
+publication journey passed. Scoped ESLint and formatting checks passed. Desktop
+People and phone Callsheet/login screenshots were visually inspected. Standards
+and Spec follow-up reviews reported zero remaining findings.

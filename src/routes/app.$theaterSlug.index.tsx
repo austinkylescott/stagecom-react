@@ -34,8 +34,10 @@ function TheaterWorkPage() {
   } = Route.useLoaderData()
   return (
     <main className="page-wrap break-words py-6 sm:py-8">
-      <p className="text-sm font-bold text-[var(--kicker)]">{theater.name}</p>
-      <h1 className="display-title mt-3 text-4xl font-bold">
+      <p className="text-sm font-medium text-muted-foreground">
+        {theater.name}
+      </p>
+      <h1 className="display-title mt-3 text-2xl font-medium">
         Theater Operations
       </h1>
       {cockpit ? (

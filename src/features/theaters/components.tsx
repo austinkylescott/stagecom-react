@@ -1,3 +1,7 @@
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
@@ -55,12 +59,12 @@ export function TheaterSetupPage({
   const canSaveDraft = name.trim().length > 0 && generatedSlug.length > 0
 
   return (
-    <main className="page-wrap py-8 sm:py-12">
+    <main className="page-wrap py-6">
       <section className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+        <p className="text-xs font-medium tracking-normal text-muted-foreground">
           Theater setup
         </p>
-        <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
+        <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
           {theaterId
             ? 'Update your public theater home'
             : 'Prepare your public theater home'}
@@ -68,7 +72,7 @@ export function TheaterSetupPage({
       </section>
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <form
-          className="island-shell grid gap-5 rounded-lg px-6 py-6"
+          className="grid gap-5 rounded-lg px-6 py-6"
           onSubmit={async (event) => {
             event.preventDefault()
             setError(null)
@@ -156,24 +160,20 @@ export function TheaterSetupPage({
             value={websiteUrl}
           />
           {error ? (
-            <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+            <p className="rounded-md border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground">
               {error}
             </p>
           ) : null}
-          <button
-            className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
-            disabled={!canSaveDraft || isSubmitting}
-            type="submit"
-          >
+          <Button disabled={!canSaveDraft || isSubmitting} type="submit">
             {isSubmitting
               ? 'Saving…'
               : theaterId
                 ? 'Save changes'
                 : 'Save and preview'}
-          </button>
+          </Button>
         </form>
-        <aside className="island-shell rounded-lg px-5 py-5">
-          <h2 className="text-lg font-extrabold text-[var(--sea-ink)]">
+        <aside className="rounded-lg px-5 py-5">
+          <h2 className="text-lg font-semibold text-foreground">
             Publish gate
           </h2>
           <div className="mt-4 grid gap-3">
@@ -182,19 +182,17 @@ export function TheaterSetupPage({
                 <CheckCircle2
                   className={
                     complete
-                      ? 'size-5 text-[var(--palm)]'
-                      : 'size-5 text-[var(--sea-ink-soft)] opacity-35'
+                      ? 'size-5 text-muted-foreground'
+                      : 'size-5 text-muted-foreground opacity-35'
                   }
                 />
-                <span className="font-semibold text-[var(--sea-ink)]">
-                  {label}
-                </span>
+                <span className="font-semibold text-foreground">{label}</span>
               </div>
             ))}
           </div>
           <span
             aria-disabled={!canPublish}
-            className="mt-6 block rounded-md bg-[var(--sea-ink)] px-4 py-3 text-center font-extrabold text-white no-underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
+            className="mt-6 block rounded-md bg-foreground px-4 py-3 text-center font-semibold text-white no-underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
           >
             {canPublish
               ? 'Ready for publication after preview'
@@ -218,39 +216,34 @@ export function TheaterHubPage({
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <main className="page-wrap py-10 sm:py-14">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+    <main className="page-wrap py-6">
+      <p className="text-xs font-medium tracking-normal text-muted-foreground">
         Personal workspace
       </p>
-      <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
+      <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
         Callsheet
       </h1>
-      <p className="mt-3 max-w-2xl text-[var(--sea-ink-soft)]">
+      <p className="mt-3 max-w-2xl text-muted-foreground">
         Your Theater memberships are available when you choose to enter a
         Theater. Callsheet always remains your personal starting point.
       </p>
       <div className="mt-7 grid gap-4 md:grid-cols-2">
         {theaters.map((theater) => (
-          <article
-            className="island-shell rounded-lg px-5 py-5"
-            key={theater.id}
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--kicker)]">
+          <Card role="article" className=" px-5 py-5 gap-0" key={theater.id}>
+            <p className="text-xs font-medium tracking-normal text-muted-foreground">
               {theater.status} {theater.isDefault ? '· Default' : ''}
             </p>
-            <h2 className="mt-2 text-2xl font-extrabold text-[var(--sea-ink)]">
+            <h2 className="mt-2 text-2xl font-semibold text-foreground">
               {theater.name}
             </h2>
             <div className="mt-5 flex flex-wrap gap-2">
-              <a
-                className="rounded-md bg-[var(--sea-ink)] px-4 py-2 text-sm font-extrabold text-white no-underline"
-                href={`/app/${theater.slug}`}
-              >
-                Enter Theater
-              </a>
+              <Button asChild variant="default">
+                <a href={`/app/${theater.slug}`}>Enter Theater</a>
+              </Button>
               {!theater.isDefault ? (
-                <button
-                  className="rounded-md border border-[var(--line)] px-4 py-2 text-sm font-extrabold"
+                <Button
+                  variant="outline"
+
                   onClick={async () => {
                     setError(null)
                     const result = await setDefaultTheaterFn({
@@ -267,25 +260,22 @@ export function TheaterHubPage({
                   type="button"
                 >
                   Make default
-                </button>
+                </Button>
               ) : null}
             </div>
-          </article>
+          </Card>
         ))}
       </div>
       {theaters.length === 0 ? (
-        <section className="mt-7 rounded-lg border border-dashed border-[var(--line)] px-5 py-7 text-[var(--sea-ink-soft)]">
+        <section className="mt-7 rounded-lg border border-dashed border-border px-5 py-7 text-muted-foreground">
           <p>No Theater memberships yet. Create a Theater to begin.</p>
-          <Link
-            className="mt-4 inline-flex rounded-md bg-[var(--sea-ink)] px-4 py-2 text-sm font-extrabold text-white no-underline focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/35"
-            to="/onboarding/theater"
-          >
-            Create a Theater
-          </Link>
+          <Button asChild variant="default" className="mt-4">
+            <Link to="/onboarding/theater">Create a Theater</Link>
+          </Button>
         </section>
       ) : null}
       {error ? (
-        <p className="mt-4 text-sm font-semibold text-red-800">{error}</p>
+        <p className="mt-4 text-sm font-semibold text-foreground">{error}</p>
       ) : null}
     </main>
   )
@@ -301,13 +291,9 @@ function Field({
   value: string
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
+    <Label className="grid gap-2 text-sm font-medium text-foreground">
       {label}
-      <input
-        className="rounded-md border border-[var(--line)] bg-white px-4 py-3 font-medium outline-none focus:border-[var(--lagoon-deep)]"
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      />
-    </label>
+      <Input onChange={(event) => onChange(event.target.value)} value={value} />
+    </Label>
   )
 }

@@ -1,3 +1,8 @@
+import { NativeSelect } from '@/components/ui/native-select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { filterEventPortfolio } from './read-model'
 import type { PortfolioEvent, PortfolioFilters } from './read-model'
@@ -69,63 +74,60 @@ export function EventPortfolioPage({
   const update = (part: Partial<PortfolioFilters>) =>
     setFilters((current) => ({ ...current, ...part }))
   return (
-    <main className="page-wrap py-8 sm:py-12">
+    <main className="page-wrap py-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+          <p className="text-xs font-medium tracking-normal text-muted-foreground">
             Events
           </p>
-          <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
+          <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
             Event portfolio
           </h1>
-          <p className="mt-2 text-[var(--sea-ink-soft)]">
+          <p className="mt-2 text-muted-foreground">
             Browse dates, independent states, and your available next actions.
           </p>
         </div>
         {canCreate ? (
-          <a
-            className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-            href={`/app/${theaterSlug}/events/new`}
-          >
-            Create Event
-          </a>
+          <Button asChild variant="default">
+            <a href={`/app/${theaterSlug}/events/new`}>Create Event</a>
+          </Button>
         ) : null}
       </div>
       <nav aria-label="Saved Event views" className="mt-7 flex flex-wrap gap-2">
         {views.map((view) => (
-          <button
+          <Button
             key={view.id}
             type="button"
             aria-pressed={filters.view === view.id}
-            className={`rounded-full border px-4 py-2 text-sm font-bold ${filters.view === view.id ? 'border-[var(--sea-ink)] bg-[var(--sea-ink)] text-white' : 'border-[var(--line)] bg-white text-[var(--sea-ink)]'}`}
+            className={`rounded-full border px-4 py-2 text-sm font-medium ${filters.view === view.id ? 'border-foreground bg-foreground text-white' : 'border-border bg-white text-foreground'}`}
             onClick={() => update({ view: view.id })}
           >
             {view.label}
-          </button>
+          </Button>
         ))}
       </nav>
-      <section
+      <Card
         aria-label="Filter and sort Events"
-        className="island-shell mt-5 grid gap-3 rounded-lg p-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="mt-5 grid gap-3  p-4 sm:grid-cols-2 lg:grid-cols-4 gap-0"
       >
-        <label className="grid gap-1 text-sm font-bold">
+        <Label className="grid gap-1 text-sm font-medium">
           From date
-          <input
-            className="w-full rounded border border-[var(--line)] p-2"
+          <Input
+            className="w-full"
             type="date"
             value={filters.from ?? ''}
             onChange={(event) => update({ from: event.target.value })}
           />
-        </label>
-        <label className="grid gap-1 text-sm font-bold">
+        </Label>
+        <Label className="grid gap-1 text-sm font-medium">
           Through date
-          <input
-            className="w-full rounded border border-[var(--line)] p-2"
+          <Input
+            className="w-full"
             type="date"
             value={filters.to ?? ''}
             onChange={(event) => update({ to: event.target.value })}
           />
-        </label>
+        </Label>
         <Select
           label="Leadership"
           value={filters.leadership}
@@ -169,10 +171,10 @@ export function EventPortfolioPage({
             ),
           )}
         />
-        <label className="grid gap-1 text-sm font-bold">
+        <Label className="grid gap-1 text-sm font-medium">
           Sort by
-          <select
-            className="w-full rounded border border-[var(--line)] bg-white p-2"
+          <NativeSelect
+            className="w-full"
             value={filters.sort}
             onChange={(event) =>
               update({ sort: event.target.value as PortfolioFilters['sort'] })
@@ -183,28 +185,29 @@ export function EventPortfolioPage({
                 {sort.label}
               </option>
             ))}
-          </select>
-        </label>
-        <button
-          className="self-end rounded border border-[var(--line)] px-3 py-2 text-sm font-bold"
+          </NativeSelect>
+        </Label>
+        <Button
+          variant="outline"
+          className="self-end"
           type="button"
           onClick={() => setFilters({ view: 'all', sort: 'date-asc' })}
         >
           Clear filters
-        </button>
-      </section>
+        </Button>
+      </Card>
       <p
         aria-live="polite"
-        className="mt-5 text-sm font-semibold text-[var(--sea-ink-soft)]"
+        className="mt-5 text-sm font-semibold text-muted-foreground"
       >
         {events.length} of {portfolio.events.length} Events
       </p>
       <div className="mt-3 grid gap-4">
         {events.map((event) => (
-          <article className="island-shell rounded-lg p-5" key={event.id}>
+          <Card role="article" className=" p-5 gap-0" key={event.id}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
+                <h2 className="text-2xl font-semibold text-foreground">
                   <a href={event.overviewHref}>{event.title}</a>
                 </h2>
                 {event.limited ? (
@@ -220,14 +223,14 @@ export function EventPortfolioPage({
                           ? `Next proposed date: ${formatDate(event.nextProposedDate, timezone, true)}`
                           : 'No upcoming confirmed or proposed date'}
                     </p>
-                    <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {event.dates.length} confirmed ·{' '}
                       {event.candidateDates.length} proposed dates
                     </p>
                   </>
                 )}
               </div>
-              <a className="font-bold underline" href={event.overviewHref}>
+              <a className="font-medium underline" href={event.overviewHref}>
                 {event.overviewHref.startsWith('/theater/')
                   ? 'Open public Event'
                   : 'Open Overview'}
@@ -245,7 +248,7 @@ export function EventPortfolioPage({
             </dl>
             {!event.limited ? (
               <p className="mt-4 text-sm">
-                <span className="font-bold">Leadership:</span>{' '}
+                <span className="font-medium">Leadership:</span>{' '}
                 {event.leadership.length
                   ? event.leadership
                       .map((leader) => `${leader.displayName} · ${leader.role}`)
@@ -254,11 +257,11 @@ export function EventPortfolioPage({
               </p>
             ) : null}
             <p className="mt-3 text-sm">
-              <span className="font-bold">Your next action:</span>{' '}
+              <span className="font-medium">Your next action:</span>{' '}
               {event.nextAction ? (
                 <>
                   <a
-                    className="ml-1 font-bold underline"
+                    className="ml-1 font-medium underline"
                     href={event.nextAction.href}
                   >
                     {event.nextAction.label}
@@ -271,10 +274,10 @@ export function EventPortfolioPage({
                 'No action currently available'
               )}
             </p>
-          </article>
+          </Card>
         ))}
         {!events.length ? (
-          <p className="rounded-lg border border-dashed border-[var(--line)] p-6">
+          <p className="rounded-lg border border-dashed border-border p-6">
             No Events match this view. Change or clear the filters to see more.
           </p>
         ) : null}
@@ -307,10 +310,10 @@ function Select({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="grid gap-1 text-sm font-bold">
+    <Label className="grid gap-1 text-sm font-medium">
       {label}
-      <select
-        className="w-full rounded border border-[var(--line)] bg-white p-2"
+      <NativeSelect
+        className="w-full"
         value={value ?? ''}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -320,14 +323,14 @@ function Select({
             {option.label}
           </option>
         ))}
-      </select>
-    </label>
+      </NativeSelect>
+    </Label>
   )
 }
 function State({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border border-[var(--line)] px-3 py-2">
-      <dt className="font-bold">{label}</dt>
+    <div className="rounded border border-border px-3 py-2">
+      <dt className="font-medium">{label}</dt>
       <dd className="mt-1 capitalize">{value.replaceAll('_', ' ')}</dd>
     </div>
   )

@@ -147,7 +147,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .filter({
         has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
       })
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: fixture.actors.reviewer.name })
     await waitForReactHandler(
       reviewerCard.getByRole('button', { name: 'Designate reviewer' }),
@@ -165,7 +165,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .filter({
         has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
       })
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: fixture.actors.multiRole.name })
     await multiRoleCard
       .getByRole('button', { name: 'Designate reviewer' })
@@ -179,7 +179,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .filter({
         has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
       })
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: fixture.actors.admin.name })
     await waitForReactHandler(
       adminCard.getByRole('button', { name: 'Offer Admin authority' }),
@@ -238,7 +238,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await producer.page.getByLabel('Minimum Viable Cast').fill('1')
     await producer.page.getByRole('button', { name: 'Add Occurrence' }).click()
     const rehearsal = producer.page
-      .locator('article')
+      .getByRole('article')
       .filter({ has: producer.page.getByText('Occurrence 1', { exact: true }) })
     await rehearsal.getByLabel('Occurrence 1 type').selectOption('rehearsal')
     await rehearsal
@@ -250,7 +250,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
 
     await producer.page.getByRole('button', { name: 'Add Occurrence' }).click()
     const performance = producer.page
-      .locator('article')
+      .getByRole('article')
       .filter({ has: producer.page.getByText('Occurrence 2', { exact: true }) })
     await performance
       .getByLabel('Occurrence 2 type')
@@ -617,6 +617,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await expect(anonymousPage.getByText('Availability')).toHaveCount(0)
 
     await owner.page.goto('/app/callsheet')
+    await waitForReactProps(
+      owner.page.getByRole('link', { name: 'Enter Theater' }),
+    )
     await owner.page.getByRole('link', { name: 'Enter Theater' }).click()
     await owner.page.getByRole('link', { name: 'Calendar' }).last().click()
     await waitForReactHandler(
@@ -630,6 +633,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await expect(owner.page.getByText('Schedule Block created.')).toBeVisible()
 
     await member.page.goto('/app/callsheet')
+    await waitForReactProps(
+      member.page.getByRole('link', { name: 'Enter Theater' }),
+    )
     await member.page.getByRole('link', { name: 'Enter Theater' }).click()
     await member.page.getByRole('link', { name: 'People' }).click()
     await expect(
@@ -658,6 +664,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await member.page.getByRole('button', { name: 'Month' }).click()
 
     await owner.page.goto('/app/callsheet')
+    await waitForReactProps(
+      owner.page.getByRole('link', { name: 'Enter Theater' }),
+    )
     await owner.page.getByRole('link', { name: 'Enter Theater' }).click()
     await expect(owner.page).toHaveURL(
       new RegExp(`/app/${fixture.theaterSlug}$`),
@@ -668,7 +677,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .filter({
         has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
       })
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: fixture.actors.reviewer.name })
     await waitForReactHandler(
       reviewerAccess.getByRole('button', { name: 'Offer Admin authority' }),
@@ -703,7 +712,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .filter({
         has: owner.page.getByRole('heading', { name: 'Access & Roles' }),
       })
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: fixture.actors.reviewer.name })
     await waitForReactHandler(
       acceptedReviewerAccess.getByRole('button', {

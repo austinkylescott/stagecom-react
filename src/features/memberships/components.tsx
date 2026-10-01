@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useState } from 'react'
 
 import { setTheaterMemberCapabilityFn } from '@/features/governance/server-functions'
@@ -44,12 +46,12 @@ export function AccessAndRolesManager({
   return (
     <section aria-labelledby="access-and-roles" className="mt-10">
       <h2
-        className="text-2xl font-extrabold text-[var(--sea-ink)]"
+        className="text-2xl font-semibold text-foreground"
         id="access-and-roles"
       >
         Access &amp; Roles
       </h2>
-      <p className="mt-2 max-w-2xl text-[var(--sea-ink-soft)]">
+      <p className="mt-2 max-w-2xl text-muted-foreground">
         Manage narrow Proposer and Reviewer capabilities separately from Theater
         Operator authority. Deactivation ends current access while preserving
         factual history.
@@ -61,22 +63,24 @@ export function AccessAndRolesManager({
           const isConfirming = confirmingUserId === member.userId
 
           return (
-            <article
-              className="island-shell rounded-lg px-5 py-4"
+            <Card
+              role="article"
+              className=" px-5 py-4 gap-0"
               key={member.userId}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-extrabold text-[var(--sea-ink)]">
+                  <h3 className="font-semibold text-foreground">
                     {member.displayName}
                     {member.userId === actorUserId ? ' · You' : ''}
                   </h3>
-                  <p className="mt-1 text-sm capitalize text-[var(--sea-ink-soft)]">
+                  <p className="mt-1 text-sm capitalize text-muted-foreground">
                     Theater role: {member.roles.join(', ')}
                   </p>
                 </div>
-                <button
-                  className="rounded-md border border-red-200 px-4 py-2 text-sm font-extrabold text-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+                <Button
+                  variant="destructive"
+
                   disabled={isLastOwner || deactivatingUserId !== null}
                   onClick={() => {
                     setError(null)
@@ -86,13 +90,14 @@ export function AccessAndRolesManager({
                   type="button"
                 >
                   {isLastOwner ? 'Accountable Owner required' : 'Deactivate'}
-                </button>
+                </Button>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {!member.roles.includes('owner') &&
                 !member.roles.includes('admin') ? (
-                  <button
-                    className="rounded-md border border-[var(--theater-ink)] bg-white px-3 py-2 text-sm font-bold text-[var(--theater-ink)] disabled:opacity-50"
+                  <Button
+                    variant="outline"
+
                     disabled={invitingUserId !== null}
                     onClick={async () => {
                       setError(null)
@@ -120,11 +125,12 @@ export function AccessAndRolesManager({
                     {invitingUserId === member.userId
                       ? 'Offering Admin authority…'
                       : 'Offer Admin authority'}
-                  </button>
+                  </Button>
                 ) : null}
                 {member.roles.includes('admin') ? (
-                  <button
-                    className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-800 disabled:opacity-50"
+                  <Button
+                    variant="destructive"
+
                     disabled={removingAdminUserId !== null}
                     onClick={async () => {
                       setError(null)
@@ -177,14 +183,15 @@ export function AccessAndRolesManager({
                       : member.userId === actorUserId
                         ? 'Relinquish Admin authority'
                         : 'Remove Admin authority'}
-                  </button>
+                  </Button>
                 ) : null}
                 {(['proposer', 'reviewer'] as const).map((capability) => {
                   const enabled = member.capabilities.includes(capability)
 
                   return (
-                    <button
-                      className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold"
+                    <Button
+                      variant="outline"
+
                       key={capability}
                       onClick={async () => {
                         setError(null)
@@ -221,19 +228,20 @@ export function AccessAndRolesManager({
                       type="button"
                     >
                       {enabled ? 'Remove' : 'Designate'} {capability}
-                    </button>
+                    </Button>
                   )
                 })}
               </div>
               {isConfirming ? (
-                <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-4">
-                  <p className="text-sm font-semibold text-red-950">
+                <div className="mt-4 rounded-md border border-border bg-muted px-4 py-4">
+                  <p className="text-sm font-semibold text-foreground">
                     Deactivate {member.displayName}? Current Theater authority,
                     leadership, and Cast assignments will end atomically.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      className="rounded-md bg-red-800 px-4 py-2 text-sm font-extrabold text-white disabled:opacity-60"
+                    <Button
+                      variant="destructive"
+
                       disabled={deactivatingUserId !== null}
                       onClick={async () => {
                         setError(null)
@@ -273,26 +281,27 @@ export function AccessAndRolesManager({
                       {deactivatingUserId === member.userId
                         ? 'Deactivating…'
                         : 'Confirm deactivation'}
-                    </button>
-                    <button
-                      className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-extrabold"
+                    </Button>
+                    <Button
+                      variant="outline"
+
                       disabled={deactivatingUserId !== null}
                       onClick={() => setConfirmingUserId(null)}
                       type="button"
                     >
                       Keep active
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : null}
-            </article>
+            </Card>
           )
         })}
       </div>
       {adminAuthorityHistory.length > 0 ? (
         <section aria-labelledby="admin-authority-history" className="mt-8">
           <h3
-            className="text-lg font-extrabold text-[var(--sea-ink)]"
+            className="text-lg font-semibold text-foreground"
             id="admin-authority-history"
           >
             Admin authority history
@@ -300,7 +309,7 @@ export function AccessAndRolesManager({
           <div className="mt-3 grid gap-2">
             {adminAuthorityHistory.map((entry) => (
               <p
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--sea-ink-soft)]"
+                className="rounded-md border border-border bg-white px-4 py-3 text-sm text-muted-foreground"
                 key={`${entry.actorDisplayName}-${entry.memberDisplayName}-${entry.createdAt}`}
               >
                 {entry.actorDisplayName} removed Admin authority from{' '}
@@ -312,10 +321,10 @@ export function AccessAndRolesManager({
         </section>
       ) : null}
       {message ? (
-        <p className="mt-4 font-semibold text-emerald-900">{message}</p>
+        <p className="mt-4 font-semibold text-foreground">{message}</p>
       ) : null}
       {error ? (
-        <p className="mt-4 font-semibold text-red-900">{error}</p>
+        <p className="mt-4 font-semibold text-foreground">{error}</p>
       ) : null}
     </section>
   )

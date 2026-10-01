@@ -306,7 +306,7 @@ for (const persona of [
       await page.goto('/app/callsheet')
       const harbor = page
         .getByRole('region', { name: 'Your Theaters' })
-        .locator('article')
+        .getByRole('article')
         .filter({ hasText: 'Harbor Stage' })
       await harbor.getByRole('link', { name: 'Enter Theater' }).click()
       const callsheet = page

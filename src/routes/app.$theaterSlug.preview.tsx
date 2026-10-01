@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { useState } from 'react'
 
@@ -37,8 +38,8 @@ function TheaterPreviewPage() {
       <PublicTheaterPage
         mode="preview"
         previewAction={
-          <button
-            className="rounded-md bg-[var(--theater-ink)] px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
+          <Button
+            className=""
             disabled={isPublishing}
             onClick={async () => {
               setError(null)
@@ -62,12 +63,12 @@ function TheaterPreviewPage() {
             type="button"
           >
             {isPublishing ? 'Publishing…' : 'Publish Theater'}
-          </button>
+          </Button>
         }
         theater={theater}
       />
       {error ? (
-        <p className="page-wrap pb-8 text-sm font-semibold text-red-800">
+        <p className="page-wrap pb-8 text-sm font-semibold text-foreground">
           {error}
         </p>
       ) : null}
