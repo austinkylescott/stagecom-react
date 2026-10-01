@@ -9,6 +9,8 @@ import { EventPortfolioPage } from '@/features/events/event-portfolio/components
 import { listManagedEventsFn } from '@/features/events/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/events')({
+  staleTime: 0,
+  gcTime: 0,
   loader: async ({ params }) => {
     const result = await listManagedEventsFn({
       data: { theaterSlug: params.theaterSlug },
@@ -37,6 +39,7 @@ function TheaterEventsPage() {
 
   return (
     <EventPortfolioPage
+      theaterName={theater.name}
       portfolio={portfolio}
       theaterSlug={theaterSlug}
       timezone={theater.timezone ?? 'UTC'}

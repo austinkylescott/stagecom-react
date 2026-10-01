@@ -5,10 +5,10 @@ import type { Database } from '@/server/db/database.types'
 type TheaterRole = Database['public']['Enums']['theater_role']
 
 export type TheaterNavigationId =
-  'calendar' | 'events' | 'operations' | 'people' | 'settings'
+  'portal' | 'calendar' | 'events' | 'operations' | 'people' | 'settings'
 
 const memberNavigation: TheaterNavigationId[] = [
-  'operations',
+  'portal',
   'calendar',
   'events',
   'people',
@@ -16,6 +16,6 @@ const memberNavigation: TheaterNavigationId[] = [
 
 export function getTheaterNavigation(roles: TheaterRole[]) {
   return canManageTheater(roles)
-    ? [...memberNavigation, 'settings']
+    ? [...memberNavigation, 'operations', 'settings']
     : memberNavigation
 }

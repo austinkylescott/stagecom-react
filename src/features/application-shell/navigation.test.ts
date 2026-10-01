@@ -5,7 +5,7 @@ import { getTheaterNavigation } from './navigation'
 describe('getTheaterNavigation', () => {
   it('keeps People available to Members while omitting protected configuration', () => {
     expect(getTheaterNavigation(['member'])).toEqual([
-      'operations',
+      'portal',
       'calendar',
       'events',
       'people',
@@ -14,10 +14,11 @@ describe('getTheaterNavigation', () => {
 
   it('adds configuration destinations for Theater Operators without changing the shared structure', () => {
     expect(getTheaterNavigation(['admin'])).toEqual([
-      'operations',
+      'portal',
       'calendar',
       'events',
       'people',
+      'operations',
       'settings',
     ])
   })

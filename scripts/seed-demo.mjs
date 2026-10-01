@@ -48,6 +48,10 @@ const DEMO_PERSONAS = {
     displayName: 'Casey Multi-Theater',
     email: 'multi@demo.stagecom.test',
   },
+  invitee: {
+    displayName: 'Indigo Invitee',
+    email: 'invitee@demo.stagecom.test',
+  },
   newcomer: {
     displayName: 'Noah Newcomer',
     email: 'newcomer@demo.stagecom.test',
@@ -106,7 +110,23 @@ const theater = await createDemoTheater(personas)
 const event = await createDemoEvent(theater.id, personas, [
   personas.member,
   personas.multi,
+  personas.producer,
 ])
+const invitation = await supabase.rpc('invite_event_cast_member', {
+  p_show_id: event.id,
+  p_actor_user_id: personas.producer.id,
+  p_member_user_id: personas.invitee.id,
+})
+throwIfError('create pending Cast invitation scenario', invitation.error)
+const unscheduled = await supabase.rpc('create_managed_event', {
+  p_actor_user_id: personas.producer.id,
+  p_producer_user_ids: [],
+  p_slug: 'an-evening-of-stories',
+  p_theater_id: theater.id,
+  p_title:
+    'An Evening of Stories, Songs, and Unexpected Encounters from Across Our Community',
+})
+throwIfError('create unscheduled long-content Event', unscheduled.error)
 await createDemoJoinLinks(theater.id, personas.owner.id)
 const secondTheater = await createDemoTheater(personas, SECOND_DEMO_THEATER)
 await createDemoEvent(secondTheater.id, personas, [personas.multi])
@@ -279,7 +299,10 @@ async function createDemoTheater(personas, theaterConfig = DEMO_THEATER) {
     { persona: 'admin', roles: ['admin'] },
     { persona: 'producer', roles: ['member'] },
     ...(theaterConfig.slug === DEMO_THEATER.slug
-      ? [{ persona: 'member', roles: ['member'] }]
+      ? [
+          { persona: 'member', roles: ['member'] },
+          { persona: 'invitee', roles: ['member'] },
+        ]
       : []),
     { persona: 'multi', roles: ['member'] },
   ].map(({ persona, roles }) => ({

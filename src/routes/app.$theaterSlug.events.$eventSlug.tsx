@@ -7,6 +7,8 @@ import {
 } from '@/features/events/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/events/$eventSlug')({
+  staleTime: 0,
+  gcTime: 0,
   loader: async ({ params }) => {
     const result = await getManagedEventWorkspaceFn({
       data: {

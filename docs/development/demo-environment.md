@@ -26,18 +26,24 @@ Theaters; the base Member belongs only to Compass Rose. Owner, Admin, Member
 and Multi-Theater Member enter through Callsheet. Persona controls remain on
 the development-only login chooser, outside authenticated product pages.
 
-Six personas are available:
+Seven personas are available:
 
 - Theater Owner
 - Theater Admin
 - Event Producer
 - Theater Member
 - Multi-Theater Member
+- Pending Cast invitee
 - Newcomer without Theater membership
 
 The login page displays a persona chooser only when server-side demo mode is
 enabled. The Newcomer lands on the active Join Link; other personas land in the
 workspace most relevant to their role.
+
+The Producer has independent Producer, Director and accepted Cast relationships.
+The Pending Cast invitee can decide an invitation without seeing planning or
+Calls. An additional long-title Event has no dates, for unscheduled portfolio
+review. These STA-67 scenarios use the same persisted Auth and database workflow.
 
 ## Local Setup
 
@@ -65,7 +71,7 @@ npm run dev
 
 Open `http://localhost:3000/login` and choose a persona. Running
 `npm run demo:seed` again resets only the Compass Rose and Harbor Stage Theaters and restores its
-known state while preserving and updating the five demo Auth users.
+known state while preserving and updating the seven demo Auth users.
 
 Remove all exact-target demo data with:
 
@@ -94,6 +100,6 @@ environment.
 
 - Persona access is rejected server-side unless `STAGECOM_DEMO_MODE=true`.
 - The demo password remains server-only and is never sent to the browser.
-- Resetting targets only the `compass-rose` Theater slug and the five exact
+- Resetting targets only the `compass-rose` Theater slug and the seven exact
   `@demo.stagecom.test` Auth users.
 - Normal magic-link login remains available for testing the real auth journey.
