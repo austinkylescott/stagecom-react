@@ -51,11 +51,13 @@ const healthOptions = values(['on_track', 'at_risk'])
 export function EventPortfolioPage({
   portfolio,
   theaterSlug,
+  theaterName,
   timezone,
   canCreate,
 }: {
   portfolio: { events: PortfolioEvent[] }
   theaterSlug: string
+  theaterName?: string
   timezone: string
   canCreate: boolean
 }) {
@@ -74,11 +76,11 @@ export function EventPortfolioPage({
   const update = (part: Partial<PortfolioFilters>) =>
     setFilters((current) => ({ ...current, ...part }))
   return (
-    <main className="page-wrap py-6">
+    <main className="page-wrap min-w-0 break-words py-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium tracking-normal text-muted-foreground">
-            Events
+            {theaterName ?? theaterSlug} · Events
           </p>
           <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
             Event portfolio
@@ -108,7 +110,7 @@ export function EventPortfolioPage({
       </nav>
       <Card
         aria-label="Filter and sort Events"
-        className="mt-5 grid gap-3  p-4 sm:grid-cols-2 lg:grid-cols-4 gap-0"
+        className="mt-5 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         <Label className="grid gap-1 text-sm font-medium">
           From date
@@ -206,7 +208,7 @@ export function EventPortfolioPage({
         {events.map((event) => (
           <Card role="article" className=" p-5 gap-0" key={event.id}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-2xl font-semibold text-foreground">
                   <a href={event.overviewHref}>{event.title}</a>
                 </h2>
@@ -278,7 +280,7 @@ export function EventPortfolioPage({
         ))}
         {!events.length ? (
           <p className="rounded-lg border border-dashed border-border p-6">
-            No Events match this view. Change or clear the filters to see more.
+            {portfolio.events.length ? 'No Events match this view. Change or clear the filters to see more.' : 'No Events are available to your current Theater relationships.'}
           </p>
         ) : null}
       </div>

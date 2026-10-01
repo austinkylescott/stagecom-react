@@ -154,8 +154,14 @@ export async function getManagedEventWorkspace(
   const actorCast = managedEvent.show_cast.find(
     (castMember) => castMember.user_id === access.data.actorUserId,
   )
-  const actorStaffAssignment = managedEvent.show_staff_assignments.find(
+  const actorStaffAssignments = managedEvent.show_staff_assignments.filter(
     (assignment) => assignment.user_id === access.data.actorUserId,
+  )
+  const actorStaffAssignment =
+    actorStaffAssignments.find(({ status }) => status === 'accepted') ??
+    actorStaffAssignments.find(({ status }) => status === 'pending')
+  const hasPendingStaffInvitation = actorStaffAssignments.some(
+    ({ status }) => status === 'pending',
   )
   const isTheaterAdmin = access.data.membership.roles.some(
     (role) => role === 'owner' || role === 'admin',
@@ -173,10 +179,10 @@ export async function getManagedEventWorkspace(
     isTheaterAdmin || isReviewer || actorLeadership.length > 0
   const view = hasOperationalView
     ? ('operational' as const)
-    : actorStaffAssignment?.status === 'accepted'
-      ? ('accepted_staff' as const)
-      : actorCast?.status === 'accepted'
-        ? ('accepted_cast' as const)
+    : actorCast?.status === 'accepted'
+      ? ('accepted_cast' as const)
+      : actorStaffAssignment?.status === 'accepted'
+        ? ('accepted_staff' as const)
         : actorCast?.status === 'pending' && actorCast.source === 'invited'
           ? ('pending_invitee' as const)
           : actorStaffAssignment?.status === 'pending'
@@ -212,11 +218,11 @@ export async function getManagedEventWorkspace(
   const canRespondToAvailability =
     !isTerminalEvent &&
     actorCast?.source === 'invited' &&
-    (actorCast.status === 'pending' || actorCast.status === 'accepted')
+    actorCast.status === 'accepted'
   const visibleCast = managedEvent.show_cast.filter((castMember) => {
     if (view === 'operational') return true
     if (!actorCast) return false
-    if (view !== 'pending_invitee') return true
+    if (view !== 'pending_invitee' && view !== 'accepted_staff') return true
     return castMember.user_id === access.data.actorUserId
   })
 
@@ -375,7 +381,7 @@ export async function getManagedEventWorkspace(
           },
           event: {
             ...managedEvent,
-            show_occurrences: orderedOccurrences,
+            show_occurrences: visibleOccurrences,
             show_resource_requests: orderedResourceRequests,
           },
           includeResourceRequests: view === 'operational',
@@ -394,6 +400,9 @@ export async function getManagedEventWorkspace(
         })
   const overview = createEventOverviewReadModel({
     actions: {
+      editOperationalPlan: canEditOperationalPlan,
+      assignOccurrenceCalls: canAssignOccurrenceCalls,
+      respondToAvailability: canRespondToAvailability,
       manageAtRisk:
         isTheaterAdmin &&
         managedEvent.lifecycle_status === 'approved' &&
@@ -403,8 +412,7 @@ export async function getManagedEventWorkspace(
         !isTerminalEvent &&
         actorCast?.source === 'invited' &&
         actorCast.status === 'pending',
-      respondToStaffInvitation:
-        !isTerminalEvent && actorStaffAssignment?.status === 'pending',
+      respondToStaffInvitation: !isTerminalEvent && hasPendingStaffInvitation,
       reviewProposalRevisions: !isTerminalEvent && isReviewer,
       useOwnerSelfApproval:
         access.data.membership.roles.includes('owner') &&
@@ -412,6 +420,7 @@ export async function getManagedEventWorkspace(
     },
     actor: {
       castStatus: actorCast?.status,
+      staffStatus: actorStaffAssignment?.status,
       invitationKind:
         view === 'pending_invitee'
           ? actorCast?.status === 'pending'
@@ -515,8 +524,7 @@ export async function getManagedEventWorkspace(
         !isTerminalEvent &&
         actorCast?.source === 'invited' &&
         actorCast.status === 'pending',
-      respondToStaffInvitation:
-        !isTerminalEvent && actorStaffAssignment?.status === 'pending',
+      respondToStaffInvitation: !isTerminalEvent && hasPendingStaffInvitation,
       respondToCounteroffer: canRespondToCounteroffer,
       requestCancellation: isProducer && !isTerminalEvent,
       reviewProposalRevisions: !isTerminalEvent && isReviewer,
@@ -544,13 +552,11 @@ export async function getManagedEventWorkspace(
           }
         : {}),
       show_availability_responses: visibleAvailability,
-      show_cast: view === 'accepted_staff' ? [] : visibleCast,
+      show_cast: visibleCast,
       show_staff_assignments:
         view === 'operational'
           ? managedEvent.show_staff_assignments
-          : actorStaffAssignment
-            ? [actorStaffAssignment]
-            : [],
+          : actorStaffAssignments,
       show_leadership:
         view === 'operational' || view === 'accepted_cast'
           ? managedEvent.show_leadership
@@ -594,6 +600,7 @@ export async function getManagedEventWorkspace(
     overview,
     proposalPreparation,
     theater: {
+      name: access.data.theater.name,
       slug: access.data.theater.slug,
       primary_venue_id:
         view === 'pending_invitee' ? '' : access.data.theater.primary_venue_id,

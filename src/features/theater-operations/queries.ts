@@ -15,16 +15,13 @@ export async function getTheaterOperations(
   const access = await getTheaterAccess(input.theaterSlug)
   if (!access.ok) return access
   const { theater, membership, actorUserId } = access.data
+  if (!canManageTheater(membership.roles))
+    return err(appError('forbidden', 'Theater Operator access is required.'))
   const work = await getTheaterWorkQueue(input, {
     accessToken: access.data.bearerToken,
     mode: 'decisions_and_exceptions',
   })
   if (!work.ok) return work
-
-  // Preserve the relationship-scoped landing for Members and Reviewers. Never
-  // read the Theater-wide portfolio or activity on their behalf.
-  if (!canManageTheater(membership.roles))
-    return ok({ theater, work: work.data, cockpit: null })
 
   const service = createSupabaseServiceRoleClient()
   const [calendar, events, activity] = await Promise.all([

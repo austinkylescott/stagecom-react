@@ -1,4 +1,7 @@
 type ActionCapabilities = {
+  editOperationalPlan?: boolean
+  assignOccurrenceCalls?: boolean
+  respondToAvailability?: boolean
   manageAtRisk?: boolean
   respondToInvitation?: boolean
   respondToStaffInvitation?: boolean
@@ -11,6 +14,7 @@ type OverviewInput = {
   actions: ActionCapabilities
   actor: {
     castStatus?: string | null
+    staffStatus?: string | null
     isReviewer: boolean
     leadershipRoles?: string[]
     roles: string[]
@@ -132,6 +136,28 @@ export function createEventOverviewReadModel(input: OverviewInput) {
     }
   }
 
+  if (!invitationOnly && input.actions.editOperationalPlan) {
+    actions.push({
+      label: 'Prepare Event plan',
+      relationship: 'Producer',
+      target: '#schedule-plan',
+    })
+  }
+  if (!invitationOnly && input.actions.assignOccurrenceCalls) {
+    actions.push({
+      label: 'Coordinate Cast and Calls',
+      relationship: 'Director',
+      target: '#cast-team',
+    })
+  }
+  if (!invitationOnly && input.actions.respondToAvailability) {
+    actions.push({
+      label: 'Respond to Availability',
+      relationship: 'Cast Member',
+      target: '#availability',
+    })
+  }
+
   const nextOccurrence = invitationOnly
     ? null
     : (input.event.occurrences
@@ -202,7 +228,10 @@ export function createEventOverviewReadModel(input: OverviewInput) {
       : input.actor.castStatus === 'pending'
         ? ['Cast invitee']
         : []),
-    ...(input.event.view === 'accepted_staff' ? ['Event staff member'] : []),
+    ...(input.actor.staffStatus === 'accepted' ||
+    input.event.view === 'accepted_staff'
+      ? ['Event staff member']
+      : []),
     ...(invitationOnly && input.actor.invitationKind === 'staff'
       ? ['Event staff invitee']
       : []),

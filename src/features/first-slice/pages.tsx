@@ -10,6 +10,7 @@ import {
   signInAsDemoPersonaFn,
   updateDisplayNameFn,
 } from '@/features/auth/server-functions'
+import { usePreserveAuthReturnFragment } from '@/features/auth/return-context'
 import { DEMO_PERSONAS, DEMO_PERSONA_KEYS } from '@/features/auth/demo-personas'
 import {
   createSupabaseBrowserClient,
@@ -29,6 +30,7 @@ export function AuthPage({
   mode,
   next,
 }: AuthPageProps) {
+  usePreserveAuthReturnFragment({ mode, next })
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<
     | { tone: 'error' | 'success'; message: string }

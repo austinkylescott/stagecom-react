@@ -4,6 +4,7 @@ export const DEMO_PERSONA_KEYS = [
   'producer',
   'member',
   'multi',
+  'invitee',
   'newcomer',
 ] as const
 
@@ -21,7 +22,8 @@ export const DEMO_PERSONAS = {
     path: '/app/callsheet',
   },
   producer: {
-    description: 'Work on the seeded Event as its Producer.',
+    description:
+      'Combine Producer, Director and accepted Cast responsibilities.',
     email: 'producer@demo.stagecom.test',
     label: 'Event Producer',
     path: '/app/compass-rose/events/a-midsummer-nights-dream',
@@ -37,6 +39,12 @@ export const DEMO_PERSONAS = {
     email: 'multi@demo.stagecom.test',
     label: 'Multi-Theater Member',
     path: '/app/callsheet',
+  },
+  invitee: {
+    description: 'Decide a pending Cast invitation before planning is shared.',
+    email: 'invitee@demo.stagecom.test',
+    label: 'Pending Cast invitee',
+    path: '/app/compass-rose/events/a-midsummer-nights-dream#overview',
   },
   newcomer: {
     description: 'Open an active Join Link without existing membership.',

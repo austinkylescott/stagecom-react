@@ -75,3 +75,13 @@ See the [accepted spec](../../docs/specs/operational-workspaces.md),
 [actor/state matrix](../../docs/design/operational-actor-state-matrix.md),
 [validation record](../design/operational-workspaces-validation.md), and
 [work versus alerts decision](../../docs/adr/0002-separate-work-from-alerts.md).
+
+## Theater and Event navigation (STA-67)
+
+The named Theater now opens a programming/community portal. Owner/Admin
+Operations is a separate server-authorized destination. Event Overview provides
+chronological typed Occurrences and relationship-labeled actions, combining
+independent leadership, Cast, and staff relationships. Pending invitees retain
+invitation-only context. Protected Occurrence fragments survive Supabase sign-in.
+See the [neutral navigation review record](../../docs/design/theater-event-navigation-review.md)
+for the browser evidence, seeded personas, and presentation-review limits.

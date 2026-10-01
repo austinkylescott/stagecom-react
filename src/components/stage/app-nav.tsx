@@ -6,10 +6,11 @@ import type { Database } from '@/server/db/database.types'
 import type { TheaterNavigationId } from '@/features/application-shell/navigation'
 
 const theaterLinks = [
+  { id: 'portal', label: 'Theater', to: '/app/$theaterSlug', icon: Theater },
   {
     id: 'operations',
     label: 'Theater Operations',
-    to: '/app/$theaterSlug',
+    to: '/app/$theaterSlug/operations',
     icon: ClipboardList,
   },
   {
@@ -74,7 +75,7 @@ export function TheaterNav({
   return (
     <div className="border-b">
       <div className="page-wrap flex flex-wrap items-center justify-between gap-3 py-3">
-        <p className="text-sm font-medium">{theaterName}</p>
+        <p className="min-w-0 break-words text-sm font-medium">{theaterName}</p>
         <nav aria-label="Theater navigation" className="flex flex-wrap gap-1">
           {theaterLinks
             .filter((item) => available.includes(item.id))
@@ -83,7 +84,7 @@ export function TheaterNav({
                 <Link
                   to={item.to}
                   params={{ theaterSlug }}
-                  activeOptions={{ exact: item.id === 'operations' }}
+                  activeOptions={{ exact: item.id === 'portal' }}
                   activeProps={{
                     className: 'bg-accent text-accent-foreground',
                   }}

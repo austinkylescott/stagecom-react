@@ -25,6 +25,7 @@ import {
   seedDeniedProposalReplacementFn,
   withdrawFromEventCastFn,
 } from './server-functions'
+import { EventOccurrences } from './event-overview/occurrences'
 import { ProposalPreparation } from './proposal-preparation/production'
 import { partitionPublicReadinessBlockers } from './public-content-readiness'
 
@@ -514,6 +515,7 @@ export function ManagedEventWorkspace({
     } | null
   } | null
   theater: {
+    name?: string
     primary_venue_id: string
     primary_venue_name: string | null
     setup_buffer_minutes: number
@@ -641,14 +643,20 @@ export function ManagedEventWorkspace({
     return () => window.removeEventListener('hashchange', setSectionFromHash)
   }, [overview.sections])
 
+  useEffect(() => {
+    const fragment = window.location.hash.slice(1)
+    if (fragment) document.getElementById(fragment)?.scrollIntoView()
+  }, [activeSection])
+
   const content = (
-    <main className="page-wrap py-6">
+    <main className="page-wrap min-w-0 break-words py-6">
       <p className="text-xs font-medium tracking-normal text-muted-foreground">
-        Event workspace
+        {theater.name ?? theater.slug} · Event
       </p>
       <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
         {event.title}
       </h1>
+      <a className="mt-3 inline-block text-sm underline" href={`/app/${theater.slug}/events`}>Back to Event portfolio</a>
       <EventWorkspaceNavigation
         activeSection={activeSection}
         onSectionSelect={setActiveSection}
@@ -660,6 +668,9 @@ export function ManagedEventWorkspace({
           operationalHealth={operationalHealth}
           overview={overview}
         />
+      ) : null}
+      {activeSection === 'overview' && view !== 'pending_invitee' ? (
+        <EventOccurrences occurrences={event.show_occurrences} />
       ) : null}
       {activeSection === 'schedule-plan' && proposalPreparation ? (
         <ProposalPreparation.PlanSection />
@@ -1325,7 +1336,7 @@ export function ManagedEventWorkspace({
               </p>
             </Card>
           ) : null}
-          {(view !== 'accepted_staff' &&
+          {allowedActions.respondToInvitation || (view !== 'accepted_staff' &&
             (view !== 'pending_invitee' ||
               allowedActions.respondToInvitation)) ||
           allowedActions.respondToAvailability ? (
@@ -1558,7 +1569,8 @@ export function ManagedEventWorkspace({
                     {assignment.status}
                   </p>
                   {allowedActions.respondToStaffInvitation &&
-                  assignment.user_id === actorUserId ? (
+                  assignment.user_id === actorUserId &&
+                  assignment.status === 'pending' ? (
                     <div className="mt-3 flex gap-3">
                       {(['accepted', 'declined'] as const).map((response) => (
                         <Button
@@ -1656,7 +1668,7 @@ export function ManagedEventWorkspace({
           {view === 'operational' && proposalPreparation ? (
             <ProposalPreparation.ProposedCastSection />
           ) : null}
-          {view === 'accepted_staff' &&
+          {overview.invitation ? null : view === 'accepted_staff' &&
           !allowedActions.respondToAvailability ? (
             <Card className="mt-5  px-6 py-6 gap-0" id="assigned-occurrences">
               <h2 className="text-2xl font-semibold">
@@ -2791,16 +2803,21 @@ export function EventWorkspaceNavigation({
 function sectionForFragment(fragment: string): EventWorkspaceSection {
   if (
     fragment === 'cast-participation' ||
-    fragment === 'event-staff-assignment'
+    fragment === 'event-staff-assignment' ||
+    fragment === 'availability' ||
+    fragment.startsWith('availability-') ||
+    fragment.startsWith('occurrence-call-')
   ) {
     return 'cast-team'
   }
   if (
     fragment === 'proposal-revisions' ||
-    fragment.startsWith('proposal-revision-')
+    fragment.startsWith('proposal-revision-') ||
+    fragment.startsWith('counteroffer-')
   ) {
     return 'review'
   }
+  if (fragment.startsWith('occurrence-')) return 'overview'
   if (fragment === 'operational-health') return 'overview'
   return fragment as EventWorkspaceSection
 }
@@ -2839,7 +2856,7 @@ function EventOverview({
         <div>
           <h2 className="text-2xl font-semibold">Overview</h2>
           {overview.primaryAction ? (
-            <Button asChild variant="outline" className="mt-4">
+            <Button asChild variant="outline" className="mt-4 h-auto max-w-full whitespace-normal text-left">
               <a href={overview.primaryAction.target}>
                 {overview.primaryAction.label} ·{' '}
                 {overview.primaryAction.relationship}
@@ -2972,7 +2989,7 @@ function StateCard({ label, value }: { label: string; value: string }) {
       <p className="text-xs font-medium tracking-normal text-muted-foreground">
         {label}
       </p>
-      <p className="mt-2 text-xl font-semibold">{value}</p>
+      <p className="mt-2 text-xl font-semibold capitalize">{value.replaceAll('_', ' ')}</p>
     </Card>
   )
 }

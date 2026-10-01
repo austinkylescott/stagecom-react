@@ -34,6 +34,7 @@ import { Route as AppTheaterSlugIndexRouteImport } from './routes/app.$theaterSl
 import { Route as TheaterTheaterSlugEventSlugRouteImport } from './routes/theater.$theaterSlug.$eventSlug'
 import { Route as AppTheaterSlugSettingsRouteImport } from './routes/app.$theaterSlug.settings'
 import { Route as AppTheaterSlugPreviewRouteImport } from './routes/app.$theaterSlug.preview'
+import { Route as AppTheaterSlugOperationsRouteImport } from './routes/app.$theaterSlug.operations'
 import { Route as AppTheaterSlugMembersRouteImport } from './routes/app.$theaterSlug.members'
 import { Route as AppTheaterSlugEventsRouteImport } from './routes/app.$theaterSlug.events'
 import { Route as AppTheaterSlugCalendarRouteImport } from './routes/app.$theaterSlug.calendar'
@@ -174,6 +175,12 @@ const AppTheaterSlugPreviewRoute = AppTheaterSlugPreviewRouteImport.update({
   path: '/preview',
   getParentRoute: () => AppTheaterSlugRoute,
 } as any)
+const AppTheaterSlugOperationsRoute =
+  AppTheaterSlugOperationsRouteImport.update({
+    id: '/operations',
+    path: '/operations',
+    getParentRoute: () => AppTheaterSlugRoute,
+  } as any)
 const AppTheaterSlugMembersRoute = AppTheaterSlugMembersRouteImport.update({
   id: '/members',
   path: '/members',
@@ -256,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
+  '/app/$theaterSlug/operations': typeof AppTheaterSlugOperationsRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
   '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRouteWithChildren
   '/theater/$theaterSlug/$eventSlug': typeof TheaterTheaterSlugEventSlugRoute
@@ -292,6 +300,7 @@ export interface FileRoutesByTo {
   '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
+  '/app/$theaterSlug/operations': typeof AppTheaterSlugOperationsRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
   '/theater/$theaterSlug/$eventSlug': typeof TheaterTheaterSlugEventSlugRoute
   '/app/$theaterSlug': typeof AppTheaterSlugIndexRoute
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
+  '/app/$theaterSlug/operations': typeof AppTheaterSlugOperationsRoute
   '/app/$theaterSlug/preview': typeof AppTheaterSlugPreviewRoute
   '/app/$theaterSlug/settings': typeof AppTheaterSlugSettingsRouteWithChildren
   '/theater/$theaterSlug/$eventSlug': typeof TheaterTheaterSlugEventSlugRoute
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
+    | '/app/$theaterSlug/operations'
     | '/app/$theaterSlug/preview'
     | '/app/$theaterSlug/settings'
     | '/theater/$theaterSlug/$eventSlug'
@@ -404,6 +415,7 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
+    | '/app/$theaterSlug/operations'
     | '/app/$theaterSlug/preview'
     | '/theater/$theaterSlug/$eventSlug'
     | '/app/$theaterSlug'
@@ -440,6 +452,7 @@ export interface FileRouteTypes {
     | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
+    | '/app/$theaterSlug/operations'
     | '/app/$theaterSlug/preview'
     | '/app/$theaterSlug/settings'
     | '/theater/$theaterSlug/$eventSlug'
@@ -648,6 +661,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTheaterSlugPreviewRouteImport
       parentRoute: typeof AppTheaterSlugRoute
     }
+    '/app/$theaterSlug/operations': {
+      id: '/app/$theaterSlug/operations'
+      path: '/operations'
+      fullPath: '/app/$theaterSlug/operations'
+      preLoaderRoute: typeof AppTheaterSlugOperationsRouteImport
+      parentRoute: typeof AppTheaterSlugRoute
+    }
     '/app/$theaterSlug/members': {
       id: '/app/$theaterSlug/members'
       path: '/members'
@@ -764,6 +784,7 @@ interface AppTheaterSlugRouteChildren {
   AppTheaterSlugCalendarRoute: typeof AppTheaterSlugCalendarRoute
   AppTheaterSlugEventsRoute: typeof AppTheaterSlugEventsRouteWithChildren
   AppTheaterSlugMembersRoute: typeof AppTheaterSlugMembersRoute
+  AppTheaterSlugOperationsRoute: typeof AppTheaterSlugOperationsRoute
   AppTheaterSlugPreviewRoute: typeof AppTheaterSlugPreviewRoute
   AppTheaterSlugSettingsRoute: typeof AppTheaterSlugSettingsRouteWithChildren
   AppTheaterSlugIndexRoute: typeof AppTheaterSlugIndexRoute
@@ -773,6 +794,7 @@ const AppTheaterSlugRouteChildren: AppTheaterSlugRouteChildren = {
   AppTheaterSlugCalendarRoute: AppTheaterSlugCalendarRoute,
   AppTheaterSlugEventsRoute: AppTheaterSlugEventsRouteWithChildren,
   AppTheaterSlugMembersRoute: AppTheaterSlugMembersRoute,
+  AppTheaterSlugOperationsRoute: AppTheaterSlugOperationsRoute,
   AppTheaterSlugPreviewRoute: AppTheaterSlugPreviewRoute,
   AppTheaterSlugSettingsRoute: AppTheaterSlugSettingsRouteWithChildren,
   AppTheaterSlugIndexRoute: AppTheaterSlugIndexRoute,
