@@ -153,6 +153,7 @@ export async function getEventPortfolio(
     })),
   ]
   return ok({
+    workspaceEventIds: [...new Set([...privateIds, ...participantIds])],
     theater,
     portfolio: createEventPortfolioReadModel({
       now: new Date().toISOString(),

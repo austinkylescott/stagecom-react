@@ -1,3 +1,8 @@
+import { NativeSelect } from '@/components/ui/native-select'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import {
   canSubmit,
   isPartitionBusy,
@@ -24,8 +29,8 @@ export function createProposalPreparationSections(
 
     return (
       <div className="mt-7">
-        <h3 className="text-xl font-extrabold">Proposed Cast</h3>
-        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+        <h3 className="text-xl font-semibold">Proposed Cast</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
           Select accepted Cast Members deliberately for the Event's next
           Proposal Revision. This does not change Cast membership.
         </p>
@@ -33,8 +38,8 @@ export function createProposalPreparationSections(
         <fieldset className="mt-4 grid gap-2">
           <legend className="sr-only">Proposed Cast Members</legend>
           {state.model.acceptedCastMembers.map((castMember) => (
-            <label
-              className="flex items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 py-3"
+            <Label
+              className="flex items-center gap-3 rounded-md border border-border bg-white px-4 py-3"
               key={castMember.userId}
             >
               <input
@@ -53,10 +58,10 @@ export function createProposalPreparationSections(
                 type="checkbox"
               />
               {castMember.displayName}
-            </label>
+            </Label>
           ))}
           {state.model.acceptedCastMembers.length === 0 ? (
-            <p className="text-sm text-[var(--sea-ink-soft)]">
+            <p className="text-sm text-muted-foreground">
               No accepted Cast Members are available for selection. Pending and
               declined invitations do not block draft editing.
             </p>
@@ -64,8 +69,9 @@ export function createProposalPreparationSections(
         </fieldset>
 
         {state.model.capabilities.selectProposedCast ? (
-          <button
-            className="mt-4 rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold disabled:opacity-60"
+          <Button
+            variant="outline"
+            className="mt-4"
             disabled={
               !castDirty || castFrozen || isRemoteTransition(state.phase)
             }
@@ -75,15 +81,15 @@ export function createProposalPreparationSections(
             {isPartitionBusy(state.phase, 'proposedCast')
               ? 'Saving…'
               : 'Save Proposed Cast'}
-          </button>
+          </Button>
         ) : null}
         {state.castNotice ? (
-          <p className="mt-2 font-semibold text-emerald-800">
+          <p className="mt-2 font-semibold text-foreground">
             {state.castNotice}
           </p>
         ) : null}
         {state.castProblem ? (
-          <p className="mt-3 font-bold text-red-700">
+          <p className="mt-3 font-medium text-foreground">
             {state.castProblem.message}
           </p>
         ) : null}
@@ -98,23 +104,23 @@ export function createProposalPreparationSections(
     const submitted = state.phase.kind === 'submitted' ? state.phase : null
 
     return (
-      <section className="island-shell mt-5 rounded-lg px-6 py-6">
-        <h2 className="text-2xl font-extrabold">Proposal Revision</h2>
-        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+      <Card className="mt-5  px-6 py-6 gap-0">
+        <h2 className="text-2xl font-semibold">Proposal Revision</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Compare Candidate Slot evidence, save the preferred Confirmed Slots in
           the operational plan, then submit one immutable snapshot for review.
         </p>
 
         <div className="mt-7 grid gap-4">
-          <h3 className="text-xl font-extrabold">
+          <h3 className="text-xl font-semibold">
             Candidate Slot recommendations
           </h3>
           {plan.occurrences.map((occurrence, occurrenceIndex) => (
             <article
-              className="rounded-md border border-[var(--line)] bg-white px-4 py-4"
+              className="rounded-md border border-border bg-white px-4 py-4"
               key={occurrence.id}
             >
-              <h4 className="font-extrabold">
+              <h4 className="font-semibold">
                 Occurrence {occurrenceIndex + 1} ·{' '}
                 <span className="capitalize">{occurrence.type}</span>
               </h4>
@@ -130,11 +136,11 @@ export function createProposalPreparationSections(
                     )
                     if (!slot) return null
                     return (
-                      <label
-                        className="grid gap-2 rounded-md bg-[var(--sand)]/40 px-4 py-3"
+                      <Label
+                        className="grid gap-2 rounded-md bg-muted/40 px-4 py-3"
                         key={recommendation.slotId}
                       >
-                        <span className="flex items-center gap-3 font-bold">
+                        <span className="flex items-center gap-3 font-medium">
                           <input
                             checked={
                               occurrence.confirmedCandidateSlotId ===
@@ -155,12 +161,12 @@ export function createProposalPreparationSections(
                           Rank {recommendation.rank}: {slot.locationName} ·{' '}
                           {recommendation.isViable ? 'Viable' : 'Blocked'}
                         </span>
-                        <ul className="list-disc pl-5 text-sm text-[var(--sea-ink-soft)]">
+                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
                           {recommendation.evidence.map((evidence) => (
                             <li key={evidence.code}>{evidence.message}</li>
                           ))}
                         </ul>
-                      </label>
+                      </Label>
                     )
                   })}
               </div>
@@ -169,24 +175,25 @@ export function createProposalPreparationSections(
         </div>
 
         {state.phase.kind === 'stale' ? (
-          <div className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950">
-            <p className="font-bold">
+          <div className="mt-5 rounded-md border border-border bg-muted px-4 py-3 text-foreground">
+            <p className="font-medium">
               Your save succeeded, but readiness could not be refreshed.
             </p>
             <p className="mt-1 text-sm">{state.phase.problem.message}</p>
-            <button
-              className="mt-3 rounded-md border border-amber-400 bg-white px-3 py-2 text-sm font-extrabold"
+            <Button
+              variant="outline"
+              className="mt-3"
               onClick={preparation.retryRefresh}
               type="button"
             >
               Retry refresh
-            </button>
+            </Button>
           </div>
         ) : null}
         {state.submissionBlockers.length > 0 ? (
-          <div className="mt-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-            <p className="font-bold text-amber-950">Submission blockers</p>
-            <ul className="mt-2 list-disc pl-5 text-sm text-amber-950">
+          <div className="mt-5 rounded-md border border-border bg-muted px-4 py-3">
+            <p className="font-medium text-foreground">Submission blockers</p>
+            <ul className="mt-2 list-disc pl-5 text-sm text-foreground">
               {state.submissionBlockers.map((blocker, index) => (
                 <li key={`${blocker.code}-${index}`}>{blocker.message}</li>
               ))}
@@ -194,18 +201,18 @@ export function createProposalPreparationSections(
           </div>
         ) : null}
         {state.submissionProblem ? (
-          <p className="mt-3 font-bold text-red-700">
+          <p className="mt-3 font-medium text-foreground">
             {state.submissionProblem.message}
           </p>
         ) : null}
         {submitted ? (
-          <p className="mt-3 font-bold text-emerald-800">
+          <p className="mt-3 font-medium text-foreground">
             Proposal Revision {submitted.revisionNumber} submitted for review.
           </p>
         ) : null}
         {state.model.capabilities.submitProposalRevision && !submitted ? (
-          <button
-            className="mt-5 rounded-md bg-[var(--sea-ink)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+          <Button
+            className="mt-5"
             disabled={!canSubmit(state)}
             onClick={preparation.submitProposalRevision}
             type="button"
@@ -213,9 +220,9 @@ export function createProposalPreparationSections(
             {state.phase.kind === 'submitting'
               ? 'Submitting…'
               : 'Submit Proposal Revision'}
-          </button>
+          </Button>
         ) : null}
-      </section>
+      </Card>
     )
   }
 
@@ -229,14 +236,11 @@ export function createProposalPreparationSections(
     const dirty = !plansEqual(plan, state.recordedOperationalPlan)
 
     return (
-      <section
-        className="island-shell mt-5 rounded-lg px-6 py-6"
-        id="schedule-plan"
-      >
+      <Card className="mt-5  px-6 py-6 gap-0" id="schedule-plan">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-extrabold">Schedule &amp; Plan</h2>
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+            <h2 className="text-2xl font-semibold">Schedule &amp; Plan</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               Plan Occurrences, Candidate Slots, confirmed choices, visibility,
               resources, and viability. Candidate Slots use{' '}
               {state.model.theater.timezoneName} and preserve the exact instant
@@ -244,7 +248,7 @@ export function createProposalPreparationSections(
             </p>
           </div>
           {!editable ? (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-950">
+            <p className="rounded-md bg-muted px-3 py-2 text-sm font-semibold text-foreground">
               You can inspect this Event plan, but only an eligible Producer can
               edit it.
             </p>
@@ -279,11 +283,11 @@ export function createProposalPreparationSections(
         <div className="mt-7 grid gap-5">
           {plan.occurrences.map((occurrence, occurrenceIndex) => (
             <article
-              className="rounded-lg border border-[var(--line)] bg-white px-5 py-5"
+              className="rounded-lg border border-border bg-white px-5 py-5"
               key={occurrence.id}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-xl font-extrabold">
+                <h3 className="text-xl font-semibold">
                   Occurrence {occurrenceIndex + 1}
                 </h3>
                 {editable ? (
@@ -348,16 +352,15 @@ export function createProposalPreparationSections(
               <div className="mt-5 grid gap-4">
                 {occurrence.candidateSlots.map((slot, slotIndex) => (
                   <fieldset
-                    className="grid gap-4 rounded-md bg-[var(--sand)]/40 px-4 py-4 sm:grid-cols-2"
+                    className="grid gap-4 rounded-md bg-muted/40 px-4 py-4 sm:grid-cols-2"
                     key={slot.id}
                   >
-                    <legend className="px-1 text-sm font-extrabold">
+                    <legend className="px-1 text-sm font-semibold">
                       Candidate Slot {slotIndex + 1}
                     </legend>
-                    <label className="grid gap-2 text-sm font-bold">
+                    <Label className="grid gap-2 text-sm font-medium">
                       Local date and time
-                      <input
-                        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                      <Input
                         disabled={disabled}
                         onChange={(change) =>
                           preparation.updateCandidateSlot(
@@ -369,7 +372,7 @@ export function createProposalPreparationSections(
                         type="datetime-local"
                         value={slot.localStartsAt}
                       />
-                    </label>
+                    </Label>
                     <NumberField
                       disabled={disabled}
                       label="Duration (minutes)"
@@ -410,10 +413,9 @@ export function createProposalPreparationSections(
                       options={['primary_venue', 'off_site']}
                       value={slot.locationKind}
                     />
-                    <label className="grid gap-2 text-sm font-bold">
+                    <Label className="grid gap-2 text-sm font-medium">
                       Location
-                      <input
-                        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                      <Input
                         disabled={
                           disabled || slot.locationKind === 'primary_venue'
                         }
@@ -426,8 +428,8 @@ export function createProposalPreparationSections(
                         }
                         value={slot.locationName}
                       />
-                    </label>
-                    <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
+                    </Label>
+                    <Label className="flex items-center gap-2 text-sm font-medium sm:col-span-2">
                       <input
                         checked={
                           occurrence.confirmedCandidateSlotId === slot.id
@@ -445,7 +447,7 @@ export function createProposalPreparationSections(
                         type="checkbox"
                       />
                       Confirm this Slot
-                    </label>
+                    </Label>
                     {editable ? (
                       <SmallButton
                         disabled={disabled}
@@ -463,42 +465,43 @@ export function createProposalPreparationSections(
                 ))}
               </div>
               {editable ? (
-                <button
-                  className="mt-4 text-sm font-extrabold text-[var(--coral-deep)]"
+                <Button
+                  className="mt-4"
                   disabled={disabled}
                   onClick={() => preparation.addCandidateSlot(occurrence.id)}
                   type="button"
                 >
                   Add Candidate Slot
-                </button>
+                </Button>
               ) : null}
             </article>
           ))}
         </div>
         {editable ? (
-          <button
-            className="mt-5 rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold"
+          <Button
+            variant="outline"
+            className="mt-5"
             disabled={disabled}
             onClick={preparation.addOccurrence}
             type="button"
           >
             Add Occurrence
-          </button>
+          </Button>
         ) : null}
 
         {state.model.capabilities.viewResourceRequests ? (
           <>
-            <h3 className="mt-8 text-xl font-extrabold">
+            <h3 className="mt-8 text-xl font-semibold">
               Requested staffing needs and resources
             </h3>
-            <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Staffing quantities describe coverage needed. Named Event staff
               assignments and their accepted coverage appear in{' '}
               {plan.resourceRequests.some(
                 (request) => request.type === 'staff',
               ) ? (
                 <a
-                  className="font-bold text-[var(--coral-deep)] underline"
+                  className="font-medium text-foreground underline"
                   href="#event-staff-assignment"
                 >
                   Cast &amp; Team
@@ -511,7 +514,7 @@ export function createProposalPreparationSections(
             <div className="mt-4 grid gap-3">
               {plan.resourceRequests.map((request, requestIndex) => (
                 <div
-                  className="grid gap-3 rounded-md border border-[var(--line)] px-4 py-4 sm:grid-cols-[10rem_1fr_7rem_auto]"
+                  className="grid gap-3 rounded-md border border-border px-4 py-4 sm:grid-cols-[10rem_1fr_7rem_auto]"
                   key={request.id}
                 >
                   <SelectField
@@ -523,10 +526,9 @@ export function createProposalPreparationSections(
                     options={['staff', 'equipment', 'other']}
                     value={request.type}
                   />
-                  <label className="grid gap-2 text-sm font-bold">
+                  <Label className="grid gap-2 text-sm font-medium">
                     Requested resource
-                    <input
-                      className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+                    <Input
                       disabled={disabled}
                       onChange={(change) =>
                         preparation.updateResourceRequest(request.id, {
@@ -535,7 +537,7 @@ export function createProposalPreparationSections(
                       }
                       value={request.label}
                     />
-                  </label>
+                  </Label>
                   <NumberField
                     disabled={disabled}
                     label="Quantity"
@@ -561,16 +563,16 @@ export function createProposalPreparationSections(
             </div>
             {editable ? (
               <div className="mt-4 flex flex-wrap items-center gap-4">
-                <button
-                  className="rounded-md border border-[var(--line)] bg-white px-4 py-2 font-extrabold"
+                <Button
+                  variant="outline"
+
                   disabled={disabled}
                   onClick={preparation.addResourceRequest}
                   type="button"
                 >
                   Add requested resource
-                </button>
-                <button
-                  className="rounded-md bg-[var(--coral)] px-5 py-3 font-extrabold text-white disabled:opacity-60"
+                </Button>
+                <Button
                   disabled={
                     disabled || !dirty || isRemoteTransition(state.phase)
                   }
@@ -580,14 +582,14 @@ export function createProposalPreparationSections(
                   {isPartitionBusy(state.phase, 'operationalPlan')
                     ? 'Saving…'
                     : 'Save operational plan'}
-                </button>
+                </Button>
                 {state.planNotice ? (
-                  <p className="font-bold text-emerald-800">
+                  <p className="font-medium text-foreground">
                     {state.planNotice}
                   </p>
                 ) : null}
                 {state.planProblem ? (
-                  <p className="font-bold text-red-700">
+                  <p className="font-medium text-foreground">
                     {state.planProblem.message}
                   </p>
                 ) : null}
@@ -595,7 +597,7 @@ export function createProposalPreparationSections(
             ) : null}
           </>
         ) : null}
-      </section>
+      </Card>
     )
   }
 
@@ -618,10 +620,9 @@ function NumberField({
   value: number
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold">
+    <Label className="grid gap-2 text-sm font-medium">
       {label}
-      <input
-        className="rounded-md border border-[var(--line)] bg-white px-3 py-2"
+      <Input
         disabled={disabled}
         max={max}
         min={min}
@@ -629,7 +630,7 @@ function NumberField({
         type="number"
         value={value}
       />
-    </label>
+    </Label>
   )
 }
 
@@ -647,10 +648,9 @@ function SelectField<T extends string>({
   value: T
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold">
+    <Label className="grid gap-2 text-sm font-medium">
       {label}
-      <select
-        className="rounded-md border border-[var(--line)] bg-white px-3 py-2 capitalize"
+      <NativeSelect
         disabled={disabled}
         onChange={(event) => onChange(event.target.value as T)}
         value={value}
@@ -660,8 +660,8 @@ function SelectField<T extends string>({
             {option.replace('_', ' ')}
           </option>
         ))}
-      </select>
-    </label>
+      </NativeSelect>
+    </Label>
   )
 }
 
@@ -675,13 +675,14 @@ function SmallButton({
   onClick: () => void
 }) {
   return (
-    <button
-      className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold disabled:opacity-40"
+    <Button
+      variant="outline"
+
       disabled={disabled}
       onClick={onClick}
       type="button"
     >
       {children}
-    </button>
+    </Button>
   )
 }

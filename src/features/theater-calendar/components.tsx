@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
@@ -18,14 +20,14 @@ export function TheaterCalendar({
 
   return (
     <section className="page-wrap pb-12">
-      <div className="island-shell rounded-lg px-4 py-6 sm:px-6">
-        <p className="text-sm font-bold">
+      <Card className=" px-4 py-6 sm:px-6 gap-0">
+        <p className="text-sm font-medium">
           {theater.name} · {theater.primaryVenueName}
         </p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold">Theater Calendar</h1>
-            <p className="mt-2 text-[var(--sea-ink-soft)]">
+            <h1 className="text-2xl font-semibold">Theater Calendar</h1>
+            <p className="mt-2 text-muted-foreground">
               Committed occupancy, active exclusive holds, and Schedule Blocks
               for the Primary Venue.
             </p>
@@ -36,39 +38,41 @@ export function TheaterCalendar({
             role="group"
           >
             {(['week', 'list', 'month'] as const).map((option) => (
-              <button
+              <Button
                 aria-pressed={view === option}
-                className={`min-h-10 rounded px-3 text-sm font-bold outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/35 ${view === option ? 'bg-[var(--theater-soft)] text-[var(--theater-ink)]' : ''}`}
+                className={`min-h-10 rounded px-3 text-sm font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35 ${view === option ? 'bg-accent text-foreground' : ''}`}
                 key={option}
                 onClick={() => setView(option)}
                 type="button"
               >
                 {option[0].toUpperCase() + option.slice(1)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
         {view !== 'list' ? (
           <div className="mt-6 flex items-center justify-between gap-3">
-            <button
+            <Button
+              variant="outline"
               aria-label="Previous Calendar period"
-              className="min-h-10 rounded border px-3 font-bold"
+
               onClick={() => setAnchor(shiftPeriod(anchor, view, -1))}
               type="button"
             >
               Previous
-            </button>
-            <p aria-live="polite" className="font-bold">
+            </Button>
+            <p aria-live="polite" className="font-medium">
               {formatPeriod(anchor, view)}
             </p>
-            <button
+            <Button
+              variant="outline"
               aria-label="Next Calendar period"
-              className="min-h-10 rounded border px-3 font-bold"
+
               onClick={() => setAnchor(shiftPeriod(anchor, view, 1))}
               type="button"
             >
               Next
-            </button>
+            </Button>
           </div>
         ) : null}
         {entries.length === 0 ? (
@@ -85,7 +89,7 @@ export function TheaterCalendar({
             theaterSlug={theater.slug}
           />
         )}
-      </div>
+      </Card>
     </section>
   )
 }
@@ -126,7 +130,7 @@ function CalendarGrid({
     >
       {days.map((day) => (
         <section className="min-h-32 rounded border bg-white p-2" key={day}>
-          <h2 className="text-sm font-extrabold">{formatDay(day)}</h2>
+          <h2 className="text-sm font-semibold">{formatDay(day)}</h2>
           <div className="mt-2 grid gap-2">
             {(groupedEntries.get(day) ?? []).map((entry) => (
               <CalendarEntry
@@ -154,12 +158,12 @@ function CalendarEntry({
 }) {
   const content = (
     <>
-      <span className="font-extrabold">{entry.label}</span>
+      <span className="font-semibold">{entry.label}</span>
       <span className="block text-sm">
         {formatTime(entry.startsAt)}–{formatTime(entry.endsAt)}
       </span>
       {entry.occurrenceType ? (
-        <span className="block text-xs capitalize text-[var(--sea-ink-soft)]">
+        <span className="block text-xs capitalize text-muted-foreground">
           {entry.occurrenceType}
         </span>
       ) : null}
@@ -168,7 +172,7 @@ function CalendarEntry({
       ) : null}
     </>
   )
-  const className = `block rounded border-l-4 p-2 text-[var(--sea-ink)] ${entry.detail === 'opaque' ? 'border-l-[var(--sea-ink-soft)] bg-[var(--surface-strong)]' : 'border-l-[var(--theater)] bg-[var(--theater-soft)] hover:brightness-95'} ${compact ? 'text-xs' : ''}`
+  const className = `block rounded border-l-4 p-2 text-foreground ${entry.detail === 'opaque' ? 'border-l-muted-foreground bg-secondary' : 'border-l-border bg-accent hover:brightness-95'} ${compact ? 'text-xs' : ''}`
   return entry.event ? (
     <Link
       aria-label={`${entry.label}, ${formatTime(entry.startsAt)} to ${formatTime(entry.endsAt)}`}

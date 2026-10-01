@@ -13,21 +13,21 @@ export function OperationalExceptions({
 }) {
   return (
     <section aria-labelledby={id} className="mt-8">
-      <h2 id={id} className="text-2xl font-extrabold">
+      <h2 id={id} className="text-2xl font-semibold">
         {title}
       </h2>
-      <p className="mt-2 text-[var(--sea-ink-soft)]">
+      <p className="mt-2 text-muted-foreground">
         Conditions to monitor. Responsibility and available actions remain with
         the underlying Event.
       </p>
       {items.length ? (
         <ol className="mt-5 grid gap-3">
           {items.map((item) => (
-            <li key={item.id} className="island-shell rounded-lg p-4">
-              <p className="text-sm font-semibold text-[var(--sea-ink-soft)]">
+            <li key={item.id} className="rounded-lg p-4">
+              <p className="text-sm font-semibold text-muted-foreground">
                 {item.theaterName} · {item.eventTitle}
               </p>
-              <h3 className="mt-2 text-lg font-bold">{item.label}</h3>
+              <h3 className="mt-2 text-lg font-medium">{item.label}</h3>
               <p className="mt-2">{item.reason}</p>
               <p className="mt-2 text-sm font-semibold">
                 {item.urgency === 'urgent' ? 'Urgent' : 'Watch-only'} ·{' '}
@@ -60,7 +60,7 @@ export function OperationalExceptions({
           ))}
         </ol>
       ) : (
-        <p className="island-shell mt-5 rounded-lg p-4">{emptyMessage}</p>
+        <p className="mt-5 rounded-lg p-4">{emptyMessage}</p>
       )}
     </section>
   )

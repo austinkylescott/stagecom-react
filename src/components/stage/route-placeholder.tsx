@@ -1,3 +1,5 @@
+import { Card } from '@/components/ui/card'
+
 type RoutePlaceholderProps = {
   eyebrow: string
   title: string
@@ -12,35 +14,33 @@ export function RoutePlaceholder({
   details = [],
 }: RoutePlaceholderProps) {
   return (
-    <main className="page-wrap py-10 sm:py-14">
-      <section className="island-shell rounded-lg px-6 py-7 sm:px-8">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+    <main className="page-wrap py-6">
+      <Card className=" px-6 py-7 sm:px-8 gap-0">
+        <p className="text-xs font-medium tracking-normal text-muted-foreground">
           {eyebrow}
         </p>
-        <h1 className="display-title mt-3 text-3xl font-bold text-[var(--sea-ink)] sm:text-4xl">
+        <h1 className="display-title mt-3 text-2xl font-medium text-foreground sm:text-2xl">
           {title}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--sea-ink-soft)]">
+        <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
           {description}
         </p>
         {details.length > 0 ? (
           <dl className="mt-7 grid gap-3 sm:grid-cols-2">
             {details.map(([label, value]) => (
               <div
-                className="rounded-md border border-[var(--line)] bg-[var(--chip-bg)] px-4 py-3"
+                className="rounded-md border border-border bg-muted px-4 py-3"
                 key={label}
               >
-                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--kicker)]">
+                <dt className="text-xs font-semibold tracking-normal text-muted-foreground">
                   {label}
                 </dt>
-                <dd className="mt-1 font-semibold text-[var(--sea-ink)]">
-                  {value}
-                </dd>
+                <dd className="mt-1 font-semibold text-foreground">{value}</dd>
               </div>
             ))}
           </dl>
         ) : null}
-      </section>
+      </Card>
     </main>
   )
 }

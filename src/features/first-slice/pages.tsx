@@ -1,3 +1,7 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
 import { ArrowRight, Loader2, Mail, UserRound } from 'lucide-react'
 import { useState } from 'react'
 
@@ -40,12 +44,12 @@ export function AuthPage({
 
   return (
     <main className="page-wrap grid min-h-[72vh] place-items-center py-10">
-      <section className="island-shell w-full max-w-lg rounded-lg px-6 py-7 sm:px-8">
-        <Mail className="size-7 text-[var(--palm)]" />
-        <h1 className="display-title mt-4 text-3xl font-bold text-[var(--sea-ink)]">
+      <Card className="w-full max-w-lg  px-6 py-7 sm:px-8 gap-0">
+        <Mail className="size-7 text-muted-foreground" />
+        <h1 className="display-title mt-4 text-2xl font-medium text-foreground">
           {title}
         </h1>
-        <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">{copy}</p>
+        <p className="mt-3 leading-7 text-muted-foreground">{copy}</p>
         <form
           className="mt-6 grid gap-3"
           onSubmit={async (event) => {
@@ -92,21 +96,17 @@ export function AuthPage({
             }
           }}
         >
-          <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
+          <Label className="grid gap-2 text-sm font-medium text-foreground">
             Email address
-            <input
-              className="rounded-md border border-[var(--line)] bg-white px-4 py-3 font-medium outline-none focus:border-[var(--lagoon-deep)]"
+            <Input
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
               required
               type="email"
               value={email}
             />
-          </label>
-          <button
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-55"
-            disabled={isSubmitting}
-          >
+          </Label>
+          <Button disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 Sending <Loader2 className="size-4 animate-spin" />
@@ -116,14 +116,14 @@ export function AuthPage({
                 Send magic link <ArrowRight className="size-4" />
               </>
             )}
-          </button>
+          </Button>
         </form>
         {demoEnabled && mode === 'login' ? (
-          <section className="mt-6 border-t border-[var(--line)] pt-6">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--kicker)]">
+          <section className="mt-6 border-t border-border pt-6">
+            <p className="text-xs font-medium tracking-normal text-muted-foreground">
               Demo access
             </p>
-            <h2 className="mt-2 text-xl font-extrabold text-[var(--sea-ink)]">
+            <h2 className="mt-2 text-xl font-semibold text-foreground">
               Choose a seeded persona
             </h2>
             <div className="mt-4 grid gap-2">
@@ -131,8 +131,9 @@ export function AuthPage({
                 const persona = DEMO_PERSONAS[key]
 
                 return (
-                  <button
-                    className="rounded-md border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-left hover:bg-[var(--theater-soft)] disabled:opacity-50"
+                  <Button
+                    variant="outline"
+                    className="h-auto w-full flex-col items-start whitespace-normal py-3 text-left"
                     disabled={isSubmitting}
                     key={key}
                     onClick={async () => {
@@ -159,13 +160,13 @@ export function AuthPage({
                     }}
                     type="button"
                   >
-                    <span className="block font-extrabold text-[var(--sea-ink)]">
+                    <span className="block font-semibold text-foreground">
                       {persona.label}
                     </span>
-                    <span className="mt-1 block text-sm text-[var(--sea-ink-soft)]">
+                    <span className="mt-1 block text-sm text-muted-foreground">
                       {persona.description}
                     </span>
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -175,14 +176,14 @@ export function AuthPage({
           <p
             className={
               status.tone === 'success'
-                ? 'mt-4 rounded-md border border-[var(--chip-line)] bg-[var(--theater-soft)] px-4 py-3 text-sm font-semibold text-[var(--theater-ink)]'
-                : 'mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800'
+                ? 'mt-4 rounded-md border border-border bg-accent px-4 py-3 text-sm font-semibold text-foreground'
+                : 'mt-4 rounded-md border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground'
             }
           >
             {status.message}
           </p>
         ) : null}
-      </section>
+      </Card>
     </main>
   )
 }
@@ -194,12 +195,12 @@ export function CompleteProfilePage({ next }: { next?: string }) {
 
   return (
     <main className="page-wrap grid min-h-[72vh] place-items-center py-10">
-      <section className="island-shell w-full max-w-lg rounded-lg px-6 py-7 sm:px-8">
-        <UserRound className="size-7 text-[var(--palm)]" />
-        <h1 className="display-title mt-4 text-3xl font-bold text-[var(--sea-ink)]">
+      <Card className="w-full max-w-lg  px-6 py-7 sm:px-8 gap-0">
+        <UserRound className="size-7 text-muted-foreground" />
+        <h1 className="display-title mt-4 text-2xl font-medium text-foreground">
           Complete your profile
         </h1>
-        <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">
+        <p className="mt-3 leading-7 text-muted-foreground">
           Stagecom only requires a display name before entering theater
           workflows.
         </p>
@@ -232,20 +233,16 @@ export function CompleteProfilePage({ next }: { next?: string }) {
             }
           }}
         >
-          <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
+          <Label className="grid gap-2 text-sm font-medium text-foreground">
             Display name
-            <input
-              className="rounded-md border border-[var(--line)] bg-white px-4 py-3 font-medium outline-none focus:border-[var(--lagoon-deep)]"
+            <Input
               onChange={(event) => setDisplayName(event.target.value)}
               placeholder="Your name"
               required
               value={displayName}
             />
-          </label>
-          <button
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
-            disabled={displayName.trim().length === 0 || isSubmitting}
-          >
+          </Label>
+          <Button disabled={displayName.trim().length === 0 || isSubmitting}>
             {isSubmitting ? (
               <>
                 Saving <Loader2 className="size-4 animate-spin" />
@@ -253,26 +250,26 @@ export function CompleteProfilePage({ next }: { next?: string }) {
             ) : (
               'Continue'
             )}
-          </button>
+          </Button>
           {error ? (
-            <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+            <p className="rounded-md border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground">
               {error}
             </p>
           ) : null}
         </form>
-      </section>
+      </Card>
     </main>
   )
 }
 
 export function OnboardingHubPage() {
   return (
-    <main className="page-wrap py-10 sm:py-14">
+    <main className="page-wrap py-6">
       <section className="mb-7">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+        <p className="text-xs font-medium tracking-normal text-muted-foreground">
           Onboarding
         </p>
-        <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
+        <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
           Choose your setup path
         </h1>
       </section>
@@ -303,12 +300,12 @@ function OnboardingChoice({
 }) {
   return (
     <a
-      className="island-shell block rounded-lg px-6 py-6 no-underline transition hover:-translate-y-0.5"
+      className="block rounded-lg px-6 py-6 no-underline transition hover:-translate-y-0.5"
       href={href}
     >
-      <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">{title}</h2>
-      <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">{copy}</p>
-      <span className="mt-5 inline-flex items-center gap-2 font-extrabold text-[var(--lagoon-deep)]">
+      <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+      <p className="mt-3 leading-7 text-muted-foreground">{copy}</p>
+      <span className="mt-5 inline-flex items-center gap-2 font-semibold text-foreground">
         Continue <ArrowRight className="size-4" />
       </span>
     </a>

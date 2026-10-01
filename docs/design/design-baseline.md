@@ -2,41 +2,36 @@
 
 Status: active synthesis
 
-The active detailed design baseline lives in `docs/rebuild/06-design-baseline.md` and the minimal token spec lives in `docs/rebuild/13-design-token-spec.md`.
+The current implementation starts from stock shadcn/ui New York components and
+the default Neutral light theme. The maintainer requested a fresh generic
+baseline across public pages, authentication, and the authenticated workspace.
+Branding follows a separate human presentation review.
 
-## Direction
+## Components
 
-- Public pages should feel like civic poster pages.
-- Authenticated app pages should feel like calm theater operations.
-- Preserve Stagecom fonts and three semantic brand colors, refined for clarity.
-- Use previous design work as reference, not law.
-- Build `/dev/components` before product pages multiply.
+Registry primitives live in `src/components/ui`, generated with the project
+configuration in `components.json`. Compose their standard variants instead of
+restyling their typography, colors, borders, or control sizes at call sites.
+Application navigation uses the stock Sidebar composition; route selection and
+Theater switching remain application behavior. The mobile Sidebar adds focus
+restoration to its external trigger when its Sheet closes.
 
-## Fonts
+Product forms use Button, Input, Textarea, Label, and NativeSelect. Shared
+surfaces use Card and semantic Table/Badge compositions. Layout adjustments,
+including wrapping long demo-persona descriptions, remain appropriate.
 
-- Display: Cubano.
-- Body/UI: Public Sans.
+## Typography And Theme
 
-If font files are committed locally, load them from `public/fonts/` and keep CSS font-family names stable.
+Use system sans typography, default component radii, semantic colors, and stock
+component shadows. The global token source is `src/styles.css`. The baseline
+is light-only; future dark-mode and branding choices require their own review.
+The old Cubano/Public Sans pairing, three brand accents, decorative backgrounds,
+hard shadows, and legacy color aliases are no longer the active implementation.
+Historical proposals remain under `docs/rebuild/` as reference.
 
-## Brand Colors
+## Working Contract
 
-Use the three Stagecom semantic accents in the design system:
-
-- theater/community/admin: `#82bfb6`
-- event/show/programming: `#eaa542`
-- performer/people/relationship surfaces: `#c76056`
-
-These colors can be adjusted through derived tokens for contrast, but the three source hues should remain recognizable in the interface.
-
-## Surfaces
-
-Public theater pages can be more expressive and poster-like. Authenticated workflows should stay calmer, denser, and task-focused. Keep cards and panels relatively square and avoid decorative effects that compete with operational clarity.
-
-## Component Baseline
-
-`/dev/components` is the working visual contract for tokens, typography, buttons, form states, setup cards, preview bars, public theater headers, and empty/loading states. Update it before multiplying a pattern across product pages.
-
-## Token Source
-
-The implemented token baseline lives in `src/styles.css`. It defines color, type, radius, shadow, width, and spacing variables, plus small helper classes such as `page-wrap`, `type-page-title`, and `type-caption`.
+`/dev/components` demonstrates the current tokens, buttons, form controls, and
+People table. Use it to review primitives before repeating a presentation
+pattern across product routes. The local database-backed personas exercise real
+Auth, reads, actions, and persistence; do not substitute a parallel mock app.

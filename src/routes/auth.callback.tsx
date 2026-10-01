@@ -1,3 +1,4 @@
+import { Card } from '@/components/ui/card'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -79,25 +80,23 @@ function AuthCallbackPage() {
 
   return (
     <main className="page-wrap grid min-h-[72vh] place-items-center py-10">
-      <section className="island-shell w-full max-w-lg rounded-lg px-6 py-7 sm:px-8">
-        <div className="flex items-center gap-3 text-[var(--theater-ink)]">
+      <Card className="w-full max-w-lg  px-6 py-7 sm:px-8 gap-0">
+        <div className="flex items-center gap-3 text-foreground">
           <Loader2 className="size-5 animate-spin" />
-          <p className="text-xs font-bold uppercase tracking-[0.18em]">
-            Auth
-          </p>
+          <p className="text-xs font-medium tracking-normal">Auth</p>
         </div>
-        <h1 className="display-title mt-4 text-3xl font-bold text-[var(--sea-ink)]">
+        <h1 className="display-title mt-4 text-2xl font-medium text-foreground">
           Completing sign in
         </h1>
-        <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">
+        <p className="mt-3 leading-7 text-muted-foreground">
           Stagecom is finishing your session and choosing the right next route.
         </p>
         {error ? (
-          <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+          <p className="mt-4 rounded-md border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground">
             {error}
           </p>
         ) : null}
-      </section>
+      </Card>
     </main>
   )
 }

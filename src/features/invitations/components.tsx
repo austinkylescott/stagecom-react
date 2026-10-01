@@ -1,3 +1,22 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2, Copy, Loader2, MailPlus, Theater } from 'lucide-react'
 import { useState } from 'react'
@@ -37,62 +56,63 @@ export function PeopleWorkspacePage({
   const [shareUrl, setShareUrl] = useState<string | null>(null)
 
   return (
-    <main className="page-wrap py-10 sm:py-14">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
-        People
-      </p>
-      <h1 className="display-title mt-3 text-4xl font-bold text-[var(--sea-ink)]">
-        People
-      </h1>
-      <p className="mt-3 max-w-2xl text-[var(--sea-ink-soft)]">
+    <main className="page-wrap py-6">
+      <h1 className="text-2xl font-semibold tracking-tight">People</h1>
+      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         See who belongs to this Theater and who can operate it.
       </p>
 
-      <section
-        aria-labelledby="people-directory"
-        className="island-shell mt-7 rounded-lg px-5 py-5"
-      >
-        <h2
-          className="text-xl font-extrabold text-[var(--sea-ink)]"
-          id="people-directory"
-        >
-          Directory
-        </h2>
-        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
-          Active Theater Members. Contact details and private access data are
-          not shared here.
-        </p>
-        <div className="mt-4 grid gap-3">
-          {people.directory.map((member) => (
-            <article
-              className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
-              key={member.userId}
-            >
-              <h3 className="font-extrabold text-[var(--sea-ink)]">
-                {member.displayName}
-              </h3>
-              {member.roles.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {member.roles.map((role) => (
-                    <span
-                      className="rounded-full bg-[var(--theater-soft)] px-2 py-1 text-xs font-extrabold capitalize text-[var(--theater-ink)]"
-                      key={role}
-                    >
-                      {role}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      </section>
+      <Card role="region" aria-labelledby="people-directory" className="mt-6">
+        <CardHeader>
+          <CardTitle>
+            <h2 id="people-directory">Directory</h2>
+          </CardTitle>
+          <CardDescription>
+            Active Theater Members. Contact details and private access data are
+            not shared here.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Theater Role</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {people.directory.map((member) => (
+                <TableRow key={member.userId}>
+                  <TableCell className="font-medium">
+                    {member.displayName}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
+                      {member.roles.length ? (
+                        member.roles.map((role) => (
+                          <Badge
+                            variant="secondary"
+                            className="capitalize"
+                            key={role}
+                          >
+                            {role}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">Member</span>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {canManage ? (
-        <section className="island-shell mt-7 rounded-lg px-5 py-5">
-          <h2 className="text-xl font-extrabold text-[var(--sea-ink)]">
-            Invitations
-          </h2>
+        <Card className="mt-7  px-5 py-5 gap-0">
+          <h2 className="text-xl font-semibold text-foreground">Invitations</h2>
           <form
             className="mt-4 flex flex-col gap-3 sm:flex-row"
             onSubmit={async (event) => {
@@ -132,19 +152,18 @@ export function PeopleWorkspacePage({
               }
             }}
           >
-            <label className="grid flex-1 gap-2 text-sm font-bold text-[var(--sea-ink)]">
+            <Label className="grid flex-1 gap-2 text-sm font-medium text-foreground">
               Recipient email
-              <input
-                className="rounded-md border border-[var(--line)] bg-white px-3 py-3 font-normal"
+              <Input
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="member@example.com"
                 required
                 type="email"
                 value={email}
               />
-            </label>
-            <button
-              className="mt-auto inline-flex items-center justify-center gap-2 rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
+            </Label>
+            <Button
+              className="mt-auto"
               disabled={isSubmitting || !email.trim()}
               type="submit"
             >
@@ -154,71 +173,74 @@ export function PeopleWorkspacePage({
                 <MailPlus className="size-4" />
               )}
               Create invitation
-            </button>
+            </Button>
           </form>
           {shareUrl ? (
-            <div className="mt-4 rounded-md border border-[var(--theater)] bg-[var(--theater-soft)] px-4 py-4">
-              <p className="font-extrabold text-[var(--theater-ink)]">
+            <div className="mt-4 rounded-md border border-border bg-accent px-4 py-4">
+              <p className="font-semibold text-foreground">
                 Copy this link now. It will not be shown again.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <input
+                <Input
                   aria-label="Shareable invitation link"
-                  className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm"
+                  className="min-w-0 flex-1"
                   readOnly
                   value={shareUrl}
                 />
-                <button
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-extrabold"
+                <Button
+                  variant="outline"
+
                   onClick={() => navigator.clipboard.writeText(shareUrl)}
                   type="button"
                 >
                   <Copy className="size-4" /> Copy
-                </button>
+                </Button>
               </div>
             </div>
           ) : null}
           {error ? <ErrorNotice message={error} /> : null}
-        </section>
+        </Card>
       ) : (
-        <section className="island-shell mt-7 rounded-lg px-5 py-5">
-          <p className="font-semibold text-[var(--sea-ink-soft)]">
+        <Card className="mt-7  px-5 py-5 gap-0">
+          <p className="font-semibold text-muted-foreground">
             Owner or Admin access is required to manage invitations.
           </p>
-        </section>
+        </Card>
       )}
 
       {canManage ? (
         <section aria-labelledby="targeted-invitations" className="mt-7">
           <h3
-            className="text-xl font-extrabold text-[var(--sea-ink)]"
+            className="text-xl font-semibold text-foreground"
             id="targeted-invitations"
           >
             Targeted Invitations
           </h3>
           <div className="mt-4 grid gap-3">
             {invitations.length === 0 ? (
-              <p className="island-shell rounded-lg px-5 py-5 text-[var(--sea-ink-soft)]">
+              <p className="rounded-lg px-5 py-5 text-muted-foreground">
                 No Targeted Invitations yet.
               </p>
             ) : (
               invitations.map((invitation) => (
-                <article
-                  className="island-shell flex flex-col justify-between gap-4 rounded-lg px-5 py-4 sm:flex-row sm:items-center"
+                <Card
+                  role="article"
+                  className="flex flex-col justify-between gap-4  px-5 py-4 sm:flex-row sm:items-center gap-0"
                   key={invitation.id}
                 >
                   <div>
-                    <p className="font-extrabold text-[var(--sea-ink)]">
+                    <p className="font-semibold text-foreground">
                       {invitation.email}
                     </p>
-                    <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {invitation.status} · expires{' '}
                       {new Date(invitation.expiresAt).toLocaleDateString()}
                     </p>
                   </div>
                   {invitation.status === 'pending' ? (
-                    <button
-                      className="rounded-md border border-red-200 px-4 py-2 text-sm font-extrabold text-red-800"
+                    <Button
+                      variant="destructive"
+
                       onClick={async () => {
                         setError(null)
                         const result = await revokeTargetedInvitationFn({
@@ -241,9 +263,9 @@ export function PeopleWorkspacePage({
                       type="button"
                     >
                       Revoke
-                    </button>
+                    </Button>
                   ) : null}
-                </article>
+                </Card>
               ))
             )}
           </div>
@@ -265,33 +287,34 @@ export function PeopleWorkspacePage({
           />
           <section aria-labelledby="former-members" className="mt-10">
             <h2
-              className="text-2xl font-extrabold text-[var(--sea-ink)]"
+              className="text-2xl font-semibold text-foreground"
               id="former-members"
             >
               Former Members
             </h2>
-            <p className="mt-2 max-w-2xl text-[var(--sea-ink-soft)]">
+            <p className="mt-2 max-w-2xl text-muted-foreground">
               Historical memberships are kept separate from the active
               Directory.
             </p>
             <div className="mt-4 grid gap-3">
               {people.operator.formerMembers.length === 0 ? (
-                <p className="island-shell rounded-lg px-5 py-5 text-[var(--sea-ink-soft)]">
+                <p className="rounded-lg px-5 py-5 text-muted-foreground">
                   No Former Theater Members.
                 </p>
               ) : (
                 people.operator.formerMembers.map((member) => (
-                  <article
-                    className="island-shell rounded-lg px-5 py-4"
+                  <Card
+                    role="article"
+                    className=" px-5 py-4 gap-0"
                     key={member.userId}
                   >
-                    <h3 className="font-extrabold text-[var(--sea-ink)]">
+                    <h3 className="font-semibold text-foreground">
                       {member.displayName}
                     </h3>
-                    <p className="mt-1 text-sm capitalize text-[var(--sea-ink-soft)]">
+                    <p className="mt-1 text-sm capitalize text-muted-foreground">
                       Membership ended · former role: {member.roles.join(', ')}
                     </p>
-                  </article>
+                  </Card>
                 ))
               )}
             </div>
@@ -322,34 +345,31 @@ export function TargetedInvitationPage({
 
   return (
     <main className="page-wrap grid min-h-[72vh] place-items-center py-10">
-      <section className="island-shell w-full max-w-xl rounded-lg px-6 py-7 sm:px-8">
+      <Card className="w-full max-w-xl  px-6 py-7 sm:px-8 gap-0">
         {acceptedTheater ? (
-          <CheckCircle2 className="size-7 text-[var(--palm)]" />
+          <CheckCircle2 className="size-7 text-muted-foreground" />
         ) : (
-          <Theater className="size-7 text-[var(--palm)]" />
+          <Theater className="size-7 text-muted-foreground" />
         )}
-        <h1 className="display-title mt-4 text-3xl font-bold text-[var(--sea-ink)]">
+        <h1 className="display-title mt-4 text-2xl font-medium text-foreground">
           {acceptedTheater
             ? `You joined ${acceptedTheater.name}`
             : stateCopy.title}
         </h1>
-        <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">
+        <p className="mt-3 leading-7 text-muted-foreground">
           {acceptedTheater
             ? 'Your base Member access is active.'
             : stateCopy.copy}
         </p>
 
         {acceptedTheater ? (
-          <a
-            className="mt-6 inline-flex rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-            href={`/app/${acceptedTheater.slug}`}
-          >
-            Open Theater workspace
-          </a>
+          <Button asChild variant="default" className="mt-6">
+            <a href={`/app/${acceptedTheater.slug}`}>Open Theater workspace</a>
+          </Button>
         ) : preview.state === 'pending' || preview.state === 'accepted' ? (
           signedIn ? (
-            <button
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
+            <Button
+              className="mt-6"
               disabled={isSubmitting}
               onClick={async () => {
                 setError(null)
@@ -376,18 +396,16 @@ export function TargetedInvitationPage({
                 <Loader2 className="size-4 animate-spin" />
               ) : null}
               Accept invitation
-            </button>
+            </Button>
           ) : (
             <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild variant="default">
+                <Link search={{ inviteToken }} to="/login">
+                  Sign in to accept
+                </Link>
+              </Button>
               <Link
-                className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-                search={{ inviteToken }}
-                to="/login"
-              >
-                Sign in to accept
-              </Link>
-              <Link
-                className="rounded-md border border-[var(--line)] px-4 py-3 font-extrabold no-underline"
+                className="rounded-md border border-border px-4 py-3 font-semibold no-underline"
                 search={{ inviteToken }}
                 to="/signup"
               >
@@ -397,7 +415,7 @@ export function TargetedInvitationPage({
           )
         ) : null}
         {error ? <ErrorNotice message={error} /> : null}
-      </section>
+      </Card>
     </main>
   )
 }
@@ -434,7 +452,7 @@ function getInvitationStateCopy(preview: TargetedInvitationView) {
 
 function ErrorNotice({ message }: { message: string }) {
   return (
-    <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+    <p className="mt-4 rounded-md border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground">
       {message}
     </p>
   )

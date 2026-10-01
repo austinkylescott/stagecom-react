@@ -1,3 +1,7 @@
+import { Button } from '@/components/ui/button'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 
@@ -25,15 +29,17 @@ export function TheaterSettingsNavigation({
     >
       <div className="flex gap-2 overflow-x-auto pb-2">
         {getTheaterSettingsSections(roles).map((section) => (
-          <Link
-            activeProps={{ className: 'bg-[var(--sea-ink)] text-white' }}
-            className="min-h-11 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-extrabold text-[var(--sea-ink)] no-underline outline-none hover:bg-[var(--surface-strong)] focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/35"
-            key={section.id}
-            params={{ theaterSlug }}
-            to={`/app/$theaterSlug/settings/${section.id}`}
-          >
-            {section.label}
-          </Link>
+          <Button asChild variant="outline">
+            <Link
+              activeProps={{ className: 'bg-foreground text-white' }}
+
+              key={section.id}
+              params={{ theaterSlug }}
+              to={`/app/$theaterSlug/settings/${section.id}`}
+            >
+              {section.label}
+            </Link>
+          </Button>
         ))}
       </div>
     </nav>
@@ -49,13 +55,13 @@ export function SettingsSectionHeader({
 }) {
   return (
     <header className="page-wrap pt-8 sm:pt-10">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--kicker)]">
+      <p className="text-xs font-medium tracking-normal text-muted-foreground">
         Theater Settings
       </p>
-      <h1 className="display-title mt-3 text-3xl font-bold text-[var(--sea-ink)] sm:text-4xl">
+      <h1 className="display-title mt-3 text-2xl font-medium text-foreground sm:text-2xl">
         {title}
       </h1>
-      <p className="mt-3 max-w-2xl text-[var(--sea-ink-soft)]">{description}</p>
+      <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>
     </header>
   )
 }
@@ -81,15 +87,15 @@ export function OwnershipSecuritySettings({
 
   return (
     <section className="page-wrap pb-12 pt-6">
-      <div className="island-shell max-w-2xl rounded-lg px-6 py-6">
-        <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
+      <Card className="max-w-2xl  px-6 py-6 gap-0">
+        <h2 className="text-2xl font-semibold text-foreground">
           Transfer Theater ownership
         </h2>
-        <p className="mt-2 text-[var(--sea-ink-soft)]">
+        <p className="mt-2 text-muted-foreground">
           You remain the Owner until the proposed successor explicitly accepts.
         </p>
         {candidates.length === 0 ? (
-          <p className="mt-5 rounded-md border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--sea-ink-soft)]">
+          <p className="mt-5 rounded-md border border-border bg-white px-4 py-3 text-sm font-semibold text-muted-foreground">
             Add an active Theater Member before transferring ownership.
           </p>
         ) : (
@@ -118,10 +124,9 @@ export function OwnershipSecuritySettings({
               }
             }}
           >
-            <label className="grid gap-2 text-sm font-bold">
+            <Label className="grid gap-2 text-sm font-medium">
               Proposed successor
-              <select
-                className="rounded-md border border-[var(--line)] bg-white px-4 py-3"
+              <NativeSelect
                 onChange={(event) => setMemberUserId(event.target.value)}
                 value={memberUserId}
               >
@@ -130,13 +135,13 @@ export function OwnershipSecuritySettings({
                     {member.displayName}
                   </option>
                 ))}
-              </select>
-            </label>
+              </NativeSelect>
+            </Label>
             <fieldset className="grid gap-2">
-              <legend className="text-sm font-bold">
+              <legend className="text-sm font-medium">
                 Your role after acceptance
               </legend>
-              <label className="flex items-center gap-2 text-sm font-semibold">
+              <Label className="flex items-center gap-2 text-sm font-semibold">
                 <input
                   checked={formerOwnerRole === 'admin'}
                   name="former-owner-role"
@@ -144,8 +149,8 @@ export function OwnershipSecuritySettings({
                   type="radio"
                 />
                 Remain an Admin (default)
-              </label>
-              <label className="flex items-center gap-2 text-sm font-semibold">
+              </Label>
+              <Label className="flex items-center gap-2 text-sm font-semibold">
                 <input
                   checked={formerOwnerRole === 'member'}
                   name="former-owner-role"
@@ -153,23 +158,19 @@ export function OwnershipSecuritySettings({
                   type="radio"
                 />
                 Remain a Member
-              </label>
+              </Label>
             </fieldset>
-            <button
-              className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
-              disabled={isSubmitting}
-              type="submit"
-            >
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting
                 ? 'Proposing transfer…'
                 : 'Propose ownership transfer'}
-            </button>
+            </Button>
           </form>
         )}
         {message ? (
           <p className="mt-4 text-sm font-semibold">{message}</p>
         ) : null}
-      </div>
+      </Card>
     </section>
   )
 }

@@ -40,7 +40,7 @@ describe('CallsheetPage', () => {
       />,
     )
 
-    const personal = screen.getByRole('region', { name: 'Your commitments' })
+    const personal = screen.getByRole('region', { name: 'Response needed' })
     const shared = screen.getByRole('region', {
       name: 'Theater needs attention',
     })
@@ -86,7 +86,7 @@ describe('CallsheetPage', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Your commitments' }),
+      screen.getByRole('heading', { name: 'Response needed' }),
     ).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Your Theaters' })).toBeTruthy()
     expect(

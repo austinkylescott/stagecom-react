@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 
-import { AppNav } from '@/components/stage/app-nav'
+import { WorkspaceHeader, WorkspaceNav } from '@/components/stage/workspace-nav'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import {
   WorkspaceErrorState,
   WorkspaceLoadingState,
@@ -46,9 +47,12 @@ function AppLayout() {
   const { currentUser, theaters } = Route.useRouteContext()
 
   return (
-    <>
-      <AppNav email={currentUser.email} theaters={theaters} />
-      <Outlet />
-    </>
+    <SidebarProvider>
+      <WorkspaceNav email={currentUser.email} theaters={theaters} />
+      <SidebarInset className="min-w-0">
+        <WorkspaceHeader email={currentUser.email} />
+        <Outlet />
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

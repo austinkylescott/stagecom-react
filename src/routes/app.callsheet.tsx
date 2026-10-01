@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 
 import { CallsheetPage } from '@/features/callsheet/components'
 import { getMyCallsheetFn } from '@/features/callsheet/server-functions'
@@ -19,5 +19,11 @@ export const Route = createFileRoute('/app/callsheet')({
 })
 
 function MyCallsheetPage() {
-  return <CallsheetPage {...Route.useLoaderData()} />
+  const router = useRouter()
+  return (
+    <CallsheetPage
+      {...Route.useLoaderData()}
+      onResponded={() => router.invalidate()}
+    />
+  )
 }

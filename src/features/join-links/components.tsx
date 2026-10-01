@@ -1,3 +1,7 @@
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2, Copy, Link2, Loader2, RotateCw } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -37,15 +41,15 @@ export function ReusableJoinLinksManager({
 
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-extrabold text-[var(--sea-ink)]">
+      <h2 className="text-2xl font-semibold text-foreground">
         Reusable Join Links
       </h2>
-      <p className="mt-2 max-w-2xl text-[var(--sea-ink-soft)]">
+      <p className="mt-2 max-w-2xl text-muted-foreground">
         Anyone with an active link can join as a base Member. Add an expiry or
         use limit when the link should close automatically.
       </p>
       <form
-        className="island-shell mt-4 grid gap-4 rounded-lg px-5 py-5 md:grid-cols-3"
+        className="mt-4 grid gap-4 rounded-lg px-5 py-5 md:grid-cols-3"
         onSubmit={async (event) => {
           event.preventDefault()
           const submittedExpiresAt = expiresAtRef.current?.value ?? ''
@@ -99,57 +103,43 @@ export function ReusableJoinLinksManager({
           }
         }}
       >
-        <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
+        <Label className="grid gap-2 text-sm font-medium text-foreground">
           Expires (optional)
-          <input
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-3 font-normal"
-            name="expiresAt"
-            ref={expiresAtRef}
-            type="datetime-local"
-          />
-        </label>
-        <label className="grid gap-2 text-sm font-bold text-[var(--sea-ink)]">
+          <Input name="expiresAt" ref={expiresAtRef} type="datetime-local" />
+        </Label>
+        <Label className="grid gap-2 text-sm font-medium text-foreground">
           Maximum uses (optional)
-          <input
-            className="rounded-md border border-[var(--line)] bg-white px-3 py-3 font-normal"
-            min="1"
-            name="maxUses"
-            ref={maxUsesRef}
-            type="number"
-          />
-        </label>
-        <button
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
-          disabled={isSubmitting}
-          type="submit"
-        >
+          <Input min="1" name="maxUses" ref={maxUsesRef} type="number" />
+        </Label>
+        <Button className="mt-auto" disabled={isSubmitting} type="submit">
           {isSubmitting ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <Link2 className="size-4" />
           )}
           Create Join Link
-        </button>
+        </Button>
       </form>
       {shareUrl ? <ShareableJoinLink value={shareUrl} /> : null}
       {error ? <JoinLinkError message={error} /> : null}
 
       <div className="mt-4 grid gap-3">
         {links.length === 0 ? (
-          <p className="island-shell rounded-lg px-5 py-5 text-[var(--sea-ink-soft)]">
+          <p className="rounded-lg px-5 py-5 text-muted-foreground">
             No Reusable Join Links yet.
           </p>
         ) : (
           links.map((link) => (
-            <article
-              className="island-shell flex flex-col justify-between gap-4 rounded-lg px-5 py-4 sm:flex-row sm:items-center"
+            <Card
+              role="article"
+              className="flex flex-col justify-between gap-4  px-5 py-4 sm:flex-row sm:items-center gap-0"
               key={link.id}
             >
               <div>
-                <p className="font-extrabold capitalize text-[var(--sea-ink)]">
+                <p className="font-semibold capitalize text-foreground">
                   {link.status}
                 </p>
-                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {link.useCount}
                   {link.maxUses === null ? ' uses' : ` of ${link.maxUses} uses`}
                   {' · '}
@@ -160,8 +150,9 @@ export function ReusableJoinLinksManager({
               </div>
               {link.status === 'active' ? (
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] px-4 py-2 text-sm font-extrabold"
+                  <Button
+                    variant="outline"
+
                     onClick={async () => {
                       setError(null)
                       setShareUrl(null)
@@ -200,9 +191,10 @@ export function ReusableJoinLinksManager({
                     type="button"
                   >
                     <RotateCw className="size-4" /> Rotate
-                  </button>
-                  <button
-                    className="rounded-md border border-red-200 px-4 py-2 text-sm font-extrabold text-red-800"
+                  </Button>
+                  <Button
+                    variant="destructive"
+
                     onClick={async () => {
                       setError(null)
                       const result = await revokeReusableJoinLinkFn({
@@ -229,10 +221,10 @@ export function ReusableJoinLinksManager({
                     type="button"
                   >
                     Revoke
-                  </button>
+                  </Button>
                 </div>
               ) : null}
-            </article>
+            </Card>
           ))
         )}
       </div>
@@ -260,34 +252,31 @@ export function ReusableJoinLinkPage({
 
   return (
     <main className="page-wrap grid min-h-[72vh] place-items-center py-10">
-      <section className="island-shell w-full max-w-xl rounded-lg px-6 py-7 sm:px-8">
+      <Card className="w-full max-w-xl  px-6 py-7 sm:px-8 gap-0">
         {acceptedTheater ? (
-          <CheckCircle2 className="size-7 text-[var(--palm)]" />
+          <CheckCircle2 className="size-7 text-muted-foreground" />
         ) : (
-          <Link2 className="size-7 text-[var(--palm)]" />
+          <Link2 className="size-7 text-muted-foreground" />
         )}
-        <h1 className="display-title mt-4 text-3xl font-bold text-[var(--sea-ink)]">
+        <h1 className="display-title mt-4 text-2xl font-medium text-foreground">
           {acceptedTheater
             ? `You joined ${acceptedTheater.name}`
             : stateCopy.title}
         </h1>
-        <p className="mt-3 leading-7 text-[var(--sea-ink-soft)]">
+        <p className="mt-3 leading-7 text-muted-foreground">
           {acceptedTheater
             ? 'Your base Member access is active.'
             : stateCopy.copy}
         </p>
 
         {acceptedTheater ? (
-          <a
-            className="mt-6 inline-flex rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-            href={`/app/${acceptedTheater.slug}`}
-          >
-            Open Theater workspace
-          </a>
+          <Button asChild variant="default" className="mt-6">
+            <a href={`/app/${acceptedTheater.slug}`}>Open Theater workspace</a>
+          </Button>
         ) : preview.state === 'active' ? (
           signedIn ? (
-            <button
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white disabled:opacity-50"
+            <Button
+              className="mt-6"
               disabled={isSubmitting}
               onClick={async () => {
                 setError(null)
@@ -314,18 +303,16 @@ export function ReusableJoinLinkPage({
                 <Loader2 className="size-4 animate-spin" />
               ) : null}
               Join Theater
-            </button>
+            </Button>
           ) : (
             <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild variant="default">
+                <Link search={{ next }} to="/login">
+                  Sign in to join
+                </Link>
+              </Button>
               <Link
-                className="rounded-md bg-[var(--sea-ink)] px-4 py-3 font-extrabold text-white no-underline"
-                search={{ next }}
-                to="/login"
-              >
-                Sign in to join
-              </Link>
-              <Link
-                className="rounded-md border border-[var(--line)] px-4 py-3 font-extrabold no-underline"
+                className="rounded-md border border-border px-4 py-3 font-semibold no-underline"
                 search={{ next }}
                 to="/signup"
               >
@@ -335,31 +322,32 @@ export function ReusableJoinLinkPage({
           )
         ) : null}
         {error ? <JoinLinkError message={error} /> : null}
-      </section>
+      </Card>
     </main>
   )
 }
 
 function ShareableJoinLink({ value }: { value: string }) {
   return (
-    <div className="mt-4 rounded-md border border-[var(--theater)] bg-[var(--theater-soft)] px-4 py-4">
-      <p className="font-extrabold text-[var(--theater-ink)]">
+    <div className="mt-4 rounded-md border border-border bg-accent px-4 py-4">
+      <p className="font-semibold text-foreground">
         Copy this link now. Its token will not be shown again.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <input
+        <Input
           aria-label="Shareable Reusable Join Link"
-          className="min-w-0 flex-1 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm"
+          className="min-w-0 flex-1"
           readOnly
           value={value}
         />
-        <button
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-extrabold"
+        <Button
+          variant="outline"
+
           onClick={() => navigator.clipboard.writeText(value)}
           type="button"
         >
           <Copy className="size-4" /> Copy
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -397,7 +385,7 @@ function getJoinLinkStateCopy(preview: ReusableJoinLinkView) {
 
 function JoinLinkError({ message }: { message: string }) {
   return (
-    <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+    <p className="mt-4 rounded-md border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground">
       {message}
     </p>
   )
