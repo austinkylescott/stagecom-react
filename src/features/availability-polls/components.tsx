@@ -31,10 +31,12 @@ export function AvailabilityPolls({
   eventId,
   occurrences,
   cast,
+  theaterTimezone,
 }: {
   eventId: string
   occurrences: Occurrence[]
   cast: Cast[]
+  theaterTimezone: string
 }) {
   const [data, setData] = useState<{ canLead: boolean; polls: Poll[] } | null>(
     null,
@@ -86,6 +88,7 @@ export function AvailabilityPolls({
               cast={cast}
               polls={data.polls}
               refresh={refresh}
+              theaterTimezone={theaterTimezone}
             />
           ) : null}
           {data.polls.length === 0 ? (
@@ -111,11 +114,13 @@ function OpenPollForm({
   cast,
   polls,
   refresh,
+  theaterTimezone,
 }: {
   occurrences: Occurrence[]
   cast: Cast[]
   polls: Poll[]
   refresh: () => Promise<void>
+  theaterTimezone: string
 }) {
   const [occurrenceId, setOccurrenceId] = useState(occurrences[0]?.id ?? '')
   const [slotIds, setSlotIds] = useState<string[]>([])
@@ -203,9 +208,8 @@ function OpenPollForm({
                 checked={slotIds.includes(slot.id)}
                 onChange={() => setSlotIds(toggle(slotIds, slot.id))}
               />
-              Option {index + 1} ·{' '}
-              {formatTime(slot.starts_at, slot.timezone_name)} ·{' '}
-              {slot.location_name}
+              Option {index + 1} · {formatTime(slot.starts_at, theaterTimezone)}{' '}
+              · {slot.location_name}
             </label>
           ))
         ) : (

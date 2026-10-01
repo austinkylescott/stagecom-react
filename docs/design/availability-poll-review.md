@@ -56,11 +56,50 @@ Final review totals: Standards 0 outstanding; Spec 0 outstanding.
 - The final forward migration was also applied from an absent poll schema in
   the empty verification database, and all 26 poll assertions passed afterward.
 
+## Final delivery verification
+
+The full browser suite ran: 22 journeys passed and 12 failed. One was introduced
+by the new poll controls: the Proposed Cast test's global Cast-name locator also
+matched the poll respondent checkbox. The locator is now scoped to the Proposed
+Cast Members group. That journey and all three poll journeys pass together.
+
+The other eleven failing journeys were run again against unchanged application
+source from baseline `0dbda03dd90977b2a17a6ba785db8bf8a6079531` in a temporary
+checkout with the same local database and dependencies. Each also fails there;
+they are existing browser-suite failures, not established STA-69 regressions.
+The broad suite is not claimed green.
+
+| Existing failing journey                  | Failure reproduced on base                                  |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| Component baseline branding               | Removed branding/typography expectations                    |
+| Targeted Invitation management            | Members-screen journey times out / obsolete article locator |
+| Producer cancellation                     | Old Work Queue presentation expectation                     |
+| Callsheet / Theater Operations separation | Old Event pipeline region expectation                       |
+| Automatic completion failure              | Old Operational Exceptions heading expectation              |
+| Event publication milestone               | Old List control expectation                                |
+| Managed Event governance                  | React handler wait for changed control                      |
+| Author Exception / Reviewer decision      | Old workflow journey timeout                                |
+| Cast withdrawal and At Risk               | Old raw `at_risk` text expectation                          |
+| Theater Member deactivation               | React handler wait for changed control                      |
+| Reusable Join Link management             | Old Members-screen journey timeout                          |
+
+Visual inspection found option selection using Candidate Slot time zones while
+opened polls used the Theater time zone. Both now display the Theater time zone;
+the browser journey asserts EDT rather than UTC for the seeded fixture. Final
+follow-up Standards and Spec reviews report no findings. Typecheck, production
+build and all four focused journeys passed after the correction.
+
+Desktop and mobile-emulation screenshots and an executable local walkthrough are
+in the [approval packet](availability-poll-approval.md).
+
 ## Remaining review boundaries
 
-The migration and seed changes have only been executed locally. Remote migration
-history comparison and integration are pending; remote migrations and seeding
-require explicit operation approval. The draft PR must carry that limitation.
+The migration and seed changes have only been executed locally. Read-only remote
+inspection confirms all 60 hosted migration version/name entries match local
+history; only this poll migration is pending. This does not prove absence of
+out-of-band schema edits. Remote application and smoke tests still require
+explicit operation approval. Supabase Preview was skipped; there is no separate
+PR preview branch. The PR carries the rollout plan and existing-suite limitations.
 
 Viewport checks do not establish physical-device software-keyboard behavior.
 Maintainer page-by-page presentation review and later branding remain separate

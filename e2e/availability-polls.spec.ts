@@ -82,6 +82,12 @@ test('selected Cast save drafts, resubmit, compare, recover stale input and reta
     const options = polls
       .getByRole('group', { name: 'Fixed options' })
       .getByRole('checkbox')
+    await expect(
+      polls.getByRole('group', { name: 'Fixed options' }),
+    ).toContainText('7:00 PM EDT')
+    await expect(
+      polls.getByRole('group', { name: 'Fixed options' }),
+    ).not.toContainText('11:00 PM UTC')
     await options.nth(0).focus()
     await options.nth(0).press('Space')
     await expect(options.nth(0)).toBeChecked()

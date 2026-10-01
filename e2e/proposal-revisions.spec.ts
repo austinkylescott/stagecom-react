@@ -40,9 +40,9 @@ test('Producer selects a Proposed Cast, compares evidence, and submits a revisio
     await page.goto(`/app/${fixture.theaterSlug}/events/${fixture.eventSlug}`)
     await page.waitForTimeout(500)
     await page.getByRole('link', { name: 'Cast & Team' }).click()
-    const acceptedCastCheckbox = page.getByLabel('Accepted Cast', {
-      exact: true,
-    })
+    const acceptedCastCheckbox = page
+      .getByRole('group', { name: 'Proposed Cast Members' })
+      .getByLabel('Accepted Cast', { exact: true })
     await expect(acceptedCastCheckbox).toBeVisible()
     await waitForReactHandler(acceptedCastCheckbox, 'onChange')
     await acceptedCastCheckbox.check()

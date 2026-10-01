@@ -1316,6 +1316,7 @@ export function ManagedEventWorkspace({
               eventId={event.id}
               occurrences={event.show_occurrences}
               cast={event.show_cast}
+              theaterTimezone={theater.timezone ?? 'UTC'}
             />
           ) : null}
           <Card className="mt-5  px-6 py-6 gap-0">
