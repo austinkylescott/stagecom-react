@@ -28,6 +28,7 @@ Every wiki page declares one of these implementation states:
 - Operational-workspaces milestone and verification: `wiki/features/operational-workspaces.md`
 - Event lifecycle: `wiki/workflows/event-lifecycle.md`
 - Casting and availability: `wiki/workflows/casting-and-availability.md`
+- Availability polls and their persistence contract: `wiki/features/availability-polls.md`
 - Review, scheduling, and publication: `wiki/workflows/review-scheduling-and-publication.md`
 - Data model: `wiki/data/data-model.md`
 - Permissions: `wiki/data/permissions-model.md`

@@ -1,3 +1,4 @@
+import { getMyPollActions } from '@/features/availability-polls/queries'
 import { getEventPortfolio } from '@/features/events/event-portfolio/query'
 import { getPublishedTheaterEvents } from '@/features/theaters/public-queries'
 import type { CallsheetEvent } from './read-model'
@@ -143,12 +144,15 @@ export async function getMyCallsheet() {
         })),
     )
   }
+  const pollActions = await getMyPollActions()
+  if (!pollActions.ok) return pollActions
   return ok({
     ...createCallsheetReadModel({
       commitments: [
         ...adminCommitments,
         ...ownershipTransferCommitments,
         ...eventCommitments.data,
+        ...pollActions.data,
       ],
       sharedWork,
     }),
