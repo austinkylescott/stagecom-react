@@ -85,3 +85,18 @@ independent leadership, Cast, and staff relationships. Pending invitees retain
 invitation-only context. Protected Occurrence fragments survive Supabase sign-in.
 See the [neutral navigation review record](../../docs/design/theater-event-navigation-review.md)
 for the browser evidence, seeded personas, and presentation-review limits.
+
+## Theater Calendar context (STA-68)
+
+The Theater Calendar now provides a monthly Daybook, an aligned desktop month
+grid and the retained Week view. View, period and selected entry survive Event
+navigation and browser Back. Event entries select their Occurrence; Operator
+Schedule Blocks open their separate management entry. Quick details support
+hover, keyboard focus and touch without shifting adjacent links.
+
+Existing Primary Venue reservations supply buffered occupancy. Confirmed
+offsite Occurrences are shown only within the viewer's authorization and do not
+consume the venue; unconfirmed candidates do not create Calendar entries. Private
+occupancy remains opaque, and staff-only detail follows called confirmed
+Occurrences. See the [neutral Calendar review record](../../docs/design/theater-calendar-review.md)
+for persisted demo scenarios, verification and remaining human/device review.

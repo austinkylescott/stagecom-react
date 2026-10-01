@@ -299,6 +299,7 @@ export function PublishedEventPage({
 }
 
 export function ManagedEventWorkspace({
+  selectedOccurrenceId,
   activeMembers,
   actorUserId,
   allowedActions,
@@ -310,6 +311,7 @@ export function ManagedEventWorkspace({
   theater,
   view,
 }: {
+  selectedOccurrenceId?: string
   activeMembers: Array<{ displayName: string; userId: string }>
   actorUserId: string
   allowedActions: {
@@ -670,7 +672,7 @@ export function ManagedEventWorkspace({
         />
       ) : null}
       {activeSection === 'overview' && view !== 'pending_invitee' ? (
-        <EventOccurrences occurrences={event.show_occurrences} />
+        <EventOccurrences occurrences={event.show_occurrences} selectedOccurrenceId={selectedOccurrenceId} />
       ) : null}
       {activeSection === 'schedule-plan' && proposalPreparation ? (
         <ProposalPreparation.PlanSection />

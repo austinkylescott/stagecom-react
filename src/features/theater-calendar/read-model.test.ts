@@ -9,6 +9,8 @@ const occupancy = [
     id: 'hold',
     startsAt: '2026-09-10T18:00:00.000Z',
     source: 'hold' as const,
+    occurrenceId: 'private-occurrence',
+    locationName: 'Private room',
   },
   {
     endsAt: '2026-09-09T20:00:00.000Z',
@@ -47,6 +49,9 @@ describe('createTheaterCalendarProjection', () => {
         detail: 'opaque',
         event: null,
         id: 'hold',
+        source: null,
+        occurrenceId: null,
+        locationName: null,
         label: 'Primary Venue unavailable',
       }),
       expect.objectContaining({
@@ -74,6 +79,51 @@ describe('createTheaterCalendarProjection', () => {
       event: null,
       label: 'Primary Venue unavailable',
     })
+  })
+
+  it('omits unrelated offsite activity rather than inventing venue occupancy', () => {
+    const offsite = { ...occupancy[2], source: 'offsite' as const }
+    expect(
+      createTheaterCalendarProjection({
+        canManage: false,
+        involvedEventSlugs: new Set(),
+        occupancy: [offsite],
+      }),
+    ).toEqual([])
+    expect(
+      createTheaterCalendarProjection({
+        canManage: false,
+        involvedEventSlugs: new Set(['my-event']),
+        occupancy: [offsite],
+      })[0],
+    ).toMatchObject({ source: 'offsite', label: 'My Event' })
+  })
+
+  it('limits staff-only disclosure to called confirmed Occurrences', () => {
+    const entries = createTheaterCalendarProjection({
+      canManage: false,
+      involvedEventSlugs: new Set(),
+      involvedOccurrenceIds: new Set(['called']),
+      occupancy: [
+        { ...occupancy[2], occurrenceId: 'called' },
+        { ...occupancy[0], occurrenceId: 'called' },
+        {
+          ...occupancy[2],
+          id: 'uncalled',
+          occurrenceId: 'uncalled',
+          source: 'offsite',
+        },
+      ],
+    })
+    expect(entries.find(({ id }) => id === 'commitment')).toMatchObject({
+      detail: 'relationship',
+      occurrenceId: 'called',
+    })
+    expect(entries.find(({ id }) => id === 'hold')).toMatchObject({
+      detail: 'opaque',
+      occurrenceId: null,
+    })
+    expect(entries.find(({ id }) => id === 'uncalled')).toBeUndefined()
   })
 
   it('shows operational Event and Schedule Block details to Operators', () => {

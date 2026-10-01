@@ -45,6 +45,13 @@ The Pending Cast invitee can decide an invitation without seeing planning or
 Calls. An additional long-title Event has no dates, for unscheduled portfolio
 review. These STA-67 scenarios use the same persisted Auth and database workflow.
 
+Calendar review (STA-68) additionally seeds a Primary Venue Performance on the
+10th, an active Counteroffer hold on the 12th and a private Schedule Block on the
+14th of the seed month. The Owner and Producer can inspect authorized Event
+entries; unrelated Members see opaque venue occupancy. Existing offsite
+Confirmed Slots do not consume the Primary Venue. These persisted scenarios
+remain confined to the owned demo Theater and use the existing schema.
+
 ## Local Setup
 
 Start and rebuild local Supabase:

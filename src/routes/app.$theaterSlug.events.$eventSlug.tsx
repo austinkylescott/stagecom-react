@@ -1,5 +1,7 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
+import { createFileRoute, notFound, useLocation } from '@tanstack/react-router'
 
+import { calendarSearchSchema } from '@/features/theater-calendar/navigation'
+import { CalendarReturnLink } from '@/features/theater-calendar/return-link'
 import { ManagedEventWorkspace } from '@/features/events/components'
 import {
   getEventPublicContentReadinessFn,
@@ -7,6 +9,7 @@ import {
 } from '@/features/events/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/events/$eventSlug')({
+  validateSearch: (search) => calendarSearchSchema.parse(search),
   staleTime: 0,
   gcTime: 0,
   loader: async ({ params }) => {
@@ -47,18 +50,28 @@ export const Route = createFileRoute('/app/$theaterSlug/events/$eventSlug')({
 function EventWorkspacePage() {
   const data = Route.useLoaderData()
 
+  const context = Route.useSearch()
+  const hash = useLocation({ select: (location) => location.hash })
   return (
-    <ManagedEventWorkspace
-      activeMembers={data.activeMembers}
-      actorUserId={data.actorUserId}
-      allowedActions={data.allowedActions}
-      event={data.event}
-      history={data.history}
-      overview={data.overview}
-      proposalPreparation={data.proposalPreparation}
-      publicContent={data.publicContent}
-      theater={data.theater}
-      view={data.view}
-    />
+    <>
+      <CalendarReturnLink theaterSlug={data.theater.slug} context={context} />
+      <ManagedEventWorkspace
+        selectedOccurrenceId={
+          hash.startsWith('occurrence-')
+            ? hash.slice('occurrence-'.length)
+            : undefined
+        }
+        activeMembers={data.activeMembers}
+        actorUserId={data.actorUserId}
+        allowedActions={data.allowedActions}
+        event={data.event}
+        history={data.history}
+        overview={data.overview}
+        proposalPreparation={data.proposalPreparation}
+        publicContent={data.publicContent}
+        theater={data.theater}
+        view={data.view}
+      />
+    </>
   )
 }
