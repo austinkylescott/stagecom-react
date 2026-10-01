@@ -1569,7 +1569,8 @@ export function ManagedEventWorkspace({
                     {assignment.status}
                   </p>
                   {allowedActions.respondToStaffInvitation &&
-                  assignment.user_id === actorUserId ? (
+                  assignment.user_id === actorUserId &&
+                  assignment.status === 'pending' ? (
                     <div className="mt-3 flex gap-3">
                       {(['accepted', 'declined'] as const).map((response) => (
                         <Button

@@ -64,5 +64,23 @@ portfolio, and seeded-persona browser checks passed. The entire unrelated
 browser suite was not run; no database migration or transaction changed.
 Remote dev migration inventory was inspected read-only; test writes and demo
 seed runs used only the already-running local Supabase stack. Two demo seed
-runs succeeded. The browser suite logs expected authorization boundaries;
-Playwright screenshot caret injection can produce a development hydration warning.
+runs succeeded. The browser suite logs expected denied-access errors and a transient failed
+fetch when a test context closes. Early screenshot caret injection produced a
+development hydration warning; final screenshots retain the initial caret.
+
+## Standards review
+
+Against `98d12e8`, the independent Standards review found no documented-standard
+violations. It flagged one optional duplicated hydration-readiness check in the
+new browser journey. Both STA-67 browser files now use `e2e/support/hydration.ts`.
+
+## Spec review
+
+The independent Spec review found one P2: mixed accepted/pending staff assignments
+offered invitation decisions on accepted rows. Row controls now require pending
+status. A database-backed browser regression first reproduced two Accept buttons
+instead of one, then passed with the row guard. No other actionable missing
+requirements or scope creep were reported.
+
+Review totals: Standards 0 hard breaches and 1 addressed maintenance suggestion;
+Spec 1 addressed P2. No outstanding findings on either axis.

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { loadEnv } from 'vite'
+import { waitForReactHandler } from './support/hydration'
 
 const env = { ...loadEnv('development', process.cwd(), ''), ...process.env }
 
@@ -27,17 +28,7 @@ test('seeded personas explore the named Theater and recognizable Event destinati
       const chooser = page.getByRole('button', {
         name: new RegExp(`^${persona}`),
       })
-      await expect
-        .poll(() =>
-          chooser.evaluate((element) =>
-            Object.keys(element).some(
-              (key) =>
-                key.startsWith('__reactProps$') &&
-                typeof Reflect.get(element, key)?.onClick === 'function',
-            ),
-          ),
-        )
-        .toBe(true)
+      await waitForReactHandler(chooser, 'onClick')
       await chooser.click()
       await expect(page).toHaveURL(/\/app\//)
       await page.goto('/app/compass-rose')

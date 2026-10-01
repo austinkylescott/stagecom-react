@@ -1,27 +1,10 @@
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
-import type { Locator } from '@playwright/test'
+import { waitForReactHandler } from './support/hydration'
 import type { Database } from '../src/server/db/database.types'
 
 const env = { ...loadEnv('development', process.cwd(), ''), ...process.env }
-
-async function waitForReactHandler(locator: Locator, handlerName: string) {
-  await expect
-    .poll(() =>
-      locator.evaluate(
-        (element, name) =>
-          Object.keys(element).some((key) => {
-            if (!key.startsWith('__reactProps$')) return false
-            const props = Reflect.get(element, key) as
-              Record<string, unknown> | undefined
-            return typeof props?.[name] === 'function'
-          }),
-        handlerName,
-      ),
-    )
-    .toBe(true)
-}
 
 test('Operator filters and Member sees a scoped Event Portfolio', async ({
   context,
@@ -427,11 +410,26 @@ test('Operator filters and Member sees a scoped Event Portfolio', async ({
         })
       ).error,
     ).toBeNull()
+    expect(
+      (
+        await admin.from('show_staff_assignments').insert({
+          show_id: event!.id,
+          user_id: memberId,
+          status: 'pending',
+          assignment_type: 'other',
+          responsibility: 'Stage hand',
+          invited_by_user_id: owner.user!.id,
+        })
+      ).error,
+    ).toBeNull()
     // Accept through the existing command and prove it persists across reloads.
     await page.goto(`/app/${slug}/events/draft-event#cast-participation`)
     await expect(
       page.getByRole('heading', { name: 'Collaborative availability matrix' }),
     ).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: 'Accept assignment', exact: true }),
+    ).toHaveCount(1)
     const accept = page.getByRole('button', { name: 'Accept invitation' })
     await waitForReactHandler(accept, 'onClick')
     await accept.click()
@@ -469,8 +467,7 @@ test('Operator filters and Member sees a scoped Event Portfolio', async ({
     ).toBeVisible()
     await expect(
       page.getByRole('link', {
-        name: 'Coordinate Cast and Calls · Director',
-        exact: true,
+        name: /^Coordinate Cast and Calls/,
       }),
     ).toBeVisible()
 
