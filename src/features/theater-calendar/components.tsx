@@ -1,48 +1,94 @@
+import { useId, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
-
+import { Input } from '@/components/ui/input'
+import {
+  calendarDateKey,
+  calendarDays,
+  shiftCalendarPeriod,
+} from './navigation'
+import type { CalendarContext } from './navigation'
 import type { TheaterCalendarEntry } from './read-model'
-
-type CalendarView = 'week' | 'list' | 'month'
 
 export function TheaterCalendar({
   entries,
   theater,
+  context,
+  onContextChange,
+  onOpenEvent,
 }: {
   entries: TheaterCalendarEntry[]
-  theater: { name: string; primaryVenueName: string; slug: string }
+  theater: {
+    name: string
+    primaryVenueName: string
+    slug: string
+    timezone?: string
+  }
+  context?: CalendarContext
+  onContextChange?: (context: CalendarContext) => void
+  onOpenEvent?: (entry: TheaterCalendarEntry, context: CalendarContext) => void
 }) {
-  const [view, setView] = useState<CalendarView>('week')
-  const [anchor, setAnchor] = useState(() => new Date())
-  const groupedEntries = useMemo(() => groupByDay(entries), [entries])
+  const timezone = theater.timezone ?? 'UTC'
+  const [localContext, setLocalContext] = useState<CalendarContext>({})
+  const current = context ?? localContext
+  const view = current.calendarView ?? 'daybook'
+  const period =
+    current.calendarPeriod ??
+    calendarDateKey(new Date().toISOString(), timezone)
+  const change = onContextChange ?? setLocalContext
+  const days = calendarDays(period, view)
+  const entriesByDay = new Map<string, TheaterCalendarEntry[]>(
+    days.map((day) => [day, []]),
+  )
+  const firstDayByEntry = new Map<string, string>()
+  for (const entry of entries) {
+    const start = calendarDateKey(entry.startsAt, timezone)
+    const end = calendarDateKey(
+      new Date(Date.parse(entry.endsAt) - 1).toISOString(),
+      timezone,
+    )
+    for (const day of days) {
+      if (day < start || day > end) continue
+      entriesByDay.get(day)?.push(entry)
+      if (!firstDayByEntry.has(entry.id)) firstDayByEntry.set(entry.id, day)
+    }
+  }
+  const periodLabel = new Intl.DateTimeFormat(
+    'en-US',
+    view === 'week'
+      ? { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
+      : { month: 'long', year: 'numeric', timeZone: 'UTC' },
+  ).format(new Date(`${days[0]}T12:00:00Z`))
+  const update = (next: CalendarContext) =>
+    change({ ...current, calendarView: view, calendarPeriod: period, ...next })
+  const entryContext = { calendarView: view, calendarPeriod: period }
 
   return (
-    <section className="page-wrap pb-12">
-      <Card className=" px-4 py-6 sm:px-6 gap-0">
+    <section className="page-wrap min-w-0 pb-12">
+      <Card className="gap-0 px-4 py-6 sm:px-6">
         <p className="text-sm font-medium">
-          {theater.name} · {theater.primaryVenueName}
+          {theater.name} · {theater.primaryVenueName} · {timezone}
         </p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Theater Calendar</h1>
             <p className="mt-2 text-muted-foreground">
-              Committed occupancy, active exclusive holds, and Schedule Blocks
-              for the Primary Venue.
+              Confirmed Slots, active holds and Schedule Blocks. Offsite
+              Occurrences do not reserve the Primary Venue.
             </p>
           </div>
           <div
             aria-label="Theater Calendar view"
-            className="inline-flex rounded-md border p-1"
+            className="inline-flex flex-wrap rounded-md border p-1"
             role="group"
           >
-            {(['week', 'list', 'month'] as const).map((option) => (
+            {(['daybook', 'month', 'week'] as const).map((option) => (
               <Button
+                variant="ghost"
                 aria-pressed={view === option}
-                className={`min-h-10 rounded px-3 text-sm font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35 ${view === option ? 'bg-accent text-foreground' : ''}`}
                 key={option}
-                onClick={() => setView(option)}
+                onClick={() => update({ calendarView: option })}
                 type="button"
               >
                 {option[0].toUpperCase() + option.slice(1)}
@@ -50,208 +96,290 @@ export function TheaterCalendar({
             ))}
           </div>
         </div>
-        {view !== 'list' ? (
-          <div className="mt-6 flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              aria-label="Previous Calendar period"
-
-              onClick={() => setAnchor(shiftPeriod(anchor, view, -1))}
-              type="button"
-            >
-              Previous
-            </Button>
-            <p aria-live="polite" className="font-medium">
-              {formatPeriod(anchor, view)}
-            </p>
-            <Button
-              variant="outline"
-              aria-label="Next Calendar period"
-
-              onClick={() => setAnchor(shiftPeriod(anchor, view, 1))}
-              type="button"
-            >
-              Next
-            </Button>
-          </div>
-        ) : null}
-        {entries.length === 0 ? (
-          <p className="mt-6 rounded border border-dashed p-5">
-            No Primary Venue occupancy is scheduled.
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <Button
+            variant="outline"
+            aria-label="Previous Calendar period"
+            onClick={() =>
+              update({
+                calendarPeriod: shiftCalendarPeriod(period, view, -1),
+                calendarEntry: undefined,
+              })
+            }
+          >
+            Previous
+          </Button>
+          <p aria-live="polite" className="font-medium">
+            {periodLabel}
           </p>
-        ) : view === 'list' ? (
-          <CalendarList entries={entries} theaterSlug={theater.slug} />
-        ) : (
-          <CalendarGrid
-            anchor={anchor}
-            groupedEntries={groupedEntries}
-            month={view === 'month'}
-            theaterSlug={theater.slug}
-          />
-        )}
+          <Button
+            variant="outline"
+            aria-label="Next Calendar period"
+            onClick={() =>
+              update({
+                calendarPeriod: shiftCalendarPeriod(period, view, 1),
+                calendarEntry: undefined,
+              })
+            }
+          >
+            Next
+          </Button>
+          <label className="flex items-center gap-2 text-sm">
+            Month and year
+            <Input
+              className="w-auto"
+              type="month"
+              min="1000-01"
+              max="9999-12"
+              aria-label="Calendar month and year"
+              value={period.slice(0, 7)}
+              onChange={(event) => {
+                if (/^\d{4}-\d{2}$/.test(event.target.value))
+                  update({
+                    calendarPeriod: `${event.target.value}-01`,
+                    calendarEntry: undefined,
+                  })
+              }}
+            />
+          </label>
+        </div>
+        {firstDayByEntry.size === 0 ? (
+          <p className="mt-6 rounded border border-dashed p-5">
+            No Calendar entries in this period.
+          </p>
+        ) : null}
+        <div
+          className={`mt-6 grid min-w-0 gap-3 ${view === 'month' ? 'lg:grid-cols-7' : view === 'week' ? 'lg:grid-cols-7' : ''}`}
+        >
+          {view === 'month' ? (
+            <>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <p className="hidden text-sm font-medium lg:block" key={day}>
+                  {day}
+                </p>
+              ))}
+              {Array.from(
+                { length: new Date(`${days[0]}T12:00:00Z`).getUTCDay() },
+                (_, index) => (
+                  <div
+                    className="hidden lg:block"
+                    aria-hidden="true"
+                    key={`offset-${index}`}
+                  />
+                ),
+              )}
+            </>
+          ) : null}
+          {(view === 'daybook'
+            ? days.filter((day) => entriesByDay.get(day)?.length)
+            : days
+          ).map((day) => (
+            <section
+              className={`min-w-0 rounded border ${view === 'daybook' ? 'p-3' : 'p-2'}`}
+              key={day}
+              aria-label={formatDay(day)}
+            >
+              <h2 className="text-sm font-semibold">{formatDay(day)}</h2>
+              <div className="mt-2 grid gap-2">
+                {(entriesByDay.get(day) ?? []).map((entry) => (
+                  <CalendarEntry
+                    compact={view !== 'daybook'}
+                    entry={entry}
+                    key={entry.id}
+                    theaterSlug={theater.slug}
+                    timezone={timezone}
+                    context={entryContext}
+                    selected={current.calendarEntry === entry.id}
+                    anchor={day === firstDayByEntry.get(entry.id)}
+                    onOpenEvent={onOpenEvent}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </Card>
     </section>
   )
 }
 
-function CalendarList({
-  entries,
-  theaterSlug,
-}: {
-  entries: TheaterCalendarEntry[]
-  theaterSlug: string
-}) {
-  return (
-    <ol className="mt-6 grid gap-3">
-      {entries.map((entry) => (
-        <li key={entry.id}>
-          <CalendarEntry entry={entry} theaterSlug={theaterSlug} />
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function CalendarGrid({
-  anchor,
-  groupedEntries,
-  month,
-  theaterSlug,
-}: {
-  anchor: Date
-  groupedEntries: Map<string, TheaterCalendarEntry[]>
-  month: boolean
-  theaterSlug: string
-}) {
-  const days = month ? monthDays(anchor) : weekDays(anchor)
-  return (
-    <div
-      className={`mt-6 grid gap-3 ${month ? 'sm:grid-cols-7' : 'md:grid-cols-7'}`}
-    >
-      {days.map((day) => (
-        <section className="min-h-32 rounded border bg-white p-2" key={day}>
-          <h2 className="text-sm font-semibold">{formatDay(day)}</h2>
-          <div className="mt-2 grid gap-2">
-            {(groupedEntries.get(day) ?? []).map((entry) => (
-              <CalendarEntry
-                compact
-                entry={entry}
-                key={entry.id}
-                theaterSlug={theaterSlug}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  )
-}
-
 function CalendarEntry({
-  compact = false,
   entry,
+  compact,
   theaterSlug,
+  timezone,
+  context,
+  selected,
+  anchor,
+  onOpenEvent,
 }: {
-  compact?: boolean
   entry: TheaterCalendarEntry
+  compact: boolean
   theaterSlug: string
+  timezone: string
+  context: CalendarContext
+  selected: boolean
+  anchor: boolean
+  onOpenEvent?: (entry: TheaterCalendarEntry, context: CalendarContext) => void
 }) {
+  const detailsId = useId()
+  const [expanded, setExpanded] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const detailsVisible = expanded || hovered || focused
+  const search = { ...context, calendarEntry: entry.id }
+  const status =
+    entry.detail === 'opaque'
+      ? 'Primary Venue occupancy'
+      : entry.source === 'hold'
+        ? 'Active hold'
+        : entry.source === 'schedule_block'
+          ? 'Schedule Block'
+          : entry.source === 'offsite'
+            ? 'Confirmed Slot · Offsite'
+            : 'Confirmed Slot'
+  const name = `${entry.label}, ${formatTime(entry.startsAt, timezone)} to ${formatTime(entry.endsAt, timezone)}`
   const content = (
     <>
       <span className="font-semibold">{entry.label}</span>
-      <span className="block text-sm">
-        {formatTime(entry.startsAt)}–{formatTime(entry.endsAt)}
+      <span className={`block ${compact ? 'text-xs' : 'text-sm'}`}>
+        {formatTime(entry.startsAt, timezone)}–
+        {formatTime(entry.endsAt, timezone)}
       </span>
-      {entry.occurrenceType ? (
-        <span className="block text-xs capitalize text-muted-foreground">
-          {entry.occurrenceType}
-        </span>
-      ) : null}
-      {entry.detail === 'opaque' ? (
-        <span className="sr-only"> Details are unavailable to you.</span>
-      ) : null}
+      <span className="block text-xs">{status}</span>
     </>
   )
-  const className = `block rounded border-l-4 p-2 text-foreground ${entry.detail === 'opaque' ? 'border-l-muted-foreground bg-secondary' : 'border-l-border bg-accent hover:brightness-95'} ${compact ? 'text-xs' : ''}`
-  return entry.event ? (
-    <Link
-      aria-label={`${entry.label}, ${formatTime(entry.startsAt)} to ${formatTime(entry.endsAt)}`}
-      className={className}
-      params={{ eventSlug: entry.event.slug, theaterSlug }}
-      to="/app/$theaterSlug/events/$eventSlug"
+  return (
+    <article
+      className={`relative min-w-0 break-words rounded border p-2 ${compact ? 'text-xs' : ''} ${selected ? 'bg-accent ring-2 ring-ring' : ''}`}
+      id={anchor ? `calendar-entry-${entry.id}` : undefined}
+      aria-current={selected ? true : undefined}
+      onPointerEnter={(event) => {
+        if (event.pointerType === 'mouse') setHovered(true)
+      }}
+      onPointerLeave={() => setHovered(false)}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          setExpanded(false)
+          setHovered(false)
+          setFocused(false)
+        }
+      }}
+      onFocus={() => setFocused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setFocused(false)
+      }}
     >
-      {content}
-    </Link>
-  ) : (
-    <div
-      aria-label={`${entry.label}, ${formatTime(entry.startsAt)} to ${formatTime(entry.endsAt)}`}
-      className={className}
-    >
-      {content}
-    </div>
+      {entry.event ? (
+        <Link
+          className="block rounded underline outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={name}
+          to="/app/$theaterSlug/events/$eventSlug"
+          params={{ theaterSlug, eventSlug: entry.event.slug }}
+          search={search}
+          onClick={(event) => {
+            if (
+              onOpenEvent &&
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.shiftKey &&
+              !event.altKey &&
+              event.button === 0
+            ) {
+              event.preventDefault()
+              onOpenEvent(entry, search)
+            }
+          }}
+          hash={
+            entry.occurrenceId ? `occurrence-${entry.occurrenceId}` : undefined
+          }
+        >
+          {content}
+        </Link>
+      ) : entry.scheduleBlockId && entry.detail === 'operational' ? (
+        <Link
+          className="block underline"
+          to="/app/$theaterSlug/calendar"
+          params={{ theaterSlug }}
+          search={search}
+          hash={`schedule-block-${entry.scheduleBlockId}`}
+        >
+          {content}
+        </Link>
+      ) : (
+        <div>{content}</div>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mt-1 h-auto min-h-9 whitespace-normal px-1 text-xs"
+        aria-expanded={detailsVisible}
+        aria-controls={detailsId}
+        aria-label={`Details for ${entry.label}`}
+        onClick={() => {
+          setExpanded(!expanded)
+          if (expanded) {
+            setFocused(false)
+            setHovered(false)
+          }
+        }}
+      >
+        Details
+      </Button>
+      {detailsVisible ? (
+        <div
+          id={detailsId}
+          className="absolute inset-x-0 top-full z-20 rounded-md border bg-popover p-3 text-xs text-popover-foreground shadow-md"
+        >
+          <p className="font-semibold">{entry.label}</p>
+          <p>
+            {formatDateTime(entry.startsAt, timezone)}–
+            {formatDateTime(entry.endsAt, timezone)} · {timezone}
+          </p>
+          {entry.detail === 'opaque' ? (
+            <p>Details are unavailable to you.</p>
+          ) : (
+            <>
+              {entry.occurrenceType ? (
+                <p className="capitalize">{entry.occurrenceType}</p>
+              ) : null}
+              {entry.locationName ? <p>{entry.locationName}</p> : null}
+              {entry.source === 'offsite' ? (
+                <p>Does not occupy the Primary Venue.</p>
+              ) : (
+                <p>
+                  Reserves the Primary Venue, including setup and turnover
+                  buffers.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      ) : null}
+    </article>
   )
 }
 
-function groupByDay(entries: TheaterCalendarEntry[]) {
-  const entriesByDay = new Map<string, TheaterCalendarEntry[]>()
-  for (const entry of entries) {
-    const day = dateKey(entry.startsAt)
-    entriesByDay.set(day, [...(entriesByDay.get(day) ?? []), entry])
-  }
-  return entriesByDay
-}
-function weekDays(date: Date) {
-  const day = new Date(date)
-  day.setHours(0, 0, 0, 0)
-  day.setDate(day.getDate() - day.getDay())
-  return Array.from({ length: 7 }, (_, offset) =>
-    dateKey(
-      new Date(
-        day.getFullYear(),
-        day.getMonth(),
-        day.getDate() + offset,
-      ).toISOString(),
-    ),
-  )
-}
-function monthDays(date: Date) {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1)
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-  return Array.from({ length: end.getDate() }, (_, offset) =>
-    dateKey(
-      new Date(start.getFullYear(), start.getMonth(), offset + 1).toISOString(),
-    ),
-  )
-}
-function dateKey(value: string) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC' }).format(
-    new Date(value),
-  )
-}
-function formatDay(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
+function formatDay(day: string) {
+  return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     timeZone: 'UTC',
-  }).format(new Date(`${value}T12:00:00Z`))
+  }).format(new Date(`${day}T12:00:00Z`))
 }
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
+function formatTime(value: string, timezone: string) {
+  return new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: timezone,
   }).format(new Date(value))
 }
-function shiftPeriod(value: Date, view: CalendarView, amount: number) {
-  const next = new Date(value)
-  next.setDate(next.getDate() + (view === 'week' ? amount * 7 : amount * 30))
-  return next
-}
-function formatPeriod(value: Date, view: CalendarView) {
-  return new Intl.DateTimeFormat(
-    undefined,
-    view === 'month'
-      ? { month: 'long', year: 'numeric' }
-      : { month: 'short', day: 'numeric', year: 'numeric' },
-  ).format(value)
+function formatDateTime(value: string, timezone: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: timezone,
+  }).format(new Date(value))
 }

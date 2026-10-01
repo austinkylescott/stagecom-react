@@ -34,6 +34,7 @@ Every wiki page declares one of these implementation states:
 - Stack and layout: `wiki/architecture/stack-and-layout.md`
 - Design system: `wiki/design/design-system.md`
 - Mobile-first visual redesign playground brief: `docs/design/visual-playground-brief.md`
+- Theater Calendar and Occurrence return context (STA-68): `docs/design/theater-calendar-review.md`
 - Named Theater portal and Event navigation (STA-67): `docs/design/theater-event-navigation-review.md`
 - Stock shadcn Callsheet workspace foundation (STA-66): `docs/design/callsheet-workspace-review.md`
 - Selected Member Home prototype direction (STA-64): `wiki/design/member-home-direction.md`

@@ -15,17 +15,19 @@ type Occurrence = {
 
 export function EventOccurrences({
   occurrences,
+  selectedOccurrenceId,
 }: {
   occurrences: Occurrence[]
+  selectedOccurrenceId?: string
 }) {
   const entries = occurrences
     .map((occurrence) => {
       const confirmed = occurrence.show_candidate_slots.find(
         (slot) => slot.id === occurrence.confirmed_candidate_slot_id,
       )
-      const proposed = [...occurrence.show_candidate_slots].sort((a, b) =>
-        a.starts_at.localeCompare(b.starts_at),
-      )[0]
+      const proposed = [...occurrence.show_candidate_slots]
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+        .at(0)
       return {
         occurrence,
         slot: confirmed ?? proposed,
@@ -57,7 +59,10 @@ export function EventOccurrences({
             <li
               key={occurrence.id}
               id={`occurrence-${occurrence.id}`}
-              className="scroll-mt-6 rounded-md border p-4 target:bg-accent"
+              aria-current={
+                selectedOccurrenceId === occurrence.id ? true : undefined
+              }
+              className={`scroll-mt-6 rounded-md border p-4 target:bg-accent ${selectedOccurrenceId === occurrence.id ? 'bg-accent ring-2 ring-ring' : ''}`}
             >
               <h3 className="font-medium capitalize">
                 <a className="underline" href={`#occurrence-${occurrence.id}`}>

@@ -1,14 +1,19 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { TheaterCalendar } from './components'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe('TheaterCalendar', () => {
-  it('defaults to Week and exposes keyboard-reachable view alternatives without making opaque occupancy a link', () => {
+  it('defaults to Daybook and exposes keyboard-reachable view alternatives without making opaque occupancy a link', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
     render(
       <TheaterCalendar
         entries={[
@@ -31,11 +36,23 @@ describe('TheaterCalendar', () => {
     )
 
     expect(
-      screen.getByRole('button', { name: 'Week' }).getAttribute('aria-pressed'),
+      screen
+        .getByRole('button', { name: 'Daybook' })
+        .getAttribute('aria-pressed'),
     ).toBe('true')
     expect(
       screen.queryByRole('link', { name: /Primary Venue unavailable/ }),
     ).toBeNull()
+    fireEvent.focus(
+      screen.getByRole('button', {
+        name: 'Details for Primary Venue unavailable',
+      }),
+    )
+    expect(screen.getByText('Details are unavailable to you.')).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Next Calendar period' }),
+    )
+    expect(screen.getByText('No Calendar entries in this period.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Month' }))
     expect(
       screen

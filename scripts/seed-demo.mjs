@@ -127,6 +127,7 @@ const unscheduled = await supabase.rpc('create_managed_event', {
     'An Evening of Stories, Songs, and Unexpected Encounters from Across Our Community',
 })
 throwIfError('create unscheduled long-content Event', unscheduled.error)
+await createCalendarReviewData(theater.id, personas)
 await createDemoJoinLinks(theater.id, personas.owner.id)
 const secondTheater = await createDemoTheater(personas, SECOND_DEMO_THEATER)
 await createDemoEvent(secondTheater.id, personas, [personas.multi])
@@ -538,4 +539,155 @@ function throwIfError(action, error) {
   if (!error) return
 
   throw new Error(`Could not ${action}: ${error.message}`)
+}
+
+// Persisted Calendar review scenarios, confined to the owned demo Theater.
+async function createCalendarReviewData(theaterId, personas) {
+  const { data: theater, error: theaterError } = await supabase
+    .from('theaters')
+    .select('primary_venue_id')
+    .eq('id', theaterId)
+    .single()
+  throwIfError('load demo venue', theaterError)
+  const month = new Date()
+  month.setUTCDate(1)
+  month.setUTCHours(18, 0, 0, 0)
+  const time = (day) => {
+    const date = new Date(month)
+    date.setUTCDate(day)
+    return date.toISOString()
+  }
+  for (const [slug, title, day, kind] of [
+    ['calendar-performance', 'Calendar Performance', 10, 'approved_commitment'],
+    ['calendar-hold', 'Calendar Hold', 12, 'counteroffer_hold'],
+  ]) {
+    const created = await supabase.rpc('create_managed_event', {
+      p_actor_user_id: personas.owner.id,
+      p_producer_user_ids: [personas.producer.id],
+      p_slug: slug,
+      p_title: title,
+      p_theater_id: theaterId,
+    })
+    throwIfError('create Calendar review Event', created.error)
+    const showId = created.data[0].id
+    const occurrenceResult = await supabase
+      .from('show_occurrences')
+      .insert({
+        show_id: showId,
+        occurrence_type: 'performance',
+        starts_at: time(day),
+        ends_at: new Date(Date.parse(time(day)) + 90 * 60_000).toISOString(),
+      })
+      .select('id')
+      .single()
+    throwIfError('create Calendar review Occurrence', occurrenceResult.error)
+    const occurrenceId = occurrenceResult.data.id
+    const slotResult = await supabase
+      .from('show_candidate_slots')
+      .insert({
+        occurrence_id: occurrenceId,
+        starts_at: time(day),
+        local_starts_at: time(day).slice(0, 19),
+        duration_minutes: 90,
+        location_kind: 'primary_venue',
+        resource_id: theater.primary_venue_id,
+        location_name: 'Compass Rose Mainstage',
+        timezone_name: 'UTC',
+        timezone_source: 'manual',
+        utc_offset_minutes: 0,
+      })
+      .select('id')
+      .single()
+    throwIfError('create Calendar review Slot', slotResult.error)
+    const slotId = slotResult.data.id
+    const revisionResult = await supabase
+      .from('show_proposal_revisions')
+      .insert({
+        show_id: showId,
+        revision_number: 1,
+        submitted_by: personas.producer.id,
+        command_id: crypto.randomUUID(),
+        decision_state:
+          kind === 'approved_commitment' ? 'approved' : 'counteroffered',
+        snapshot: {
+          title,
+          occurrences: [
+            {
+              id: occurrenceId,
+              type: 'performance',
+              confirmedSlot: {
+                id: slotId,
+                startsAt: time(day),
+                durationMinutes: 90,
+                locationName: 'Compass Rose Mainstage',
+              },
+            },
+          ],
+        },
+      })
+      .select('id')
+      .single()
+    throwIfError('create Calendar review Revision', revisionResult.error)
+    const revisionId = revisionResult.data.id
+    let counterofferId = null
+    if (kind === 'counteroffer_hold') {
+      const offer = await supabase
+        .from('show_counteroffers')
+        .insert({
+          proposal_revision_id: revisionId,
+          occurrence_id: occurrenceId,
+          candidate_slot_id: slotId,
+          actor_user_id: personas.owner.id,
+          command_id: crypto.randomUUID(),
+          response_deadline: new Date(
+            Date.now() + 48 * 60 * 60_000,
+          ).toISOString(),
+        })
+        .select('id')
+        .single()
+      throwIfError('create Calendar review hold', offer.error)
+      counterofferId = offer.data.id
+    } else {
+      const confirmed = await supabase
+        .from('show_occurrences')
+        .update({ confirmed_candidate_slot_id: slotId })
+        .eq('id', occurrenceId)
+      throwIfError('confirm Calendar review Slot', confirmed.error)
+    }
+    const state = await supabase
+      .from('shows')
+      .update({
+        lifecycle_status:
+          kind === 'approved_commitment' ? 'approved' : 'in_review',
+        approved_proposal_revision_id:
+          kind === 'approved_commitment' ? revisionId : null,
+      })
+      .eq('id', showId)
+    throwIfError('set Calendar review lifecycle', state.error)
+    const reservation = await supabase
+      .from('show_schedule_reservations')
+      .insert({
+        theater_id: theaterId,
+        resource_id: theater.primary_venue_id,
+        show_id: showId,
+        occurrence_id: occurrenceId,
+        candidate_slot_id: slotId,
+        kind,
+        proposal_revision_id:
+          kind === 'approved_commitment' ? revisionId : null,
+        counteroffer_id: counterofferId,
+        reserved_during: `[${new Date(Date.parse(time(day)) - 60 * 60_000).toISOString()},${new Date(Date.parse(time(day)) + 120 * 60_000).toISOString()})`,
+      })
+    throwIfError('create Calendar review reservation', reservation.error)
+  }
+  const block = await supabase.rpc('create_schedule_block', {
+    p_actor_user_id: personas.owner.id,
+    p_command_id: crypto.randomUUID(),
+    p_theater_id: theaterId,
+    p_starts_at: time(14),
+    p_ends_at: new Date(Date.parse(time(14)) + 60 * 60_000).toISOString(),
+    p_private_label: 'Calendar maintenance',
+    p_private_notes: 'Private review notes.',
+  })
+  throwIfError('create Calendar review Schedule Block', block.error)
 }

@@ -192,7 +192,11 @@ export function ScheduleBlocksPage({
         <div className="mt-6 grid gap-3">
           {blocks.length ? (
             blocks.map((block) => (
-              <article className="rounded border p-4" key={block.id}>
+              <article
+                className="min-w-0 scroll-mt-6 break-words rounded border p-4 target:bg-accent"
+                id={`schedule-block-${block.id}`}
+                key={block.id}
+              >
                 <div className="flex flex-wrap justify-between gap-3">
                   <div>
                     <h2 className="font-semibold">{block.privateLabel}</h2>
@@ -223,7 +227,7 @@ export function ScheduleBlocksPage({
                     ) : null}
                   </div>
                   {block.state === 'active' ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
 

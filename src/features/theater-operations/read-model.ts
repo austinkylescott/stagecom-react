@@ -35,7 +35,9 @@ export function createTheaterOperationsReadModel(
   const calendar = input.calendar
     .filter(
       (entry) =>
-        Date.parse(entry.endsAt) > now && Date.parse(entry.startsAt) < horizon,
+        entry.source !== 'offsite' &&
+        Date.parse(entry.endsAt) > now &&
+        Date.parse(entry.startsAt) < horizon,
     )
     .sort(
       (a, b) =>

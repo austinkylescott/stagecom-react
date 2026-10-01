@@ -1,4 +1,5 @@
-export type CalendarOccupancySource = 'commitment' | 'hold' | 'schedule_block'
+export type CalendarOccupancySource =
+  'commitment' | 'hold' | 'schedule_block' | 'offsite'
 export type CalendarDetail = 'opaque' | 'relationship' | 'operational'
 
 export type CalendarOccupancyInput = {
@@ -6,6 +7,9 @@ export type CalendarOccupancyInput = {
   event?: { slug: string; title: string } | null
   id: string
   occurrenceType?: 'performance' | 'rehearsal' | null
+  occurrenceId?: string | null
+  scheduleBlockId?: string | null
+  locationName?: string | null
   privateLabel?: string | null
   source: CalendarOccupancySource
   startsAt: string
@@ -19,22 +23,39 @@ export type TheaterCalendarEntry = {
   label: string
   occurrenceType: 'performance' | 'rehearsal' | null
   startsAt: string
+  source?: CalendarOccupancySource | null
+  occurrenceId?: string | null
+  scheduleBlockId?: string | null
+  locationName?: string | null
 }
 
 export function createTheaterCalendarProjection({
   canManage,
   involvedEventSlugs,
+  involvedOccurrenceIds = new Set(),
   occupancy,
 }: {
   canManage: boolean
   involvedEventSlugs: ReadonlySet<string>
+  involvedOccurrenceIds?: ReadonlySet<string>
   occupancy: readonly CalendarOccupancyInput[]
 }): TheaterCalendarEntry[] {
+  const hasRelationship = (entry: CalendarOccupancyInput) =>
+    Boolean(entry.event && involvedEventSlugs.has(entry.event.slug)) ||
+    Boolean(
+      (entry.source === 'commitment' || entry.source === 'offsite') &&
+      entry.occurrenceId &&
+      involvedOccurrenceIds.has(entry.occurrenceId),
+    )
   return occupancy
+    .filter(
+      (entry) =>
+        entry.source !== 'offsite' || canManage || hasRelationship(entry),
+    )
     .map((entry) => {
       const detail: CalendarDetail = canManage
         ? 'operational'
-        : entry.event && involvedEventSlugs.has(entry.event.slug)
+        : hasRelationship(entry)
           ? 'relationship'
           : 'opaque'
       const label =
@@ -53,6 +74,11 @@ export function createTheaterCalendarProjection({
         occurrenceType:
           detail === 'opaque' ? null : (entry.occurrenceType ?? null),
         startsAt: entry.startsAt,
+        source: detail === 'opaque' ? null : entry.source,
+        occurrenceId: detail === 'opaque' ? null : (entry.occurrenceId ?? null),
+        scheduleBlockId:
+          detail === 'opaque' ? null : (entry.scheduleBlockId ?? null),
+        locationName: detail === 'opaque' ? null : (entry.locationName ?? null),
       }
     })
     .sort(
