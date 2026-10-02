@@ -17,7 +17,13 @@ export type TheaterWorkSnapshot = {
   }
   setupBufferMinutes: number
   turnoverBufferMinutes: number
-  reservations: Array<{ resourceId: string; startsAt: string; endsAt: string }>
+  reservations: Array<{
+    resourceId: string
+    startsAt: string
+    endsAt: string
+    revisionId?: string | null
+    planningTargetId?: string | null
+  }>
   activeMemberIds: string[]
   events: Array<{
     id: string
@@ -33,6 +39,7 @@ export type TheaterWorkSnapshot = {
       state: WorkState['proposal_decision_state']
       authorId: string
       hasDecision: boolean
+      hasApprovalBlockers?: boolean
       snapshot: unknown
     }>
     occurrences: Array<{ startsAt: string; publicPerformance: boolean }>
@@ -176,6 +183,7 @@ export function createWorkQueueReadModel(
         selfAuthored &&
         input.viewer.roles.includes('owner') &&
         input.theater.ownerSelfApprovalEnabled &&
+        !revision.hasApprovalBlockers &&
         canApproveSnapshot(revision.snapshot, input)
       if (
         !(operator || input.viewer.isReviewer) ||
@@ -241,6 +249,8 @@ export function orderWorkQueueItems(
 }
 
 const approvalSnapshotSchema = z.object({
+  baseApprovalId: z.string().nullable().optional(),
+  planningTargetIds: z.array(z.string()).optional(),
   occurrences: z.array(
     z.object({
       confirmedSlot: z.object({
@@ -256,7 +266,17 @@ const approvalSnapshotSchema = z.object({
 function canApproveSnapshot(snapshot: unknown, input: TheaterWorkSnapshot) {
   const parsed = approvalSnapshotSchema.safeParse(snapshot)
   if (!parsed.success) return false
-  const reservations = [...input.reservations]
+  const reservations = input.reservations.filter(
+    (reservation) =>
+      !(
+        parsed.data.baseApprovalId &&
+        reservation.revisionId === parsed.data.baseApprovalId
+      ) &&
+      !(
+        reservation.planningTargetId &&
+        parsed.data.planningTargetIds?.includes(reservation.planningTargetId)
+      ),
+  )
   for (const { confirmedSlot: slot } of parsed.data.occurrences) {
     if (slot.locationKind !== 'primary_venue') continue
     if (!slot.resourceId) return false

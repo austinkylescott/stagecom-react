@@ -6,6 +6,7 @@ export type CallsheetCommitmentKind =
   | 'admin_invitation'
   | 'ownership_transfer'
   | 'availability_response'
+  | 'selected_time_confirmation'
   | 'cast_invitation'
   | 'staff_invitation'
   | 'counteroffer'
@@ -89,6 +90,7 @@ function commitmentPriority(commitment: CallsheetCommitmentInput, now: Date) {
     proposal_edits: 3,
     public_content: 3,
     availability_response: 4,
+    selected_time_confirmation: 4,
     occurrence_call: 5,
   }[commitment.kind]
 }

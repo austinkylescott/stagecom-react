@@ -1,3 +1,5 @@
+import { useRouter } from '@tanstack/react-router'
+import { EventPlanning } from '@/features/event-planning/components'
 import { AvailabilityPolls } from '@/features/availability-polls/components'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
@@ -540,6 +542,11 @@ export function ManagedEventWorkspace({
   const [availabilityResponses, setAvailabilityResponses] = useState(
     event.show_availability_responses,
   )
+  const router = useRouter()
+  useEffect(
+    () => setLifecycleStatus(event.lifecycle_status),
+    [event.lifecycle_status],
+  )
   const [occurrenceCalls, setOccurrenceCalls] = useState(() =>
     event.show_occurrences.flatMap(
       (occurrence) => occurrence.show_occurrence_calls,
@@ -588,6 +595,10 @@ export function ManagedEventWorkspace({
   )
   const [proposalRevisions, setProposalRevisions] = useState(
     event.show_proposal_revisions,
+  )
+  useEffect(
+    () => setProposalRevisions(event.show_proposal_revisions),
+    [event.show_proposal_revisions],
   )
   const publicReadiness = publicContent
     ? partitionPublicReadinessBlockers(publicContent.blockers)
@@ -659,7 +670,12 @@ export function ManagedEventWorkspace({
       <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
         {event.title}
       </h1>
-      <a className="mt-3 inline-block text-sm underline" href={`/app/${theater.slug}/events`}>Back to Event portfolio</a>
+      <a
+        className="mt-3 inline-block text-sm underline"
+        href={`/app/${theater.slug}/events`}
+      >
+        Back to Event portfolio
+      </a>
       <EventWorkspaceNavigation
         activeSection={activeSection}
         onSectionSelect={setActiveSection}
@@ -673,10 +689,20 @@ export function ManagedEventWorkspace({
         />
       ) : null}
       {activeSection === 'overview' && view !== 'pending_invitee' ? (
-        <EventOccurrences occurrences={event.show_occurrences} selectedOccurrenceId={selectedOccurrenceId} />
+        <EventOccurrences
+          occurrences={event.show_occurrences}
+          selectedOccurrenceId={selectedOccurrenceId}
+        />
       ) : null}
       {activeSection === 'schedule-plan' && proposalPreparation ? (
-        <ProposalPreparation.PlanSection />
+        <>
+          <ProposalPreparation.PlanSection />
+          <EventPlanning
+            eventId={event.id}
+            occurrences={event.show_occurrences}
+            timezone={theater.timezone ?? 'UTC'}
+          />
+        </>
       ) : null}
       {activeSection === 'overview' && lifecycleStatus === 'cancelled' ? (
         <section className="mt-5 rounded-lg border border-border bg-muted px-6 py-5 text-foreground">
@@ -1312,12 +1338,19 @@ export function ManagedEventWorkspace({
       {activeSection === 'cast-team' ? (
         <div aria-labelledby="cast-team-heading" id="cast-team">
           {view !== 'pending_invitee' ? (
-            <AvailabilityPolls
-              eventId={event.id}
-              occurrences={event.show_occurrences}
-              cast={event.show_cast}
-              theaterTimezone={theater.timezone ?? 'UTC'}
-            />
+            <>
+              <EventPlanning
+                eventId={event.id}
+                occurrences={event.show_occurrences}
+                timezone={theater.timezone ?? 'UTC'}
+              />
+              <AvailabilityPolls
+                eventId={event.id}
+                occurrences={event.show_occurrences}
+                cast={event.show_cast}
+                theaterTimezone={theater.timezone ?? 'UTC'}
+              />
+            </>
           ) : null}
           <Card className="mt-5  px-6 py-6 gap-0">
             <h2 className="text-2xl font-semibold" id="cast-team-heading">
@@ -1347,7 +1380,8 @@ export function ManagedEventWorkspace({
               </p>
             </Card>
           ) : null}
-          {allowedActions.respondToInvitation || (view !== 'accepted_staff' &&
+          {allowedActions.respondToInvitation ||
+          (view !== 'accepted_staff' &&
             (view !== 'pending_invitee' ||
               allowedActions.respondToInvitation)) ||
           allowedActions.respondToAvailability ? (
@@ -1680,7 +1714,7 @@ export function ManagedEventWorkspace({
             <ProposalPreparation.ProposedCastSection />
           ) : null}
           {overview.invitation ? null : view === 'accepted_staff' &&
-          !allowedActions.respondToAvailability ? (
+            !allowedActions.respondToAvailability ? (
             <Card className="mt-5  px-6 py-6 gap-0" id="assigned-occurrences">
               <h2 className="text-2xl font-semibold">
                 Your assigned Occurrences and Calls
@@ -2011,6 +2045,15 @@ export function ManagedEventWorkspace({
                   Submitted {new Date(revision.submitted_at).toLocaleString()}.
                 </p>
                 <ProposalRevisionSnapshot snapshot={revision.snapshot} />
+                {asJsonRecord(revision.snapshot)?.planningTargetIds &&
+                revision.decision_state === 'pending' ? (
+                  <EventPlanning
+                    key={`${revision.id}-${revision.decision_version}`}
+                    eventId={event.id}
+                    occurrences={event.show_occurrences}
+                    timezone={theater.timezone ?? 'UTC'}
+                  />
+                ) : null}
                 <div className="mt-4 border-t border-border pt-4">
                   <h4 className="font-medium">Decision history</h4>
                   {revision.show_proposal_decisions ? (
@@ -2095,13 +2138,18 @@ export function ManagedEventWorkspace({
                         )
                         if (decision.action === 'approve') {
                           setLifecycleStatus('approved')
-                        } else if (decision.action === 'request_edits') {
+                        } else if (
+                          decision.action === 'request_edits' &&
+                          !asJsonRecord(revision.snapshot)?.baseApprovalId
+                        ) {
                           setLifecycleStatus('draft')
                         }
+                        void router.invalidate({ sync: true })
                       }}
                       revision={revision}
                     />
                     {allowedActions.issueCounteroffer &&
+                    !asJsonRecord(revision.snapshot)?.planningTargetIds &&
                     revision.submitted_by !== actorUserId ? (
                       <ProposalCounterofferForm
                         occurrences={event.show_occurrences}
@@ -2230,6 +2278,27 @@ function ProposalRevisionSnapshot({ snapshot }: { snapshot: Json }) {
                           'location not recorded'}
                       </span>
                     ) : null}
+                    {asJsonRecords(occurrence.calls).map((call, callIndex) => (
+                      <p key={callIndex}>
+                        {displaySnapshotValue(call.displayName ?? call.userId)}{' '}
+                        · {displaySnapshotValue(call.call)}
+                      </p>
+                    ))}
+                    {asJsonRecords(occurrence.confirmations).map(
+                      (confirmation, confirmationIndex) => (
+                        <p key={confirmationIndex}>
+                          Selected-time consent:{' '}
+                          {displaySnapshotValue(
+                            confirmation.displayName ?? confirmation.userId,
+                          )}{' '}
+                          ·{' '}
+                          {confirmation.confirmed === true
+                            ? 'Confirmed'
+                            : 'Not confirmed'}{' '}
+                          · {displaySnapshotValue(confirmation.respondedAt)}
+                        </p>
+                      ),
+                    )}
                   </li>
                 )
               })}
@@ -2813,6 +2882,7 @@ export function EventWorkspaceNavigation({
 
 function sectionForFragment(fragment: string): EventWorkspaceSection {
   if (
+    fragment === 'planning-confirmations' ||
     fragment === 'cast-participation' ||
     fragment === 'event-staff-assignment' ||
     fragment === 'availability' ||
@@ -2867,7 +2937,11 @@ function EventOverview({
         <div>
           <h2 className="text-2xl font-semibold">Overview</h2>
           {overview.primaryAction ? (
-            <Button asChild variant="outline" className="mt-4 h-auto max-w-full whitespace-normal text-left">
+            <Button
+              asChild
+              variant="outline"
+              className="mt-4 h-auto max-w-full whitespace-normal text-left"
+            >
               <a href={overview.primaryAction.target}>
                 {overview.primaryAction.label} ·{' '}
                 {overview.primaryAction.relationship}
@@ -3000,7 +3074,9 @@ function StateCard({ label, value }: { label: string; value: string }) {
       <p className="text-xs font-medium tracking-normal text-muted-foreground">
         {label}
       </p>
-      <p className="mt-2 text-xl font-semibold capitalize">{value.replaceAll('_', ' ')}</p>
+      <p className="mt-2 text-xl font-semibold capitalize">
+        {value.replaceAll('_', ' ')}
+      </p>
     </Card>
   )
 }

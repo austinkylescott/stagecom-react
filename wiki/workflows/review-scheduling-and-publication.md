@@ -68,6 +68,36 @@ a linked replacement Event containing the denied operational plan, but the new
 Event starts as a draft with new identifiers and does not carry Cast
 participation into the replacement.
 
+## Explicit Planning And Replacement
+
+A Producer may select a persisted planning target separately from the committed
+Slot. A Director assigns required, optional or not-called Calls to accepted active
+Cast and Event staff. Every required participant confirms the exact selected time;
+availability answers do not supply this consent. Target or Call changes invalidate
+that consent. Missing confirmations and viability/resource conflicts are named
+blockers for submission and approval.
+
+Submission freezes the target, Calls and confirmation evidence in an immutable
+Proposal Revision. A participant may subsequently refuse; Review rechecks current
+consent and eligibility without rewriting the submitted snapshot. Author separation
+and the configured, reasoned Owner override still apply.
+
+For an approved Event, one pending move preserves its current approval, committed
+Slot, Calls and booking until authorized replacement approval atomically swaps them.
+Denial, requested edits, withdrawal and failed approval preserve the old commitment.
+An Operator may grant an exclusive planning hold using the Theater response-window
+default. Expiry releases the hold and leaves Review pending; approval rechecks
+conflicts. A hold overlapping the Event's existing reservation cannot be granted;
+approval can still replace that commitment transactionally.
+
+Legacy Counteroffers remain available for legacy proposals. Explicit planning
+revisions require withdrawal and fresh confirmation when a different target is
+needed. Approval does not publish: an existing public Performance snapshot stays
+visible until an explicit Publication action. Personal confirmation actions appear
+on the Callsheet separately from Theater Operations decisions.
+
+See [the confirmed contract and capability map](../../docs/design/planning-confirmation-contract.md).
+
 ## How Does A Counteroffer Work?
 
 Reviewers may compare Candidate Slots and tentative schedule arrangements before making an offer. A formal Counteroffer:
