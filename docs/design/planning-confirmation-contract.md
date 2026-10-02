@@ -117,7 +117,8 @@ migrations/seeding, deployment, merge, release and branding keep separate gates.
   original commitment during a move, hold and atomic replacement, Calendar, Callsheet, and permission loss in an open participant view.
 - 176 unit/integration tests, typecheck and production build pass.
 - Physical-device software-keyboard behavior is not established by viewport
-  emulation and remains a review gate. No remote migration or seeding occurred.
+  emulation and remains a review gate. No remote migration or seeding occurred
+  during initial implementation; the approved integration is recorded below.
 
 All new planning mutations lock Theater, Event, current membership/participation,
 leadership and Reviewer capabilities before checking eligibility. The reservation
@@ -145,3 +146,18 @@ The new planning journey passes, including persistence, retries and permission l
 The broad suite is not green, and its existing failures are not hidden by focused
 results. Local migration history was repaired after direct isolated application;
 the final forward migration is separately proven from the scratch baseline.
+
+## Approved remote integration
+
+On 2026-10-01, the maintainer explicitly approved applying the migration to
+shared remote dev `stagecom` (`obufimjayisdhkjjxhfd`). Supabase applied the exact
+reviewed SQL and recorded version `20261002024320`, `planning_targets`. The tracked
+migration was renamed to that version to keep repository and hosted history aligned.
+
+Post-apply reads confirm all four planning tables have RLS enabled, the command
+and read RPCs exist, the legacy Review contract remains available internally,
+anonymous reads/writes are denied, private-schema access remains denied, and the
+committed Call synchronization trigger exists. Types regenerated directly from
+remote for `public` and `graphql_public` match the local schemas; the only generator
+addition is the hosted PostgREST version metadata (`14.5`). No remote seed, merge
+or release was performed. The physical-phone review gate remains open.
