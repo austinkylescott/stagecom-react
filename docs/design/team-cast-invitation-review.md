@@ -12,7 +12,8 @@ The capability, permission and concurrency mapping is in
 - All 28 database files / 591 assertions passed. The batch tests cover overlapping
   whole Teams/subsets, named reviews, changed membership, duplicate exclusion,
   authorization, last-recipient failure rollback and idempotent retry.
-- Generated public-schema types exactly match the local database.
+- Generated public schema matches the verified local database. Committed types
+  were subsequently regenerated from remote, retaining PostgREST 14.5 metadata.
 - Typecheck, scoped lint, production build, and all 180 active unit tests passed
   (two pre-existing skips).
 - All seven focused Cast invitation and Callsheet browser tests passed. Phone and
@@ -35,8 +36,13 @@ hosts. No fault injection is available in application code.
 
 ## Integration boundary
 
-Remote migration history matches fetched `origin/main` through STA-72. STA-73's
-migration and extended demo seed have not been applied remotely. Explicit
-operation approval is required before either action; branding, merge and release
-remain separate gates. The local demo offers **Team Cast Invitation Review**
-under Compass Rose, with accepted Parker, pending Casey and eligible Morgan.
+After explicit maintainer approval on 2026-10-02, STA-73's migration was verified
+on `stagecom`: the stored SQL matches the reviewed file. The apply attempt found
+the existing review table; verification confirmed migration version
+`20261002192510` was already recorded. The approved scoped demo reseed then
+completed. Authenticated Producer review verified the expected three unique
+recipients; ordinary Member and anonymous Cast Team reads were denied. Remote
+types were regenerated and the public schema matches the verified local chain.
+Future remote operations, branding, merge and release remain separate gates.
+Local and remote demos offer **Team Cast Invitation Review** under Compass Rose,
+with accepted Parker, pending Casey and eligible Morgan.

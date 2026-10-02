@@ -177,4 +177,7 @@ changed state returns a refreshed review and sends nothing. Invitations, activit
 and notification projection reuse the delivered backend in one transaction.
 See `docs/design/team-cast-invitation-contract.md`. The complete forward chain
 and generated types are verified against disposable local Supabase. This migration
-has not been applied remotely; remote integration requires explicit approval.
+is verified on `stagecom` after explicit maintainer approval on 2026-10-02.
+Stored remote SQL matches the reviewed forward migration; the scoped demo reseed
+and authenticated recipient review passed. Types were regenerated from remote.
+Future remote operations still require explicit approval.
