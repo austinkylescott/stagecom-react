@@ -22,6 +22,7 @@ Every wiki page declares one of these implementation states:
 ## Start Here
 
 - Product: `wiki/product/overview.md`
+- People and self-service Teams: `wiki/features/self-service-teams.md`
 - Membership and governance: `wiki/product/membership-and-governance.md`
 - Foundation slice: `wiki/features/first-slice.md`
 - First meaningful milestone: `wiki/features/event-publication-milestone.md`

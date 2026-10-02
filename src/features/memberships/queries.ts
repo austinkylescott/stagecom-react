@@ -22,6 +22,7 @@ export type TheaterMemberListItem = {
 }
 
 export type TheaterDirectoryMember = {
+  avatarUrl: string | null
   displayName: string
   roles: Array<'admin' | 'owner'>
   userId: string
@@ -224,7 +225,9 @@ export async function getPeopleWorkspace(input: { theaterId: string }) {
   const supabase = createSupabaseServiceRoleClient()
   const { data: activeMemberships, error: activeError } = await supabase
     .from('theater_memberships')
-    .select('user_id, roles, membership_version, profiles!inner(display_name)')
+    .select(
+      'user_id, roles, membership_version, profiles!inner(display_name, avatar_url)',
+    )
     .eq('theater_id', input.theaterId)
     .eq('status', 'active')
     .order('created_at')
@@ -237,6 +240,7 @@ export async function getPeopleWorkspace(input: { theaterId: string }) {
 
   const directory = activeMemberships.map(
     (membership): TheaterDirectoryMember => ({
+      avatarUrl: membership.profiles.avatar_url,
       displayName: membership.profiles.display_name,
       roles: membership.roles.filter(
         (role): role is 'admin' | 'owner' =>
@@ -291,7 +295,7 @@ export async function getPeopleWorkspace(input: { theaterId: string }) {
   )
 
   return ok({
-    adminAuthorityHistory: (adminAuthorityEvents ?? []).flatMap((event) => {
+    adminAuthorityHistory: adminAuthorityEvents.flatMap((event) => {
       const memberUserId = getPayloadUserId(event.payload)
       const actor = membershipsByUserId.get(event.actor_user_id ?? '')
       const member = membershipsByUserId.get(memberUserId ?? '')

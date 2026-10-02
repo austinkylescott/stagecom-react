@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5'
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -2274,6 +2269,97 @@ export type Database = {
           },
         ]
       }
+      team_commands: {
+        Row: {
+          actor_id: string
+          id: string
+          request: Json
+          result: Json
+          theater_id: string
+        }
+        Insert: {
+          actor_id: string
+          id: string
+          request: Json
+          result: Json
+          theater_id: string
+        }
+        Update: {
+          actor_id?: string
+          id?: string
+          request?: Json
+          result?: Json
+          theater_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'team_commands_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'team_commands_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      team_memberships: {
+        Row: {
+          invited_by: string
+          joined_at: string | null
+          state: string
+          team_id: string
+          theater_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          invited_by: string
+          joined_at?: string | null
+          state: string
+          team_id: string
+          theater_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          invited_by?: string
+          joined_at?: string | null
+          state?: string
+          team_id?: string
+          theater_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'team_memberships_invited_by_fkey'
+            columns: ['invited_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'team_memberships_team_id_theater_id_fkey'
+            columns: ['team_id', 'theater_id']
+            isOneToOne: false
+            referencedRelation: 'theater_teams'
+            referencedColumns: ['id', 'theater_id']
+          },
+          {
+            foreignKeyName: 'team_memberships_theater_id_user_id_fkey'
+            columns: ['theater_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'theater_memberships'
+            referencedColumns: ['theater_id', 'user_id']
+          },
+        ]
+      }
       theater_invites: {
         Row: {
           accepted_at: string | null
@@ -2600,6 +2686,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'theater_staff_slot_defaults_theater_id_fkey'
+            columns: ['theater_id']
+            isOneToOne: false
+            referencedRelation: 'theaters'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      theater_teams: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+          state: string
+          theater_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          owner_user_id: string
+          state?: string
+          theater_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+          state?: string
+          theater_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'theater_teams_owner_user_id_fkey'
+            columns: ['owner_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_teams_theater_id_fkey'
             columns: ['theater_id']
             isOneToOne: false
             referencedRelation: 'theaters'
@@ -3154,6 +3285,7 @@ export type Database = {
           theater_name: string
         }[]
       }
+      get_team_workspace: { Args: { p_theater_id: string }; Returns: Json }
       invite_event_cast_member: {
         Args: {
           p_actor_user_id: string
@@ -3365,6 +3497,15 @@ export type Database = {
           p_command_id: string
           p_input: Json
           p_show_id: string
+        }
+        Returns: Json
+      }
+      manage_team: {
+        Args: {
+          p_action: string
+          p_command_id: string
+          p_input: Json
+          p_theater_id: string
         }
         Returns: Json
       }

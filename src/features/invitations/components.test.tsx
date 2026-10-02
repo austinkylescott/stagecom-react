@@ -18,8 +18,18 @@ const people = {
     },
   ],
   directory: [
-    { displayName: 'Owner Olive', roles: ['owner'], userId: 'owner' },
-    { displayName: 'Member Mira', roles: [], userId: 'member' },
+    {
+      avatarUrl: null,
+      displayName: 'Owner Olive',
+      roles: ['owner'],
+      userId: 'owner',
+    },
+    {
+      avatarUrl: null,
+      displayName: 'Member Mira',
+      roles: [],
+      userId: 'member',
+    },
   ],
   operator: {
     formerMembers: [
@@ -57,6 +67,7 @@ describe('PeopleWorkspacePage', () => {
         canManage={false}
         initialInvitations={[]}
         initialJoinLinks={[]}
+        initialTeams={{ actorId: 'member', teams: [] }}
         people={{
           adminAuthorityHistory: [],
           directory: people.directory,
@@ -83,6 +94,7 @@ describe('PeopleWorkspacePage', () => {
         canManage
         initialInvitations={[]}
         initialJoinLinks={[]}
+        initialTeams={{ actorId: 'member', teams: [] }}
         people={people}
         theaterId="10000000-0000-0000-0000-000000000001"
       />,

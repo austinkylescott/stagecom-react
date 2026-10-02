@@ -16,6 +16,18 @@ _Avoid_: User, performer, employee
 A person whose Theater membership has ended while their Theater-local participation and history remain preserved.
 _Avoid_: Inactive Member
 
+**Team**:
+A named, Theater-local grouping of consenting Theater Members. A Theater Member
+may belong to several Teams; Team membership is independent of Event participation.
+
+**Team Owner**:
+The accountable Member of a Team who manages its invitations. Team ownership
+confers no Theater Operator or Event authority.
+
+**Team Invitation**:
+A pending offer to join a Team. The recipient becomes a Team Member only by
+accepting personally.
+
 **Owner**:
 The single Theater Member with final authority for the Theater. Ownership may be transferred to another Theater Member.
 

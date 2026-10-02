@@ -127,6 +127,7 @@ const unscheduled = await supabase.rpc('create_managed_event', {
     'An Evening of Stories, Songs, and Unexpected Encounters from Across Our Community',
 })
 throwIfError('create unscheduled long-content Event', unscheduled.error)
+await createDemoTeams(theater.id, personas)
 await createCalendarReviewData(theater.id, personas)
 await createDemoJoinLinks(theater.id, personas.owner.id)
 const secondTheater = await createDemoTheater(personas, SECOND_DEMO_THEATER)
@@ -182,6 +183,15 @@ async function clearDemoTheater() {
     .in('slug', [DEMO_THEATER.slug, SECOND_DEMO_THEATER.slug])
   throwIfError('find owned demo Theaters', lookupError)
   if (ownedTheaters.length) {
+    // Clear owned Teams before Theater membership cascades; keep reset scoped.
+    const { error: teamError } = await supabase
+      .from('theater_teams')
+      .delete()
+      .in(
+        'theater_id',
+        ownedTheaters.map((item) => item.id),
+      )
+    throwIfError('clear owned demo Teams', teamError)
     const { data: events, error } = await supabase
       .from('shows')
       .select('id')
@@ -725,4 +735,65 @@ async function createCalendarReviewData(theaterId, personas) {
     p_private_notes: 'Private review notes.',
   })
   throwIfError('create Calendar review Schedule Block', block.error)
+}
+
+async function createDemoTeams(theaterId, personas) {
+  const actor = createClient(
+    supabaseUrl,
+    requireEnv('VITE_SUPABASE_ANON_KEY'),
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  )
+  const clients = {}
+  for (const key of ['producer', 'member', 'multi']) {
+    const client =
+      key === 'producer'
+        ? actor
+        : createClient(supabaseUrl, requireEnv('VITE_SUPABASE_ANON_KEY'), {
+            auth: { persistSession: false, autoRefreshToken: false },
+          })
+    const login = await client.auth.signInWithPassword({
+      email: DEMO_PERSONAS[key].email,
+      password: demoPassword,
+    })
+    throwIfError('sign in disposable Team persona', login.error)
+    clients[key] = client
+  }
+  for (const [name, recipients] of [
+    ['Ants 2 Gods', ['member', 'multi']],
+    ['The Management', ['multi']],
+  ]) {
+    const id = crypto.randomUUID()
+    const created = await actor.rpc('manage_team', {
+      p_theater_id: theaterId,
+      p_action: 'create',
+      p_input: { name },
+      p_command_id: id,
+    })
+    throwIfError('create demo Team', created.error)
+    let version = 1
+    for (const recipient of recipients) {
+      const invited = await actor.rpc('manage_team', {
+        p_theater_id: theaterId,
+        p_action: 'invite',
+        p_input: {
+          teamId: id,
+          memberUserId: personas[recipient].id,
+          expectedVersion: version++,
+        },
+        p_command_id: crypto.randomUUID(),
+      })
+      throwIfError('invite demo Team Member', invited.error)
+      const accepted = await clients[recipient].rpc('manage_team', {
+        p_theater_id: theaterId,
+        p_action: 'respond',
+        p_input: {
+          teamId: id,
+          response: 'accepted',
+          expectedVersion: version++,
+        },
+        p_command_id: crypto.randomUUID(),
+      })
+      throwIfError('accept demo Team invitation', accepted.error)
+    }
+  }
 }

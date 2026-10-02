@@ -193,3 +193,10 @@ draft, and require a new Proposal Revision.
 The generated TypeScript schema lives at `src/server/db/database.types.ts`.
 Regenerate it from the local schema with `npm run db:types:local` after local
 migrations; use `npm run db:types:check:local` to verify the committed file.
+
+## Theater-local Teams
+
+`theater_teams` and `team_memberships` store independent, overlapping Team
+relationships. Pending invitations require recipient consent. `team_commands`
+stores retry receipts; explicit `activity_events` preserve creation, invitations,
+responses and departure. See [the contract](../../docs/design/teams-contract.md).

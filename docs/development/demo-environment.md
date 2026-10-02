@@ -31,6 +31,13 @@ demo Events. In Cast & Team, the Producer can select Morgan Member and Parker
 Producer for a two-option poll. The scoped reset explicitly clears owned poll
 records before removing their Occurrences; it never clears unrelated polls.
 
+Team review (STA-71) seeds **Ants 2 Gods** and **The Management** through
+authenticated Team commands. Parker Producer owns both; Casey Multi-Theater
+belongs to both, and Morgan Member belongs to Ants 2 Gods. These are accepted
+Team memberships independent of their Event relationships. People supports
+creating a Team as Morgan and inviting Parker to accept personally. Reset clears
+only Teams belonging to the two owned demo Theaters before clearing membership.
+
 Seven personas are available:
 
 - Theater Owner
