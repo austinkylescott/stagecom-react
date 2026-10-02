@@ -19,10 +19,18 @@ export async function getTheaterCalendar(
   const { theater, membership, actorUserId } = access.data
   // Member access is established before reading private venue configuration.
   const service = createSupabaseServiceRoleClient()
+  const expired = await service.rpc('expire_planning_holds')
+  if (expired.error)
+    return err(
+      appError(
+        'external_service_error',
+        'Calendar holds could not be refreshed.',
+      ),
+    )
   const { data: reservations, error: reservationError } = await service
     .from('show_schedule_reservations')
     .select(
-      'candidate_slot_id, id, kind, occurrence_id, reserved_during, schedule_block_id, show_id, show_counteroffers(state, response_deadline)',
+      'candidate_slot_id, id, kind, occurrence_id, reserved_during, schedule_block_id, show_id, show_planning_targets(hold_until,state), show_counteroffers(state, response_deadline)',
     )
     .eq('theater_id', theater.id)
     .eq('resource_id', theater.primary_venue_id)
@@ -195,10 +203,17 @@ export async function getTheaterCalendar(
   for (const reservation of reservations) {
     if (
       reservation.kind === 'counteroffer_hold' &&
-      (!reservation.show_counteroffers ||
-        reservation.show_counteroffers.state !== 'pending' ||
-        Date.parse(reservation.show_counteroffers.response_deadline) <=
-          Date.now())
+      (reservation.show_planning_targets
+        ? !reservation.show_planning_targets.hold_until ||
+          Date.parse(reservation.show_planning_targets.hold_until) <=
+            Date.now() ||
+          !['planning', 'submitted'].includes(
+            reservation.show_planning_targets.state,
+          )
+        : !reservation.show_counteroffers ||
+          reservation.show_counteroffers.state !== 'pending' ||
+          Date.parse(reservation.show_counteroffers.response_deadline) <=
+            Date.now())
     )
       continue
     if (reservation.kind === 'schedule_block') {

@@ -53,6 +53,14 @@ export async function getTheaterWorkQueue(
   const eventIds = leadership.data.map((row) => row.show_id)
   if (!operator && !isReviewer && !eventIds.length)
     return ok({ items: [], exceptions: [], canResolveWork: false })
+  const expiredHolds = await supabase.rpc('expire_planning_holds')
+  if (expiredHolds.error)
+    return err(
+      appError(
+        'external_service_error',
+        'Planning holds could not be refreshed.',
+      ),
+    )
   const [events, profile, members, reservations, completionFailures] =
     await Promise.all([
       supabase
@@ -92,7 +100,9 @@ export async function getTheaterWorkQueue(
       operator || isReviewer
         ? supabase
             .from('show_schedule_reservations')
-            .select('resource_id, reserved_during')
+            .select(
+              'resource_id, reserved_during, proposal_revision_id, planning_target_id',
+            )
             .eq('theater_id', theater.id)
             .eq('status', 'active')
         : Promise.resolve({ data: [], error: null }),
@@ -115,9 +125,43 @@ export async function getTheaterWorkQueue(
     return err(
       appError('external_service_error', 'Work Queue could not be loaded.'),
     )
+  const targets = events.data.length
+    ? await supabase
+        .from('show_planning_targets')
+        .select('id,proposal_revision_id')
+        .in(
+          'show_id',
+          events.data.map((event) => event.id),
+        )
+        .eq('state', 'submitted')
+    : { data: [], error: null }
+  if (targets.error)
+    return err(
+      appError(
+        'external_service_error',
+        'Planning eligibility could not be loaded.',
+      ),
+    )
+  const targetBlockers = await Promise.all(
+    targets.data.map(async (target) => ({
+      revisionId: target.proposal_revision_id,
+      result: await supabase.rpc('planning_target_blockers', {
+        p_target_id: target.id,
+      }),
+    })),
+  )
+  if (targetBlockers.some((item) => item.result.error))
+    return err(
+      appError(
+        'external_service_error',
+        'Planning eligibility could not be loaded.',
+      ),
+    )
   const fields = profile.data
   const ranges = reservations.data.map((reservation) => ({
     resourceId: reservation.resource_id,
+    revisionId: reservation.proposal_revision_id,
+    planningTargetId: reservation.planning_target_id,
     range: parseReservedRange(reservation.reserved_during),
   }))
   if (ranges.some(({ range }) => !range))
@@ -145,8 +189,9 @@ export async function getTheaterWorkQueue(
     activeMemberIds: members.data.map((member) => member.user_id),
     setupBufferMinutes: theater.setup_buffer_minutes,
     turnoverBufferMinutes: theater.turnover_buffer_minutes,
-    reservations: ranges.flatMap(({ resourceId, range }) =>
-      range ? [{ resourceId, ...range }] : [],
+    reservations: ranges.flatMap(
+      ({ resourceId, range, revisionId, planningTargetId }) =>
+        range ? [{ resourceId, revisionId, planningTargetId, ...range }] : [],
     ),
     events: events.data.map((event) => {
       const draft = event.show_public_content_revisions.find(
@@ -203,6 +248,12 @@ export async function getTheaterWorkQueue(
           state: revision.decision_state,
           authorId: revision.submitted_by,
           hasDecision: Boolean(revision.show_proposal_decisions),
+          hasApprovalBlockers: targetBlockers.some(
+            (item) =>
+              item.revisionId === revision.id &&
+              Array.isArray(item.result.data) &&
+              item.result.data.length > 0,
+          ),
           snapshot: revision.snapshot,
         })),
         occurrences: event.show_occurrences.flatMap((occurrence) =>

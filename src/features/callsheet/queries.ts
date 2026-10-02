@@ -1,3 +1,4 @@
+import { getMyPlanningActions } from '@/features/event-planning/queries'
 import { getMyPollActions } from '@/features/availability-polls/queries'
 import { getEventPortfolio } from '@/features/events/event-portfolio/query'
 import { getPublishedTheaterEvents } from '@/features/theaters/public-queries'
@@ -144,6 +145,8 @@ export async function getMyCallsheet() {
         })),
     )
   }
+  const planningActions = await getMyPlanningActions()
+  if (!planningActions.ok) return planningActions
   const pollActions = await getMyPollActions()
   if (!pollActions.ok) return pollActions
   return ok({
@@ -153,6 +156,7 @@ export async function getMyCallsheet() {
         ...ownershipTransferCommitments,
         ...eventCommitments.data,
         ...pollActions.data,
+        ...planningActions.data,
       ],
       sharedWork,
     }),

@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.5'
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -1076,6 +1081,207 @@ export type Database = {
           },
         ]
       }
+      show_planning_calls: {
+        Row: {
+          call: Database['public']['Enums']['occurrence_call']
+          target_id: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          call: Database['public']['Enums']['occurrence_call']
+          target_id: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          call?: Database['public']['Enums']['occurrence_call']
+          target_id?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_planning_calls_target_id_fkey'
+            columns: ['target_id']
+            isOneToOne: false
+            referencedRelation: 'show_planning_targets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_calls_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_planning_commands: {
+        Row: {
+          action: string
+          actor_id: string
+          id: string
+          input: Json
+          result: Json
+          show_id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          id: string
+          input: Json
+          result: Json
+          show_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          id?: string
+          input?: Json
+          result?: Json
+          show_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_planning_commands_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_commands_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_planning_confirmations: {
+        Row: {
+          call_version: number
+          confirmed: boolean
+          responded_at: string
+          target_id: string
+          target_version: number
+          user_id: string
+          version: number
+        }
+        Insert: {
+          call_version: number
+          confirmed: boolean
+          responded_at?: string
+          target_id: string
+          target_version: number
+          user_id: string
+          version?: number
+        }
+        Update: {
+          call_version?: number
+          confirmed?: boolean
+          responded_at?: string
+          target_id?: string
+          target_version?: number
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_planning_confirmations_target_id_fkey'
+            columns: ['target_id']
+            isOneToOne: false
+            referencedRelation: 'show_planning_targets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_confirmations_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_planning_targets: {
+        Row: {
+          base_revision_id: string | null
+          created_at: string
+          hold_until: string | null
+          id: string
+          occurrence_id: string
+          proposal_revision_id: string | null
+          selected_by: string
+          show_id: string
+          slot: Json
+          state: string
+          version: number
+        }
+        Insert: {
+          base_revision_id?: string | null
+          created_at?: string
+          hold_until?: string | null
+          id?: string
+          occurrence_id: string
+          proposal_revision_id?: string | null
+          selected_by: string
+          show_id: string
+          slot: Json
+          state?: string
+          version?: number
+        }
+        Update: {
+          base_revision_id?: string | null
+          created_at?: string
+          hold_until?: string | null
+          id?: string
+          occurrence_id?: string
+          proposal_revision_id?: string | null
+          selected_by?: string
+          show_id?: string
+          slot?: Json
+          state?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_planning_targets_base_revision_id_fkey'
+            columns: ['base_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_targets_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_targets_proposal_revision_id_fkey'
+            columns: ['proposal_revision_id']
+            isOneToOne: false
+            referencedRelation: 'show_proposal_revisions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_targets_selected_by_fkey'
+            columns: ['selected_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_planning_targets_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_poll_commands: {
         Row: {
           actor_user_id: string
@@ -1725,6 +1931,7 @@ export type Database = {
           id: string
           kind: Database['public']['Enums']['schedule_reservation_kind']
           occurrence_id: string | null
+          planning_target_id: string | null
           proposal_revision_id: string | null
           released_at: string | null
           reserved_during: unknown
@@ -1741,6 +1948,7 @@ export type Database = {
           id?: string
           kind: Database['public']['Enums']['schedule_reservation_kind']
           occurrence_id?: string | null
+          planning_target_id?: string | null
           proposal_revision_id?: string | null
           released_at?: string | null
           reserved_during: unknown
@@ -1757,6 +1965,7 @@ export type Database = {
           id?: string
           kind?: Database['public']['Enums']['schedule_reservation_kind']
           occurrence_id?: string | null
+          planning_target_id?: string | null
           proposal_revision_id?: string | null
           released_at?: string | null
           reserved_during?: unknown
@@ -1786,6 +1995,13 @@ export type Database = {
             columns: ['occurrence_id']
             isOneToOne: false
             referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_schedule_reservations_planning_target_id_fkey'
+            columns: ['planning_target_id']
+            isOneToOne: false
+            referencedRelation: 'show_planning_targets'
             referencedColumns: ['id']
           },
           {
@@ -2891,15 +3107,18 @@ export type Database = {
         Args: { p_resource_request_id: string; p_show_id: string }
         Returns: number
       }
+      expire_planning_holds: { Args: { p_now?: string }; Returns: number }
       expire_proposal_counteroffers: {
         Args: { p_now?: string; p_show_id?: string }
         Returns: number
       }
       get_availability_polls: { Args: { p_show_id: string }; Returns: Json }
+      get_event_planning: { Args: { p_show_id: string }; Returns: Json }
       get_event_staff_invitation_response_state: {
         Args: { p_assignment_id: string }
         Returns: string
       }
+      get_my_planning_actions: { Args: never; Returns: Json }
       get_my_poll_actions: { Args: never; Returns: Json }
       get_published_event: {
         Args: { p_event_slug: string; p_theater_slug: string }
@@ -3140,6 +3359,15 @@ export type Database = {
           publication_status: Database['public']['Enums']['show_publication_status']
         }[]
       }
+      manage_event_planning: {
+        Args: {
+          p_action: string
+          p_command_id: string
+          p_input: Json
+          p_show_id: string
+        }
+        Returns: Json
+      }
       notify_approaching_counteroffer_expirations: {
         Args: { p_now?: string; p_show_id?: string; p_window?: string }
         Returns: number
@@ -3154,6 +3382,15 @@ export type Database = {
         }
         Returns: Json
       }
+      planning_committed_confirmation: {
+        Args: {
+          p_call: Database['public']['Enums']['occurrence_call']
+          p_target_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      planning_target_blockers: { Args: { p_target_id: string }; Returns: Json }
       project_admin_invitation_notification: {
         Args: { p_activity_event_id: string }
         Returns: undefined
@@ -3540,6 +3777,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_proposal_revision_without_planning: {
+        Args: {
+          p_action: Database['public']['Enums']['proposal_review_action']
+          p_actor_user_id: string
+          p_command_id: string
+          p_expected_version: number
+          p_owner_override: boolean
+          p_proposal_revision_id: string
+          p_reason: string
+        }
+        Returns: {
+          action: Database['public']['Enums']['proposal_review_action']
+          actor_user_id: string
+          command_id: string
+          created_at: string
+          id: string
+          owner_override: boolean
+          proposal_revision_id: string
+          reason: string | null
+          revision_version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_proposal_decisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       revoke_event_staff_assignment: {
         Args: { p_actor_user_id: string; p_assignment_id: string }
         Returns: {
@@ -3635,6 +3900,17 @@ export type Database = {
         Returns: Json
       }
       save_event_operational_plan_draft: {
+        Args: {
+          p_actor_user_id: string
+          p_minimum_viable_cast: number
+          p_occurrences: Json
+          p_resource_requests: Json
+          p_show_id: string
+          p_target_cast_size: number
+        }
+        Returns: Json
+      }
+      save_event_operational_plan_without_planning: {
         Args: {
           p_actor_user_id: string
           p_minimum_viable_cast: number
@@ -3852,6 +4128,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      submit_event_proposal_revision_without_planning: {
+        Args: {
+          p_actor_user_id: string
+          p_command_id: string
+          p_show_id: string
+        }
+        Returns: {
+          command_id: string
+          decision_state: Database['public']['Enums']['proposal_decision_state']
+          decision_version: number
+          id: string
+          revision_number: number
+          show_id: string
+          snapshot: Json
+          submitted_at: string
+          submitted_by: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'show_proposal_revisions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       submit_event_proposal_revision_without_reservations: {
         Args: {
           p_actor_user_id: string
@@ -3875,6 +4175,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_planning_revision: {
+        Args: { p_actor_id: string; p_command_id: string; p_show_id: string }
+        Returns: Json
       }
       update_theater_event_policy: {
         Args: {
