@@ -125,6 +125,12 @@ _Avoid_: Attendance
 **Availability Response**:
 A Cast Member's available, unavailable, or uncertain response to a Candidate Slot.
 
+**Availability Poll**:
+An explicitly opened and ended request from an Event Producer or Director for
+selected accepted Cast Members to answer a fixed set of options for one
+Occurrence. Submitted poll answers and private editing drafts are separate from
+legacy Candidate Slot Availability Responses, Calls and booking readiness.
+
 ## Review And Publication
 
 **Proposal Revision**:

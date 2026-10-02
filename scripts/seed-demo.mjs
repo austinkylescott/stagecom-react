@@ -191,6 +191,24 @@ async function clearDemoTheater() {
       )
     throwIfError('find owned demo Events', error)
     if (events.length) {
+      const { data: occurrences, error: occurrenceError } = await supabase
+        .from('show_occurrences')
+        .select('id')
+        .in(
+          'show_id',
+          events.map((item) => item.id),
+        )
+      throwIfError('find owned demo Occurrences', occurrenceError)
+      if (occurrences.length) {
+        const { error: pollError } = await supabase
+          .from('show_availability_polls')
+          .delete()
+          .in(
+            'occurrence_id',
+            occurrences.map((item) => item.id),
+          )
+        throwIfError('clear owned demo polls', pollError)
+      }
       // Remove leadership while its Event still exists: its risk trigger reads that Event.
       const { error: leadershipError } = await supabase
         .from('show_leadership')
@@ -443,6 +461,23 @@ async function createDemoEvent(theaterId, personas, participants) {
     .select('id')
     .single()
   throwIfError('create demo Confirmed Slot', slotError)
+  const alternativeStartsAt = new Date(startsAt.getTime() + 24 * 60 * 60 * 1000)
+  const { error: alternativeError } = await supabase
+    .from('show_candidate_slots')
+    .insert({
+      occurrence_id: occurrence.id,
+      starts_at: alternativeStartsAt.toISOString(),
+      local_starts_at: alternativeStartsAt.toISOString().slice(0, 19),
+      duration_minutes: 150,
+      location_kind: 'off_site',
+      location_name: 'Community Studio',
+      off_site_approved: true,
+      timezone_name: 'UTC',
+      timezone_source: 'manual',
+      utc_offset_minutes: 0,
+      position: 1,
+    })
+  throwIfError('create alternative demo poll option', alternativeError)
   const { error: confirmError } = await supabase
     .from('show_occurrences')
     .update({ confirmed_candidate_slot_id: slot.id })

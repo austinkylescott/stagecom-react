@@ -1,3 +1,4 @@
+import { AvailabilityPolls } from '@/features/availability-polls/components'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -1310,6 +1311,14 @@ export function ManagedEventWorkspace({
       ) : null}
       {activeSection === 'cast-team' ? (
         <div aria-labelledby="cast-team-heading" id="cast-team">
+          {view !== 'pending_invitee' ? (
+            <AvailabilityPolls
+              eventId={event.id}
+              occurrences={event.show_occurrences}
+              cast={event.show_cast}
+              theaterTimezone={theater.timezone ?? 'UTC'}
+            />
+          ) : null}
           <Card className="mt-5  px-6 py-6 gap-0">
             <h2 className="text-2xl font-semibold" id="cast-team-heading">
               Cast &amp; Team

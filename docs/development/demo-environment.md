@@ -26,6 +26,11 @@ Theaters; the base Member belongs only to Compass Rose. Owner, Admin, Member
 and Multi-Theater Member enter through Callsheet. Persona controls remain on
 the development-only login chooser, outside authenticated product pages.
 
+Availability review (STA-69) adds an alternative Candidate Slot to the owned
+demo Events. In Cast & Team, the Producer can select Morgan Member and Parker
+Producer for a two-option poll. The scoped reset explicitly clears owned poll
+records before removing their Occurrences; it never clears unrelated polls.
+
 Seven personas are available:
 
 - Theater Owner

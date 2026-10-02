@@ -463,6 +463,64 @@ export type Database = {
           },
         ]
       }
+      show_availability_polls: {
+        Row: {
+          ended_at: string | null
+          id: string
+          occurrence_id: string
+          opened_at: string
+          opened_by: string
+          options: Json
+          replaced_poll_id: string | null
+          state: string
+          timezone_name: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id: string
+          occurrence_id: string
+          opened_at?: string
+          opened_by: string
+          options: Json
+          replaced_poll_id?: string | null
+          state?: string
+          timezone_name: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          occurrence_id?: string
+          opened_at?: string
+          opened_by?: string
+          options?: Json
+          replaced_poll_id?: string | null
+          state?: string
+          timezone_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_availability_polls_occurrence_id_fkey'
+            columns: ['occurrence_id']
+            isOneToOne: false
+            referencedRelation: 'show_occurrences'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_availability_polls_opened_by_fkey'
+            columns: ['opened_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_availability_polls_replaced_poll_id_fkey'
+            columns: ['replaced_poll_id']
+            isOneToOne: false
+            referencedRelation: 'show_availability_polls'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       show_availability_requests: {
         Row: {
           candidate_slot_id: string
@@ -1015,6 +1073,113 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'shows'
             referencedColumns: ['id']
+          },
+        ]
+      }
+      show_poll_commands: {
+        Row: {
+          actor_user_id: string
+          command_id: string
+          poll_id: string
+          request: Json
+          result: Json
+        }
+        Insert: {
+          actor_user_id: string
+          command_id: string
+          poll_id: string
+          request: Json
+          result: Json
+        }
+        Update: {
+          actor_user_id?: string
+          command_id?: string
+          poll_id?: string
+          request?: Json
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_poll_commands_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_poll_commands_poll_id_fkey'
+            columns: ['poll_id']
+            isOneToOne: false
+            referencedRelation: 'show_availability_polls'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_poll_respondents: {
+        Row: {
+          display_name: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          display_name: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_poll_respondents_poll_id_fkey'
+            columns: ['poll_id']
+            isOneToOne: false
+            referencedRelation: 'show_availability_polls'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'show_poll_respondents_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      show_poll_responses: {
+        Row: {
+          draft: Json | null
+          poll_id: string
+          submitted: Json | null
+          submitted_at: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          draft?: Json | null
+          poll_id: string
+          submitted?: Json | null
+          submitted_at?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          draft?: Json | null
+          poll_id?: string
+          submitted?: Json | null
+          submitted_at?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'show_poll_responses_poll_id_user_id_fkey'
+            columns: ['poll_id', 'user_id']
+            isOneToOne: true
+            referencedRelation: 'show_poll_respondents'
+            referencedColumns: ['poll_id', 'user_id']
           },
         ]
       }
@@ -2400,6 +2565,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_view_availability_poll: {
+        Args: { p_poll_id: string }
+        Returns: boolean
+      }
       can_view_candidate_slot_coordination: {
         Args: { p_actor_user_id: string; p_candidate_slot_id: string }
         Returns: boolean
@@ -2510,6 +2679,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      close_availability_poll: {
+        Args: { p_cancel?: boolean; p_command_id: string; p_poll_id: string }
+        Returns: Json
       }
       complete_due_events: {
         Args: { p_now?: string; p_show_id?: string }
@@ -2722,10 +2895,12 @@ export type Database = {
         Args: { p_now?: string; p_show_id?: string }
         Returns: number
       }
+      get_availability_polls: { Args: { p_show_id: string }; Returns: Json }
       get_event_staff_invitation_response_state: {
         Args: { p_assignment_id: string }
         Returns: string
       }
+      get_my_poll_actions: { Args: never; Returns: Json }
       get_published_event: {
         Args: { p_event_slug: string; p_theater_slug: string }
         Returns: Json
@@ -2856,6 +3031,10 @@ export type Database = {
         Args: { p_show_id: string; p_user_id?: string }
         Returns: boolean
       }
+      is_poll_respondent: {
+        Args: { p_poll_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       is_show_leader: {
         Args: { p_show_id: string; p_user_id?: string }
         Returns: boolean
@@ -2964,6 +3143,16 @@ export type Database = {
       notify_approaching_counteroffer_expirations: {
         Args: { p_now?: string; p_show_id?: string; p_window?: string }
         Returns: number
+      }
+      open_availability_poll: {
+        Args: {
+          p_command_id: string
+          p_occurrence_id: string
+          p_replace_poll_id?: string
+          p_slot_ids: string[]
+          p_user_ids: string[]
+        }
+        Returns: Json
       }
       project_admin_invitation_notification: {
         Args: { p_activity_event_id: string }
@@ -3423,6 +3612,16 @@ export type Database = {
           rotated_from_id: string
           theater_id: string
         }[]
+      }
+      save_availability_poll_answers: {
+        Args: {
+          p_answers: Json
+          p_command_id: string
+          p_expected_version: number
+          p_poll_id: string
+          p_submit: boolean
+        }
+        Returns: Json
       }
       save_event_operational_plan: {
         Args: {
