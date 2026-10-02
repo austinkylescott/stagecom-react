@@ -52,3 +52,37 @@ Authorized commands/queries, real database transactions and RLS, and the People
 workspace browser flow. Review data extends the existing disposable Supabase
 Auth demo. All migrations and seeding run locally; remote integration remains
 subject to explicit operation approval.
+
+## Verification and review
+
+The final implementation passed typechecking, touched-file ESLint/Prettier, and
+production build. The unit suite passed 176 tests with two existing skips. A
+fresh isolated Supabase stack on 553xx ports applied the complete forward chain;
+all 536 database checks passed, and generated local types matched the committed
+file. The extended demo reseeded twice successfully with scoped cleanup.
+
+All three STA-71 browser/RPC scenarios passed, including phone widths 360/390,
+keyboard search/filter/create/acceptance, offline retry, stale invitation recovery,
+actual Theater switching, reload persistence, private pending invitations,
+unauthorized reads/writes, and concurrent acceptance versus dissolution.
+
+The broad browser run had 27 passes, one existing skip, and ten failures in older
+scenarios. All ten failing test cases also failed on unchanged starting main
+`d205fda`; see the pull request for the baseline comparison. They are not represented as a green
+full browser suite. Remote migration and remote seeding were not performed.
+Local security advisors reported only the existing `pg_trgm` and `btree_gist`
+extension placement warnings, with no Team findings.
+
+## Standards
+
+No documented-standard violations or actionable baseline code smells. The
+review was repeated after the Theater-switch correction.
+
+## Spec
+
+The initial review identified retained Team state across Theater switches. It
+was fixed by remounting the Team workspace by Theater, with a regression that
+failed before the fix and passed afterward plus an actual switcher browser test.
+No remaining actionable Spec findings.
+
+Review totals: Standards 0; Spec 0 remaining (one Spec finding resolved).
