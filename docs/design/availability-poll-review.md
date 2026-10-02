@@ -94,12 +94,17 @@ in the [approval packet](availability-poll-approval.md).
 
 ## Remaining review boundaries
 
-The migration and seed changes have only been executed locally. Read-only remote
-inspection confirms all 60 hosted migration version/name entries match local
-history; only this poll migration is pending. This does not prove absence of
-out-of-band schema edits. Remote application and smoke tests still require
-explicit operation approval. Supabase Preview was skipped; there is no separate
-PR preview branch. The PR carries the rollout plan and existing-suite limitations.
+The approved migration was applied to hosted `stagecom` with its original version
+`20261001221258`. The only pending migration was applied; RLS, policies, RPC grants,
+index/history constraints and NULL validation were verified. Hosted public-schema
+types match the committed types. An unrelated authenticated read probe returns no
+polls or actions. Advisor notices and the precise scope are recorded in the
+[approval packet](availability-poll-approval.md).
+
+No remote seed or application deployment was performed. Authorized hosted browser
+smoke testing belongs to the later deployment operation. Supabase Preview was
+skipped; there is no separate PR preview branch. The PR carries these limits and
+existing browser-suite failures.
 
 Viewport checks do not establish physical-device software-keyboard behavior.
 Maintainer page-by-page presentation review and later branding remain separate

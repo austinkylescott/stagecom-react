@@ -56,22 +56,43 @@ exactly; no remote-only entries exist. This verifies migration history, not the
 absence of out-of-band schema edits. Supabase Preview on PR #65 was skipped and
 there is no separate PR preview branch.
 
-Only `20261001221258_availability_polls.sql` is pending. It creates the poll
-persistence, RLS and authorized RPCs; existing Candidate Slot responses, Calls and
-approval/readiness behavior remain separate. Local fresh-schema application and
-26 poll database assertions passed.
+The maintainer explicitly approved remote application. The Supabase CLI dry run
+confirmed `20261001221258_availability_polls.sql` was the only pending migration,
+and `db push --linked --yes` applied that exact committed file successfully on
+2026-10-02 UTC. The history entry retains version `20261001221258` and name
+`availability_polls`.
 
-Before deploying this application version to that hosted target:
+Post-application verification confirmed:
 
-1. Obtain explicit approval to apply that exact migration to that exact project.
-2. Apply the committed migration and confirm its migration-history entry.
-3. Verify the new tables have RLS and the RPCs/read policies are installed with
-   the committed grants. Regenerate/compare hosted database types if appropriate.
-4. Deploy the application through the normal release process, then smoke-test an
-   authorized poll flow and denied reads using approved test records.
+- All four poll tables have RLS; the three authenticated SELECT policies match
+  the committed authorization and private-draft rules. The command receipts
+  table intentionally has no client policy.
+- All seven poll functions use an empty search path, deny `anon` execution, and
+  grant execution to `authenticated` for application-authorized operations.
+- The partial unique index enforces one open poll per Occurrence, the Occurrence
+  foreign key restricts deletion to protect history, and the NULL-answer guard
+  is installed.
+- An unrelated authenticated identity gets no polls, no Callsheet actions, no
+  direct response rows and no respondent eligibility in a rolled-back read probe.
+- Hosted public-schema generated types match the committed public-schema types
+  structurally. Generator-only PostgREST metadata and the excluded GraphQL schema
+  are not application-schema differences.
 
-No remote schema or seed operations have been executed. The discovered project
-has not been established as a dedicated disposable demo target; remote demo
-seeding is therefore not part of this plan. The application code can be rolled
-back while retaining new tables and submitted history; do not drop those tables
-as an application rollback.
+The security advisor reports seven intentional
+[authenticated SECURITY DEFINER APIs](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
+and one informational
+[RLS-without-policy notice](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+for default-deny command receipts. Existing notices (public extensions, 36
+anonymous SECURITY DEFINER functions, leaked-password protection) were present
+before this migration and remain outside STA-69. See Supabase's
+[extension guidance](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public),
+[anonymous-function guidance](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
+and [password protection guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+The database integration is complete. Application deployment and an authorized
+hosted browser smoke test remain part of the normal release process; they were
+not included in the migration approval. No remote seed was run. The discovered
+project has not been established as a dedicated disposable demo target.
+
+The application code can be rolled back while retaining new tables and submitted
+history; do not drop those tables as an application rollback.
