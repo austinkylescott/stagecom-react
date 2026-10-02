@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { PeopleWorkspacePage } from './components'
@@ -116,4 +116,52 @@ describe('PeopleWorkspacePage', () => {
       screen.getByText(/Owner Olive removed Admin authority from Member Mira/),
     ).toBeTruthy()
   })
+})
+
+it("discards another Theater's Teams and search input when People changes Theater", () => {
+  const props = {
+    actorUserId: 'member',
+    canManage: false,
+    initialInvitations: [],
+    initialJoinLinks: [],
+    people: {
+      adminAuthorityHistory: [],
+      directory: people.directory,
+      operator: null,
+    },
+  }
+  const { rerender } = render(
+    <PeopleWorkspacePage
+      {...props}
+      theaterId="first"
+      initialTeams={{
+        actorId: 'member',
+        teams: [
+          {
+            id: 'team',
+            name: 'First Theater Team',
+            ownerId: 'member',
+            ownerEligible: true,
+            version: 1,
+            memberIds: ['member'],
+            invitations: [],
+          },
+        ],
+      }}
+    />,
+  )
+  fireEvent.change(screen.getByLabelText('Search Members'), {
+    target: { value: 'Mira' },
+  })
+  rerender(
+    <PeopleWorkspacePage
+      {...props}
+      theaterId="second"
+      initialTeams={{ actorId: 'member', teams: [] }}
+    />,
+  )
+  expect(
+    screen.queryByRole('button', { name: 'View First Theater Team' }),
+  ).toBeNull()
+  expect(screen.getByLabelText('Search Members')).toHaveProperty('value', '')
 })

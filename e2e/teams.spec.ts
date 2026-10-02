@@ -365,7 +365,15 @@ test('Team departure races acceptance atomically and empty Theater Teams remain 
 }) => {
   test.skip(!localDemo, 'Requires disposable local demo data.')
   await login(page, 'Multi-Theater Member')
-  await page.goto('/app/harbor-stage/members')
+  await page.getByLabel('Search Members').fill('casey')
+  const switcher = page.getByRole('button', { name: 'Change Theater' })
+  await waitForReactHandler(switcher, 'onPointerDown')
+  await switcher.click()
+  await page
+    .getByRole('menuitem', { name: 'Harbor Stage', exact: true })
+    .click()
+  await expect(page).toHaveURL(/\/app\/harbor-stage\/members$/)
+  await expect(page.getByLabel('Search Members')).toHaveValue('')
   await waitForReactHandler(page.getByLabel('Search Members'), 'onChange')
   await expect(
     page.getByText('No Teams yet. Create the first Team in this Theater.'),

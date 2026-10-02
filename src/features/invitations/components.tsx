@@ -52,6 +52,7 @@ export function PeopleWorkspacePage({
       </p>
 
       <PeopleAndTeams
+        key={theaterId}
         theaterId={theaterId}
         members={people.directory}
         initialWorkspace={initialTeams}
