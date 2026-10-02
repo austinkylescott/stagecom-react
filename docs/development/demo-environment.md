@@ -149,4 +149,8 @@ Morgan is eligible through the overlapping accepted Teams. As Producer, select
 Ants 2 Gods and The Management in Cast & Team, review the three unique names, and
 send Morgan's invitation. Morgan can accept personally from Callsheet or the
 Event. This extends only owned demo records; local seed execution is verified.
-Remote migration and reseeding remain separate approval operations.
+After explicit maintainer approval on 2026-10-02, the migration was verified on
+`stagecom` and these owned demo records were reseeded. Authenticated Producer
+review returned unique Casey (pending), Morgan (eligible), and Parker (accepted)
+recipients; ordinary Member and anonymous Cast Team reads were denied. Future
+remote migrations and reseeding still require explicit operation approval.

@@ -91,5 +91,7 @@ Successful retries return the recorded result without duplicate invitations.
 Acceptance continues through the existing Event/Callsheet actions.
 
 See [transaction and permission contract](../../docs/design/team-cast-invitation-contract.md).
-The forward migration and browser flow are verified locally; remote deployment
-requires explicit operation approval.
+The forward migration and browser flow are verified locally. After explicit
+maintainer approval on 2026-10-02, the matching migration and owned demo seed
+were verified on `stagecom`, including named recipient review and denied
+unauthorized access. Future remote operations require explicit approval.

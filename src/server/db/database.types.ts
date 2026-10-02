@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.5'
+  }
   public: {
     Tables: {
       activity_events: {
@@ -3423,7 +3428,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      is_accepted_event_staff: { Args: { p_show_id: string }; Returns: boolean }
+      is_accepted_event_staff: {
+        Args: { p_show_id: string }
+        Returns: boolean
+      }
       is_active_member_of_theater: {
         Args: { p_theater_id: string }
         Returns: boolean
@@ -3585,7 +3593,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      planning_target_blockers: { Args: { p_target_id: string }; Returns: Json }
+      planning_target_blockers: {
+        Args: { p_target_id: string }
+        Returns: Json
+      }
       project_admin_invitation_notification: {
         Args: { p_activity_event_id: string }
         Returns: undefined
@@ -4483,7 +4494,11 @@ export type Database = {
         }
       }
       update_theater_setup: {
-        Args: { p_actor_user_id: string; p_changes: Json; p_theater_id: string }
+        Args: {
+          p_actor_user_id: string
+          p_changes: Json
+          p_theater_id: string
+        }
         Returns: {
           city: string | null
           counteroffer_response_hours: number
