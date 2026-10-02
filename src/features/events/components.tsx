@@ -1,4 +1,5 @@
 import { useRouter } from '@tanstack/react-router'
+import { TeamCastInvitations } from '@/features/team-cast-invitations/components'
 import { EventPlanning } from '@/features/event-planning/components'
 import { AvailabilityPolls } from '@/features/availability-polls/components'
 import { Textarea } from '@/components/ui/textarea'
@@ -534,6 +535,7 @@ export function ManagedEventWorkspace({
   const [activeSection, setActiveSection] =
     useState<EventWorkspaceSection>('overview')
   const [cast, setCast] = useState(event.show_cast)
+  useEffect(() => setCast(event.show_cast), [event.show_cast])
   const [inviteeUserId, setInviteeUserId] = useState('')
   const [staffInviteeUserId, setStaffInviteeUserId] = useState('')
   const [staffRequestId, setStaffRequestId] = useState('')
@@ -1414,6 +1416,15 @@ export function ManagedEventWorkspace({
                     </p>
                   ) : null}
                 </div>
+                {allowedActions.inviteCast ? (
+                  <TeamCastInvitations
+                    eventId={event.id}
+                    members={activeMembers}
+                    onSent={async () => {
+                      await router.invalidate()
+                    }}
+                  />
+                ) : null}
                 {allowedActions.inviteCast ? (
                   <div className="mt-5 flex flex-wrap items-end gap-3">
                     <Label className="grid min-w-64 gap-2 text-sm font-medium">

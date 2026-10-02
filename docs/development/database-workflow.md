@@ -167,3 +167,14 @@ remote project. Stored SQL exactly matches the reviewed forward migration.
 Committed types were regenerated from remote; the public schema matches the
 verified local forward chain. The scoped remote demo seed and authenticated
 persona reads also passed. Future remote operations still require approval.
+
+## Reviewed Team Cast batches (STA-73)
+
+`20261002192510_reviewed_team_cast_invitations` adds private, server-owned
+`team_cast_reviews` and authenticated leader-only options/review/send RPCs.
+A reviewed selection is revalidated under membership, Team, Event and Cast locks;
+changed state returns a refreshed review and sends nothing. Invitations, activity
+and notification projection reuse the delivered backend in one transaction.
+See `docs/design/team-cast-invitation-contract.md`. The complete forward chain
+and generated types are verified against disposable local Supabase. This migration
+has not been applied remotely; remote integration requires explicit approval.
