@@ -1,26 +1,13 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Card } from '@/components/ui/card'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2, Copy, Loader2, MailPlus, Theater } from 'lucide-react'
 import { useState } from 'react'
 
+import { PeopleAndTeams } from '@/features/teams/components'
+import type { TeamWorkspace } from '@/features/teams/schemas'
 import { ReusableJoinLinksManager } from '@/features/join-links/components'
 import { AccessAndRolesManager } from '@/features/memberships/components'
 import {
@@ -39,6 +26,7 @@ export function PeopleWorkspacePage({
   actorUserId,
   initialInvitations,
   initialJoinLinks,
+  initialTeams,
   people,
   theaterId,
 }: {
@@ -46,6 +34,7 @@ export function PeopleWorkspacePage({
   actorUserId: string
   initialInvitations: TargetedInvitationListItem[]
   initialJoinLinks: ReusableJoinLinkListItem[]
+  initialTeams: TeamWorkspace
   people: PeopleWorkspace
   theaterId: string
 }) {
@@ -62,53 +51,12 @@ export function PeopleWorkspacePage({
         See who belongs to this Theater and who can operate it.
       </p>
 
-      <Card role="region" aria-labelledby="people-directory" className="mt-6">
-        <CardHeader>
-          <CardTitle>
-            <h2 id="people-directory">Directory</h2>
-          </CardTitle>
-          <CardDescription>
-            Active Theater Members. Contact details and private access data are
-            not shared here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Theater Role</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {people.directory.map((member) => (
-                <TableRow key={member.userId}>
-                  <TableCell className="font-medium">
-                    {member.displayName}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {member.roles.length ? (
-                        member.roles.map((role) => (
-                          <Badge
-                            variant="secondary"
-                            className="capitalize"
-                            key={role}
-                          >
-                            {role}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground">Member</span>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <PeopleAndTeams
+        key={theaterId}
+        theaterId={theaterId}
+        members={people.directory}
+        initialWorkspace={initialTeams}
+      />
 
       {canManage ? (
         <Card className="mt-7  px-5 py-5 gap-0">

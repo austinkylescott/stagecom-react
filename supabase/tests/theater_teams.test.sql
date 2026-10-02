@@ -1,0 +1,44 @@
+begin;
+select plan(24);
+insert into auth.users(id,email,raw_user_meta_data) values
+('74000000-0000-0000-0000-000000000001','team-owner@stagecom.local','{"full_name":"Team Owner"}'),
+('74000000-0000-0000-0000-000000000002','team-member@stagecom.local','{"full_name":"Team Member"}');
+select * from public.create_theater_with_owner('74000000-0000-0000-0000-000000000001','Team Theater','team-theater','America/New_York');
+insert into public.theater_memberships(theater_id,user_id,roles,status)
+select id,'74000000-0000-0000-0000-000000000002',array['member']::public.theater_role[],'active' from public.theaters where slug='team-theater';
+select set_config('stagecom.team_theater',(select id::text from public.theaters where slug='team-theater'),true);
+set local role authenticated;
+set local "request.jwt.claim.sub"='74000000-0000-0000-0000-000000000002';
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'create','{"name":"Ants 2 Gods"}','74000000-0000-0000-0001-000000000001')$$,'base Member creates a Team without Operator authority');
+select is(public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)->'teams'->0->>'ownerId','74000000-0000-0000-0000-000000000002','creator owns the Team');
+select is(jsonb_array_length(public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)->'teams'->0->'memberIds'),1,'creator is first accepted Member');
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'invite','{"teamId":"74000000-0000-0000-0001-000000000001","memberUserId":"74000000-0000-0000-0000-000000000001","expectedVersion":1}','74000000-0000-0000-0001-000000000002')$$,'Owner invites without enrolling another person');
+select is(jsonb_array_length(public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)->'teams'->0->'memberIds'),1,'invitation remains pending');
+set local "request.jwt.claim.sub"='74000000-0000-0000-0000-000000000001';
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'respond','{"teamId":"74000000-0000-0000-0001-000000000001","response":"accepted","expectedVersion":2}','74000000-0000-0000-0001-000000000003')$$,'recipient accepts personally');
+select is(jsonb_array_length(public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)->'teams'->0->'memberIds'),2,'accepted Member appears in Team');
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'leave','{"teamId":"74000000-0000-0000-0001-000000000001","expectedVersion":3}','74000000-0000-0000-0001-000000000004')$$,'ordinary Member leaves themselves');
+select throws_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'invite','{"teamId":"74000000-0000-0000-0001-000000000001","memberUserId":"74000000-0000-0000-0000-000000000002","expectedVersion":4}','74000000-0000-0000-0001-000000000005')$$,'42501',null,'Theater Owner gains no Team invitation power');
+select throws_ok($$select * from public.team_memberships$$,'42501',null,'client table reads denied; projection prevents pending disclosure');
+select throws_ok($$insert into public.team_memberships values(null,null,null,'accepted',null,null,now())$$,'42501',null,'client cannot silently enroll another Member');
+set local "request.jwt.claim.sub"='74000000-0000-0000-0000-000000000002';
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'create','{"name":"Ants 2 Gods"}','74000000-0000-0000-0001-000000000001')$$,'create retry returns committed result');
+select throws_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'create','{"name":"changed"}','74000000-0000-0000-0001-000000000001')$$,'22023',null,'command identity cannot be reused for changed input');
+select throws_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'leave','{"teamId":"74000000-0000-0000-0001-000000000001","expectedVersion":1}','74000000-0000-0000-0001-000000000006')$$,'55000',null,'stale departure rejected');
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'leave','{"teamId":"74000000-0000-0000-0001-000000000001","expectedVersion":4}','74000000-0000-0000-0001-000000000006')$$,'sole Owner dissolves Team by leaving');
+select is(jsonb_array_length(public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)->'teams'),0,'dissolved Team disappears from active discovery');
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'create','{"name":"Recovery Team"}','74000000-0000-0000-0001-000000000007')$$,'create separate recovery scenario');
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'invite','{"teamId":"74000000-0000-0000-0001-000000000007","memberUserId":"74000000-0000-0000-0000-000000000001","expectedVersion":1}','74000000-0000-0000-0001-000000000008')$$,'Owner invites before losing Theater access');
+set local role anon;
+select throws_ok($$select public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)$$,'42501',null,'anonymous private Team reads denied');
+reset role;
+update public.theater_memberships set status='inactive' where user_id='74000000-0000-0000-0000-000000000002';
+set local role authenticated;
+select throws_ok($$select public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)$$,'42501',null,'Former Theater Member reads denied');
+select throws_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'create','{"name":"Ants 2 Gods"}','74000000-0000-0000-0001-000000000001')$$,'42501',null,'permission loss checked even on retries');
+set local "request.jwt.claim.sub"='74000000-0000-0000-0000-000000000001';
+select is(public.get_team_workspace(current_setting('stagecom.team_theater')::uuid)->'teams'->0->>'ownerEligible','false','ineligible Owner freezes administration');
+select throws_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'respond','{"teamId":"74000000-0000-0000-0001-000000000007","response":"accepted","expectedVersion":2}','74000000-0000-0000-0001-000000000009')$$,'55000',null,'cannot accept into orphaned ownership');
+select lives_ok($$select public.manage_team(current_setting('stagecom.team_theater')::uuid,'respond','{"teamId":"74000000-0000-0000-0001-000000000007","response":"declined","expectedVersion":2}','74000000-0000-0000-0001-000000000009')$$,'recipient may still decline after Owner loses access');
+select * from finish();
+rollback;

@@ -7,7 +7,15 @@ Status: implemented
 The Stagecom demo is a deterministic, disposable dataset for moderated user
 testing, stakeholder walkthroughs, and manual QA. It must run against either
 the local Supabase stack or a dedicated hosted demo project. Do not point the
-demo commands at production or the shared development project.
+demo commands at production or the shared development project, except for the
+current maintainer-approved single-project arrangement below.
+
+On 2026-10-02 the maintainer confirmed that `stagecom`
+(`obufimjayisdhkjjxhfd`) is the personal project's only active database and
+explicitly approved using it for the STA-71 demo seed. Development and production
+are not yet separate. This approved seed uses only the owned demo records;
+future remote seed/reset operations still require explicit approval. Revisit
+this exception when dedicated environments are introduced.
 
 Agents may extend the demo seed and persona scenarios as feature work requires.
 Use the existing Supabase schema and Auth workflow, and create required schema
@@ -30,6 +38,13 @@ Availability review (STA-69) adds an alternative Candidate Slot to the owned
 demo Events. In Cast & Team, the Producer can select Morgan Member and Parker
 Producer for a two-option poll. The scoped reset explicitly clears owned poll
 records before removing their Occurrences; it never clears unrelated polls.
+
+Team review (STA-71) seeds **Ants 2 Gods** and **The Management** through
+authenticated Team commands. Parker Producer owns both; Casey Multi-Theater
+belongs to both, and Morgan Member belongs to Ants 2 Gods. These are accepted
+Team memberships independent of their Event relationships. People supports
+creating a Team as Morgan and inviting Parker to accept personally. Reset clears
+only Teams belonging to the two owned demo Theaters before clearing membership.
 
 Seven personas are available:
 

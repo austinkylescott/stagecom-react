@@ -3,13 +3,16 @@ import { createFileRoute } from '@tanstack/react-router'
 import { PeopleWorkspacePage } from '@/features/invitations/components'
 import { listTargetedInvitationsFn } from '@/features/invitations/server-functions'
 import { listReusableJoinLinksFn } from '@/features/join-links/server-functions'
+import { getTeamWorkspaceFn } from '@/features/teams/server-functions'
 import { getPeopleWorkspaceFn } from '@/features/memberships/server-functions'
 
 export const Route = createFileRoute('/app/$theaterSlug/members')({
   loader: async ({ context }) => {
-    const peopleResult = await getPeopleWorkspaceFn({
-      data: { theaterId: context.theater.id },
-    })
+    const [peopleResult, teamsResult] = await Promise.all([
+      getPeopleWorkspaceFn({ data: { theaterId: context.theater.id } }),
+      getTeamWorkspaceFn({ data: { theaterId: context.theater.id } }),
+    ])
+    if (!teamsResult.ok) throw teamsResult.error
 
     if (!peopleResult.ok) {
       throw peopleResult.error
@@ -21,6 +24,7 @@ export const Route = createFileRoute('/app/$theaterSlug/members')({
       return {
         canManage,
         people: peopleResult.data,
+        teams: teamsResult.data,
         invitations: [],
         joinLinks: [],
       }
@@ -37,6 +41,7 @@ export const Route = createFileRoute('/app/$theaterSlug/members')({
     return {
       canManage,
       people: peopleResult.data,
+      teams: teamsResult.data,
       invitations: invitationResult.data.invitations,
       joinLinks: joinLinkResult.data.links,
     }
@@ -46,7 +51,8 @@ export const Route = createFileRoute('/app/$theaterSlug/members')({
 
 function TheaterMembersPage() {
   const { membership, theater } = Route.useRouteContext()
-  const { canManage, invitations, joinLinks, people } = Route.useLoaderData()
+  const { canManage, invitations, joinLinks, people, teams } =
+    Route.useLoaderData()
 
   return (
     <PeopleWorkspacePage
@@ -55,6 +61,7 @@ function TheaterMembersPage() {
       initialInvitations={invitations}
       initialJoinLinks={joinLinks}
       people={people}
+      initialTeams={teams}
       theaterId={theater.id}
     />
   )

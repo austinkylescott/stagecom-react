@@ -93,3 +93,13 @@ by `service_role` after app-level authorization.
 ## Reusable Join Links
 
 Possession of an active Reusable Join Link grants immediate base `member` access. Links never grant elevated roles or capabilities. Owner/Admin may revoke or rotate them and may configure expiration or use limits.
+
+## Teams
+
+Active Theater Members read Team names and accepted eligible membership through
+an authenticated projection. Pending invitations are visible only to their
+recipient and Team Owner. Any active Member creates a Team; only the Team Owner
+invites, the recipient responds, and each accepted Member leaves themselves.
+Team authority never grants Theater or Event capabilities. Anonymous reads and
+direct client table writes are denied. Ownership continuity is tracked in
+STA-72; see [the contract](../../docs/design/teams-contract.md).

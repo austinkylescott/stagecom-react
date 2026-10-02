@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { PeopleWorkspacePage } from './components'
@@ -18,8 +18,18 @@ const people = {
     },
   ],
   directory: [
-    { displayName: 'Owner Olive', roles: ['owner'], userId: 'owner' },
-    { displayName: 'Member Mira', roles: [], userId: 'member' },
+    {
+      avatarUrl: null,
+      displayName: 'Owner Olive',
+      roles: ['owner'],
+      userId: 'owner',
+    },
+    {
+      avatarUrl: null,
+      displayName: 'Member Mira',
+      roles: [],
+      userId: 'member',
+    },
   ],
   operator: {
     formerMembers: [
@@ -57,6 +67,7 @@ describe('PeopleWorkspacePage', () => {
         canManage={false}
         initialInvitations={[]}
         initialJoinLinks={[]}
+        initialTeams={{ actorId: 'member', teams: [] }}
         people={{
           adminAuthorityHistory: [],
           directory: people.directory,
@@ -83,6 +94,7 @@ describe('PeopleWorkspacePage', () => {
         canManage
         initialInvitations={[]}
         initialJoinLinks={[]}
+        initialTeams={{ actorId: 'member', teams: [] }}
         people={people}
         theaterId="10000000-0000-0000-0000-000000000001"
       />,
@@ -104,4 +116,52 @@ describe('PeopleWorkspacePage', () => {
       screen.getByText(/Owner Olive removed Admin authority from Member Mira/),
     ).toBeTruthy()
   })
+})
+
+it("discards another Theater's Teams and search input when People changes Theater", () => {
+  const props = {
+    actorUserId: 'member',
+    canManage: false,
+    initialInvitations: [],
+    initialJoinLinks: [],
+    people: {
+      adminAuthorityHistory: [],
+      directory: people.directory,
+      operator: null,
+    },
+  }
+  const { rerender } = render(
+    <PeopleWorkspacePage
+      {...props}
+      theaterId="first"
+      initialTeams={{
+        actorId: 'member',
+        teams: [
+          {
+            id: 'team',
+            name: 'First Theater Team',
+            ownerId: 'member',
+            ownerEligible: true,
+            version: 1,
+            memberIds: ['member'],
+            invitations: [],
+          },
+        ],
+      }}
+    />,
+  )
+  fireEvent.change(screen.getByLabelText('Search Members'), {
+    target: { value: 'Mira' },
+  })
+  rerender(
+    <PeopleWorkspacePage
+      {...props}
+      theaterId="second"
+      initialTeams={{ actorId: 'member', teams: [] }}
+    />,
+  )
+  expect(
+    screen.queryByRole('button', { name: 'View First Theater Team' }),
+  ).toBeNull()
+  expect(screen.getByLabelText('Search Members')).toHaveProperty('value', '')
 })
