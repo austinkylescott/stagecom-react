@@ -97,9 +97,14 @@ private command/query boundary; anonymous grants remain revoked. See the
 [RLS advisor](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
 and [authenticated RPC advisor](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
 
-Remote seeding remains pending a dedicated hosted demo target. The connected
-project inventory has only shared dev and an unrelated inactive project;
-the demo environment policy excludes shared dev from demo seed commands.
+The maintainer confirmed that `stagecom` is currently the personal project's
+only active database, without separate development/production environments,
+and explicitly approved using it for the demo seed. The existing scoped seed
+completed successfully remotely on 2026-10-02. Persisted Teams are Ants 2 Gods
+(three accepted Members) and The Management (two), both owned by Parker Producer.
+Authenticated Morgan and Casey reads verified their one/two accepted Teams;
+anonymous Team reads remained denied. The existing configured demo password was
+used without printing credentials. No dedicated target remains outstanding.
 
 ## Standards
 

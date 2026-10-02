@@ -7,7 +7,15 @@ Status: implemented
 The Stagecom demo is a deterministic, disposable dataset for moderated user
 testing, stakeholder walkthroughs, and manual QA. It must run against either
 the local Supabase stack or a dedicated hosted demo project. Do not point the
-demo commands at production or the shared development project.
+demo commands at production or the shared development project, except for the
+current maintainer-approved single-project arrangement below.
+
+On 2026-10-02 the maintainer confirmed that `stagecom`
+(`obufimjayisdhkjjxhfd`) is the personal project's only active database and
+explicitly approved using it for the STA-71 demo seed. Development and production
+are not yet separate. This approved seed uses only the owned demo records;
+future remote seed/reset operations still require explicit approval. Revisit
+this exception when dedicated environments are introduced.
 
 Agents may extend the demo seed and persona scenarios as feature work requires.
 Use the existing Supabase schema and Auth workflow, and create required schema

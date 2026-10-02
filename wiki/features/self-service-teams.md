@@ -2,7 +2,8 @@
 
 Implementation status: Partially implemented; STA-71 scope implemented and its
 approved migration integrated into remote dev, with verification recorded in
-the review contract. Remote demo seeding awaits a dedicated demo target.
+the review contract. The approved demo seed is persisted in the current single
+remote project.
 Ownership administration and recovery are STA-72.
 
 Active Theater Members find people by name, profile avatar, and any selected
