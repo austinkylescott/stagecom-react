@@ -37,6 +37,7 @@ export type PublishedEventContent = {
   externalUrl: string | null
   imageUrl: string | null
   occurrences: Array<{
+    id?: string
     durationMinutes: number
     localStartsAt: string
     locationName: string

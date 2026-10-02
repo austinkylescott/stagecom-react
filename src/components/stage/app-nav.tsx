@@ -44,6 +44,9 @@ export function PublicNav() {
           aria-label="Public navigation"
           className="ml-auto flex items-center gap-2"
         >
+          <Button asChild variant="ghost">
+            <Link to="/theater">Discover</Link>
+          </Button>
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link to="/app/callsheet">My Callsheet</Link>
           </Button>

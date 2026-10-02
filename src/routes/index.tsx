@@ -26,6 +26,9 @@ function Home() {
                 Open my callsheet <ArrowRight className="size-4" />
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <a href="/theater">Discover public programming</a>
+            </Button>
             <Link
               className="rounded-md border border-border bg-background px-5 py-3 font-semibold text-foreground no-underline"
               to="/signup"

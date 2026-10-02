@@ -1,3 +1,4 @@
+import { EventPoster } from '@/features/public-programming/poster'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CalendarDays, ExternalLink, MapPin } from 'lucide-react'
@@ -53,7 +54,7 @@ export function PublicTheaterPage({
     .join(', ')
 
   return (
-    <main className="page-wrap py-6">
+    <main className="page-wrap min-w-0 break-words py-6">
       {mode === 'preview' ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary px-4 py-3">
           <p className="text-sm font-semibold text-foreground">Preview mode</p>
@@ -72,8 +73,13 @@ export function PublicTheaterPage({
         </div>
       ) : null}
 
+      {mode === 'published' ? (
+        <a className="mb-4 inline-block text-sm underline" href="/theater">
+          Browse Theaters
+        </a>
+      ) : null}
       <Card className="overflow-hidden gap-0">
-        <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="p-7 sm:p-10">
             <p className="text-xs font-medium tracking-normal text-muted-foreground">
               {mode === 'preview' ? 'Draft public page' : 'Theater'}
@@ -131,19 +137,18 @@ export function PublicTheaterPage({
           <div className="grid gap-3">
             {theater.upcomingEvents.map((event) => (
               <article
-                className="overflow-hidden rounded-lg border border-border bg-secondary sm:flex"
+                className="min-w-0 rounded-lg border border-border bg-card p-4 sm:flex sm:gap-4"
                 key={event.href}
               >
-                {event.imageUrl ? (
-                  <img
-                    alt=""
-                    className="aspect-[4/3] w-full object-cover sm:w-44"
-                    src={event.imageUrl}
-                  />
-                ) : null}
-                <div className="px-5 py-4">
+                <div className="w-full shrink-0 sm:w-44">
+                  <EventPoster imageUrl={event.imageUrl} title={event.title} />
+                </div>
+                <div className="min-w-0 py-4">
                   <p className="text-xs font-medium tracking-normal text-muted-foreground">
-                    {event.cancelled ? 'Cancelled Event' : 'Upcoming Event'}
+                    <span>
+                      {event.cancelled ? 'Cancelled Event' : 'Upcoming Event'}
+                    </span>{' '}
+                    · Published presentation
                   </p>
                   <h3 className="mt-1 text-xl font-semibold text-foreground">
                     <a
