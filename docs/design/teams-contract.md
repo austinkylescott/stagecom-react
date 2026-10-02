@@ -10,8 +10,8 @@ Former Member history to Operators. Profiles already store `avatar_url`.
 Theater membership deactivation has versioned, audited transactions. Event
 Cast, leadership, staff and Calls are independent persisted relationships.
 No Team storage, permissions or commands existed on the starting main commit
-`d205fda`. Remote dev lists the same migration versions as that main commit;
-no remote schema mutation is authorized for this work.
+`d205fda`. Remote dev initially listed the same migration versions as that main
+commit. The maintainer subsequently approved remote migration and seeding.
 
 ## Approved scope
 
@@ -50,8 +50,8 @@ anonymous reads and client table writes. Service-role access remains server-only
 
 Authorized commands/queries, real database transactions and RLS, and the People
 workspace browser flow. Review data extends the existing disposable Supabase
-Auth demo. All migrations and seeding run locally; remote integration remains
-subject to explicit operation approval.
+Auth demo. The complete migration chain and seed reruns were verified locally
+before the approved remote migration.
 
 ## Verification and review
 
@@ -69,9 +69,37 @@ unauthorized reads/writes, and concurrent acceptance versus dissolution.
 The broad browser run had 27 passes, one existing skip, and ten failures in older
 scenarios. All ten failing test cases also failed on unchanged starting main
 `d205fda`; see the pull request for the baseline comparison. They are not represented as a green
-full browser suite. Remote migration and remote seeding were not performed.
+full browser suite.
 Local security advisors reported only the existing `pg_trgm` and `btree_gist`
 extension placement warnings, with no Team findings.
+
+## Remote integration
+
+After explicit maintainer approval, the reviewed SQL was applied to shared dev
+`stagecom` (`obufimjayisdhkjjxhfd`) on 2026-10-02. Supabase assigned version
+`20261002155338`; the pending repository migration was renamed to match, with
+unchanged SQL. Stored remote migration SQL matches the reviewed file exactly.
+All three Team tables have RLS enabled and deny direct anonymous/authenticated
+reads. Both RPCs deny anonymous execution, use an empty search path and reject
+calls without an authenticated actor. Database types were regenerated from
+remote; public schema types match the locally tested schema. Typecheck and the
+Theater-switch unit regression passed again.
+
+History comparison found two pre-existing SQL differences against `d205fda`:
+`initial_schema` includes later Theater identity/home and search-path changes
+locally, and `targeted_theater_invitations` includes its later conflict-target
+fix locally. Later forward migrations supply these changes remotely. Their
+historical records were preserved.
+
+Remote security advisors flag the Team tables' intentional lack of direct RLS
+policies and the authenticated security-definer RPCs. These are the reviewed
+private command/query boundary; anonymous grants remain revoked. See the
+[RLS advisor](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+and [authenticated RPC advisor](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+
+Remote seeding remains pending a dedicated hosted demo target. The connected
+project inventory has only shared dev and an unrelated inactive project;
+the demo environment policy excludes shared dev from demo seed commands.
 
 ## Standards
 
