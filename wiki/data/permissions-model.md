@@ -97,9 +97,12 @@ Possession of an active Reusable Join Link grants immediate base `member` access
 ## Teams
 
 Active Theater Members read Team names and accepted eligible membership through
-an authenticated projection. Pending invitations are visible only to their
-recipient and Team Owner. Any active Member creates a Team; only the Team Owner
-invites, the recipient responds, and each accepted Member leaves themselves.
+the authenticated Team projection. Pending invitations are private to the
+recipient and Team Owner/accepted Admin. Any active Member creates a Team.
+Only the Owner offers/removes Admin authority and chooses ownership/recovery
+recipients; authority and nominations require personal acceptance. Owner/Admins
+rename, invite and remove ordinary Members. Admins relinquish authority personally.
 Team authority never grants Theater or Event capabilities. Anonymous reads and
-direct client table writes are denied. Ownership continuity is tracked in
-STA-72; see [the contract](../../docs/design/teams-contract.md).
+direct client table writes remain denied. Membership loss ends Team authority
+and performs deterministic recovery/dissolution. See the
+[authority contract](../../docs/design/team-authority-contract.md).

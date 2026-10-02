@@ -2290,6 +2290,7 @@ export type Database = {
       }
       team_memberships: {
         Row: {
+          admin_state: string
           invited_by: string
           joined_at: string | null
           state: string
@@ -2299,6 +2300,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_state?: string
           invited_by: string
           joined_at?: string | null
           state: string
@@ -2308,6 +2310,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_state?: string
           invited_by?: string
           joined_at?: string | null
           state?: string
@@ -2679,8 +2682,12 @@ export type Database = {
           id: string
           name: string
           owner_user_id: string
+          recovery_accepted: boolean
+          recovery_user_id: string | null
           state: string
+          successor_user_id: string | null
           theater_id: string
+          transfer_departure: boolean
           version: number
         }
         Insert: {
@@ -2688,8 +2695,12 @@ export type Database = {
           id: string
           name: string
           owner_user_id: string
+          recovery_accepted?: boolean
+          recovery_user_id?: string | null
           state?: string
+          successor_user_id?: string | null
           theater_id: string
+          transfer_departure?: boolean
           version?: number
         }
         Update: {
@@ -2697,14 +2708,32 @@ export type Database = {
           id?: string
           name?: string
           owner_user_id?: string
+          recovery_accepted?: boolean
+          recovery_user_id?: string | null
           state?: string
+          successor_user_id?: string | null
           theater_id?: string
+          transfer_departure?: boolean
           version?: number
         }
         Relationships: [
           {
             foreignKeyName: 'theater_teams_owner_user_id_fkey'
             columns: ['owner_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_teams_recovery_user_id_fkey'
+            columns: ['recovery_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_teams_successor_user_id_fkey'
+            columns: ['successor_user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -3679,6 +3708,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      reconcile_team_ownership: {
+        Args: { p_team_id: string }
+        Returns: undefined
       }
       record_candidate_slot_availability: {
         Args: {

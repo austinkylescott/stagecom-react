@@ -1,6 +1,8 @@
 # People and self-service Teams (STA-71)
 
-Status: implementation contract; maintainer approved first-version boundaries.
+Status: STA-71 implementation contract; maintainer approved first-version boundaries.
+STA-72 supersedes the initial governance limits through the
+[approved authority contract](team-authority-contract.md).
 
 ## Existing capabilities
 

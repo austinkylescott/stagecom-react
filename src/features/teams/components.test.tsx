@@ -34,6 +34,10 @@ it('searches names with overlapping Team filters while keeping identities readab
             version: 1,
             memberIds: ['a', 'b'],
             invitations: [],
+            adminIds: [],
+            adminInvitationIds: [],
+            transfer: null,
+            recovery: null,
           },
           {
             id: 'french',
@@ -43,6 +47,10 @@ it('searches names with overlapping Team filters while keeping identities readab
             version: 1,
             memberIds: ['a'],
             invitations: [],
+            adminIds: [],
+            adminInvitationIds: [],
+            transfer: null,
+            recovery: null,
           },
         ],
       }}

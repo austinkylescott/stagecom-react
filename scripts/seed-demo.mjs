@@ -761,6 +761,7 @@ async function createDemoTeams(theaterId, personas) {
   for (const [name, recipients] of [
     ['Ants 2 Gods', ['member', 'multi']],
     ['The Management', ['multi']],
+    ['Authority Review Team', ['member', 'multi']],
   ]) {
     const id = crypto.randomUUID()
     const created = await actor.rpc('manage_team', {
@@ -794,6 +795,35 @@ async function createDemoTeams(theaterId, personas) {
         p_command_id: crypto.randomUUID(),
       })
       throwIfError('accept demo Team invitation', accepted.error)
+    }
+    if (name === 'The Management') {
+      for (const [offer, response] of [
+        ['offer_admin', 'respond_admin'],
+        ['offer_recovery', 'respond_recovery'],
+      ]) {
+        const offered = await actor.rpc('manage_team', {
+          p_theater_id: theaterId,
+          p_action: offer,
+          p_input: {
+            teamId: id,
+            memberUserId: personas.multi.id,
+            expectedVersion: version++,
+          },
+          p_command_id: crypto.randomUUID(),
+        })
+        throwIfError('offer demo Team authority', offered.error)
+        const consent = await clients.multi.rpc('manage_team', {
+          p_theater_id: theaterId,
+          p_action: response,
+          p_input: {
+            teamId: id,
+            response: 'accepted',
+            expectedVersion: version++,
+          },
+          p_command_id: crypto.randomUUID(),
+        })
+        throwIfError('accept demo Team authority', consent.error)
+      }
     }
   }
 }

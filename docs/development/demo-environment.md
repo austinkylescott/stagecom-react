@@ -12,7 +12,8 @@ current maintainer-approved single-project arrangement below.
 
 On 2026-10-02 the maintainer confirmed that `stagecom`
 (`obufimjayisdhkjjxhfd`) is the personal project's only active database and
-explicitly approved using it for the STA-71 demo seed. Development and production
+explicitly approved using it for the STA-71 demo seed and later the STA-72
+migration and extended demo seed. Development and production
 are not yet separate. This approved seed uses only the owned demo records;
 future remote seed/reset operations still require explicit approval. Revisit
 this exception when dedicated environments are introduced.
@@ -45,6 +46,17 @@ belongs to both, and Morgan Member belongs to Ants 2 Gods. These are accepted
 Team memberships independent of their Event relationships. People supports
 creating a Team as Morgan and inviting Parker to accept personally. Reset clears
 only Teams belonging to the two owned demo Theaters before clearing membership.
+
+STA-72 adds **Authority Review Team** with Parker, Morgan and Casey for the
+consent/departure walkthrough. **The Management** gives Casey accepted Team
+Admin authority and an accepted recovery nomination through authenticated
+commands. Ants 2 Gods retains the original membership story. The automated
+recovery scenario creates an isolated local Auth actor and persists their Theater
+and Team membership before racing transfer acceptance with deactivation.
+After explicit operation approval on 2026-10-02 these extensions were seeded on
+`stagecom`. Remote persona authentication and Team reads verified all three
+Teams, Casey's accepted Admin authority and accepted recovery nomination;
+anonymous Team reads remain denied. Future remote seeds still require approval.
 
 Seven personas are available:
 
