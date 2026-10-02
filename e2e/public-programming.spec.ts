@@ -39,6 +39,10 @@ test('phone discovery discloses only published presentations and complete poster
   await expect(
     page.getByText('PRIVATE REVIEW COPY', { exact: false }),
   ).toHaveCount(0)
+  await waitForReactHandler(
+    page.getByRole('link', { name: 'Discover', exact: true }),
+    'onClick',
+  )
   await page
     .getByRole('link', { name: 'Calendar Performance', exact: true })
     .click()
@@ -85,6 +89,19 @@ test('phone discovery discloses only published presentations and complete poster
     path: 'test-results/public-event-phone.png',
     fullPage: true,
   })
+  for (const width of [360, 1280]) {
+    await page.setViewportSize({ width, height: 844 })
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true)
+    await page.screenshot({
+      path: `test-results/public-event-${width}.png`,
+      fullPage: true,
+    })
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/theater/compass-rose/public-stories')
   await expect(page.getByText('Poster unavailable')).toBeVisible()
   await expect(page.getByText('$18.00')).toBeVisible()

@@ -80,7 +80,8 @@ clock instant, so the suite never waits for wall time.
 
 ## Public discovery and private return (STA-74)
 
-Implemented with remote migration integration pending explicit approval. Public
+Implemented and integrated with `stagecom` after explicit migration and scoped
+demo-seed approval on 2026-10-02. Public
 navigation exposes `/theater` discovery and the existing Theater/Event public
 destinations. Event copy, credits, admission and Performances come exclusively
 from published snapshots. Complete 4:5 posters have original-image access and a

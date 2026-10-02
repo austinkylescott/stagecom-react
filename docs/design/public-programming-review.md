@@ -1,6 +1,6 @@
 # Published Theater and Event discovery (STA-74)
 
-Status: implemented; remote integration pending operation approval.
+Status: implemented and integrated with the approved remote development database.
 
 `/theater` discovers published Theaters using an anonymous client and a narrow
 public-field projection. The existing Theater destination lists upcoming published
@@ -19,7 +19,7 @@ credits remain accessible text. Performance and admission details precede long
 copy on phones. The private destination labels the **Current private plan** and
 links back to the published presentation.
 
-The additive `20261002202840_public_event_occurrence_context` migration adds the
+The additive `20261002204819_public_event_occurrence_context` migration adds the
 existing snapshot's `occurrence_id` to the public JSON projection as `id`. It does
 not expose live Occurrences, Candidate Slots, private plans or unpublished copy.
 The function's anonymous-safe visibility predicate and grants stay intact. The
@@ -39,7 +39,9 @@ working revision. A Midsummer Night's Dream remains private. Publication and
 working revisions are persisted through the delivered RPCs; the operational
 Calendar fixture retains its existing approved-plan setup. Scoped cleanup removes
 only owned public Occurrence snapshots before their Events, so seed reruns pass.
-Remote seeding still requires explicit approval.
+The maintainer approved this migration and scoped remote demo reseed on 2026-10-02.
+Both succeeded on `stagecom` (`obufimjayisdhkjjxhfd`); future remote operations
+still require explicit approval.
 
 ## Verification
 
@@ -47,15 +49,35 @@ Remote seeding still requires explicit approval.
   admission, published labels and Performance identity links.
 - A real anonymous-query integration test verifies discovery, exact published
   content, snapshot IDs, unpublished not-found and direct private-table denial.
-- `e2e/public-programming.spec.ts` verifies 390px composition, long copy, broken
+- `e2e/public-programming.spec.ts` verifies 360px/390px phone and 1280px desktop composition, long copy, broken
   images, keyboard navigation, private/public revision separation, sign-in return
   fragments, Producer access, unrelated-Member denial, loading, failed requests
-  and retry. Phone screenshots are generated in `test-results/`.
+  and retry. Screenshots are generated in `test-results/`; review captures are
+  checked in under `docs/design/public-programming-evidence/`.
 - The migration applies on disposable local Supabase. The public schema matches
   committed types; local CLI output differs in formatting, included GraphQL
-  schema and PostgREST metadata. No committed type change is needed for JSON.
+  schema and PostgREST metadata. Generated remote public-schema types also match the committed schema; no type
+  change is needed for the additive JSON field. The committed migration timestamp
+  matches the version assigned by remote Supabase. Stored remote SQL matches the
+  reviewed migration exactly. The remote anonymous API verifies both published
+  cards, unpublished absence and direct-table denial. The real app browser also
+  verifies exact Performance entry, the Producer's separate working revision,
+  and unrelated-Member private-route denial. A remote public phone capture is
+  included with the review images.
+- Typechecking, all 59 unit/integration files (186 tests) and production build pass.
+  The full browser suite records 31 passes, 13 failures and one skip. All three
+  STA-74 journeys pass. Wider failures include old component-gallery, Work Queue,
+  Event pipeline and Calendar selectors, email-link waits and a poll focus check.
+  The milestone test reaches and verifies public admission before failing later
+  on the old Calendar `List` selector. These failures remain disclosed; this
+  ticket does not change those unrelated flows.
 - The broader existing pgTAP suite fails on seeded global counts and retired
   function signatures. STA-74's public-query and browser checks pass independently.
 
 The neutral component foundation is preserved. This work does not approve or
 change the separate branding direction.
+
+## Independent review
+
+Standards: no actionable findings. Spec: no findings or scope creep. Both reviews
+used the user-confirmed starting commit `3947314` as the fixed comparison point.

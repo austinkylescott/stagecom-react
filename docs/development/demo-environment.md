@@ -162,4 +162,7 @@ then saves separate unpublished working revisions. The first has a complete
 copy, an unavailable image and an external ticket link. Original Event identity
 and snapshot Performance IDs connect to the authorized private destinations.
 Owned public Occurrence snapshots are cleared before owned Events on reset.
-Local seed reruns pass; no remote STA-74 seed has been executed.
+Local seed reruns pass. After explicit maintainer approval on 2026-10-02, the
+scoped STA-74 demo seed also succeeded on `stagecom`. Anonymous snapshots,
+unpublished absence, private-table denial and Producer authority were verified.
+Future remote seed/reset operations still require explicit approval.

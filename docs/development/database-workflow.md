@@ -184,9 +184,12 @@ Future remote operations still require explicit approval.
 
 ## Public Performance identity (STA-74)
 
-`20261002202840_public_event_occurrence_context` adds the existing published
+`20261002204819_public_event_occurrence_context` adds the existing published
 snapshot's Occurrence ID to `get_published_event` JSON. It preserves the anonymous
 visibility predicate and exposes no current private-plan content. The forward
 migration and public schema types were verified on disposable local Supabase.
-Remote application and demo reseeding still require explicit operation approval.
-See `docs/design/public-programming-review.md` for disclosure and browser evidence.
+After explicit maintainer approval on 2026-10-02, the migration and scoped demo
+reseed succeeded on `stagecom`. Stored SQL matches the reviewed migration and
+generated remote public-schema types match the committed schema. Future remote
+operations still require explicit approval. See
+`docs/design/public-programming-review.md` for disclosure and browser evidence.

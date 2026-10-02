@@ -35,25 +35,25 @@ const theaterLinks = [
 export function PublicNav() {
   return (
     <header className="border-b">
-      <div className="page-wrap flex h-14 items-center gap-4">
+      <div className="page-wrap flex h-14 items-center gap-2 sm:gap-4">
         <Link to="/" className="flex items-center gap-2 font-semibold">
           <Theater className="size-4" />
           Stagecom
         </Link>
         <nav
           aria-label="Public navigation"
-          className="ml-auto flex items-center gap-2"
+          className="ml-auto flex items-center gap-1 sm:gap-2"
         >
-          <Button asChild variant="ghost">
+          <Button asChild variant="ghost" className="px-2 sm:px-4">
             <Link to="/theater">Discover</Link>
           </Button>
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link to="/app/callsheet">My Callsheet</Link>
           </Button>
-          <Button asChild variant="ghost">
+          <Button asChild variant="ghost" className="px-2 sm:px-4">
             <Link to="/login">Sign in</Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="px-2 sm:px-4">
             <Link to="/signup">
               <span className="sm:hidden">Join</span>
               <span className="hidden sm:inline">Create account</span>
