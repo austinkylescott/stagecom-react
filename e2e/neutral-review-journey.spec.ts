@@ -66,7 +66,14 @@ test('connected neutral review spans all workspace pages and relationship presen
       await waitForReactHandler(chooser, 'onClick')
       await chooser.click()
       await expect(page).toHaveURL(/\/app\//)
-      await page.goto('/app/callsheet')
+      const callsheet = page
+        .getByRole('link', {
+          name: 'Callsheet',
+          exact: true,
+        })
+        .first()
+      await waitForReactHandler(callsheet, 'onClick')
+      await callsheet.click()
       await expect(
         page.getByRole('region', { name: 'Confirmed Calls' }),
       ).toBeVisible()

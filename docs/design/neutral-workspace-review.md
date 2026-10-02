@@ -1,6 +1,6 @@
 # Connected neutral workspace review (STA-75)
 
-Status: integrated neutral review checkpoint in preparation; human presentation
+Status: integrated neutral review checkpoint ready for maintainer review; human presentation
 review pending. This record does not approve branding or release readiness.
 
 ## Successive gates
@@ -74,8 +74,8 @@ here as review occurs; do not infer acceptance from tests or prior ticket merges
 
 ## Automated findings and verification
 
-To be finalized after the connected journey and regression checks. Failures,
-omissions and untested states will remain explicit even where scoped checks pass.
+Failures, omissions and untested states remain explicit even where scoped
+checks pass.
 
 ### Scope and contracts
 
@@ -132,10 +132,45 @@ private authorization remain separate. No remote write operation was performed.
 - Full unit/integration suite: **59 files, 186 tests passed**, including real
   anonymous queries and authenticated local scope checks.
 - Scoped ESLint and Git whitespace checks: **passed**.
-- Final full browser suite: pending final result below.
+- Intermediate full runs: **43 passed, 3 failed, 1 skipped**, then **44 passed,
+  2 failed, 1 skipped**. The connected journey needed an exact Event-route/heading
+  assertion; legacy milestone links and Team form checks needed hydration waits.
+  The corrected milestone passed three consecutive runs and the Team flow passed.
+- Subsequent full run: **42 passed, 4 failed, 1 skipped**. Persona login and an
+  immediate Callsheet load competed; the journey now follows the hydrated shell
+  link and both connected/Notification tests pass on rerun. One exhausted Join
+  Link read returned an external-service error; its unchanged focused rerun passed.
+  Team authority tests encountered retained mutation state and duplicate recovery
+  Teams after repeated runs. The owned disposable demo story was reseeded.
+- Final fresh-seed serial full browser suite: **45 passed, 1 failed, 1 skipped**.
+  Connected review, Notification recovery, Team authority, Join Links and Calendar
+  passed. The older Callsheet drawer-focus test interacted before its route
+  transition settled; it now waits for the Callsheet URL and hydrated trigger.
+  The affected test then **passed three consecutive runs**. The full suite was
+  not repeated after this test-only synchronization fix.
+- Skipped completion-fault injection is restricted to the default disposable
+  local stack; this run uses the dedicated demo stack. No remote fault injection
+  or production operation was attempted.
 - No migration or seed-code change: migration/reset/pgTAP checks were not rerun;
   read-only migration-body comparison, generated-type comparison and real
   authorized persistence/query journeys provide proportionate database evidence.
 - Physical-device software keyboard, uncoached human usability, exhaustive screen
   reader audit and branded presentation: **not performed**.
 - Neutral presentation checklist and human review log above remain **Pending**.
+
+## Code review against `aa3bbbc`
+
+### Standards
+
+No documented-standard violations or material baseline smells. Production fixes
+remain in feature components and reuse authorized commands. Tests use real local
+Auth and persistence; docs and wiki remain synchronized. The final login
+synchronization deltas were also reviewed without findings.
+
+### Spec
+
+No actionable gaps or scope creep. The connected pages/personas, retry behavior
+and preserved contracts match STA-75. Human acceptance and actual-device review
+remain explicit limits. The final full-run failure and focused recovery results are recorded above.
+
+Standards: **0 findings**, no worst issue. Spec: **0 findings**, no worst issue.
