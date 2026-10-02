@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5'
-  }
   public: {
     Tables: {
       activity_events: {
@@ -2249,6 +2244,51 @@ export type Database = {
           },
         ]
       }
+      team_cast_reviews: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          selection: Json
+          sent_result: Json | null
+          show_id: string
+          snapshot: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id?: string
+          selection: Json
+          sent_result?: Json | null
+          show_id: string
+          snapshot: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          selection?: Json
+          sent_result?: Json | null
+          show_id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'team_cast_reviews_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'team_cast_reviews_show_id_fkey'
+            columns: ['show_id']
+            isOneToOne: false
+            referencedRelation: 'shows'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       team_commands: {
         Row: {
           actor_id: string
@@ -2872,6 +2912,10 @@ export type Database = {
         Args: { p_actor_user_id: string; p_theater_id: string }
         Returns: undefined
       }
+      authorize_team_cast_review: {
+        Args: { p_show_id: string }
+        Returns: string
+      }
       can_assign_occurrence_call: {
         Args: { p_occurrence_id: string }
         Returns: boolean
@@ -3253,6 +3297,7 @@ export type Database = {
         Returns: number
       }
       get_availability_polls: { Args: { p_show_id: string }; Returns: Json }
+      get_cast_team_options: { Args: { p_show_id: string }; Returns: Json }
       get_event_planning: { Args: { p_show_id: string }; Returns: Json }
       get_event_staff_invitation_response_state: {
         Args: { p_assignment_id: string }
@@ -3959,6 +4004,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_team_cast_invitations: {
+        Args: { p_selection: Json; p_show_id: string }
+        Returns: Json
+      }
       revoke_event_staff_assignment: {
         Args: { p_actor_user_id: string; p_assignment_id: string }
         Returns: {
@@ -4174,6 +4223,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      send_team_cast_invitations: {
+        Args: { p_review_id: string }
+        Returns: Json
+      }
       set_default_theater: {
         Args: { p_theater_id: string; p_user_id: string }
         Returns: {
@@ -4332,6 +4385,10 @@ export type Database = {
       }
       submit_planning_revision: {
         Args: { p_actor_id: string; p_command_id: string; p_show_id: string }
+        Returns: Json
+      }
+      team_cast_review_snapshot: {
+        Args: { p_selection: Json; p_show_id: string }
         Returns: Json
       }
       update_theater_event_policy: {

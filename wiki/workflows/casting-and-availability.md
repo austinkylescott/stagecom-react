@@ -74,3 +74,22 @@ and turnover buffer. Ranking is read-only: it never changes a Confirmed Slot or
 creates a hold.
 
 When management counteroffers a new slot, the entire Proposed Cast receives an in-app availability request. The Producer cannot accept until the confirmed available cast meets the approved minimum.
+
+## How Do Teams Become Cast Invitations?
+
+In Cast & Team, active Event Producers/Directors select whole Teams or individual
+accepted Team Members. A named review expands overlapping membership into unique
+people and labels existing accepted Cast, pending invitations and other recorded
+Cast states as excluded. Team membership alone grants no Event participation.
+
+Send revalidates the stored review against current Team membership, active Theater
+membership, names and Cast records. Changed state returns an explained refreshed
+review without sending. Newly joined whole-Team Members must be reviewed and sent
+explicitly. The database batch calls the existing invitation backend in one
+transaction; failure leaves no partial invitations, domain events or notifications.
+Successful retries return the recorded result without duplicate invitations.
+Acceptance continues through the existing Event/Callsheet actions.
+
+See [transaction and permission contract](../../docs/design/team-cast-invitation-contract.md).
+The forward migration and browser flow are verified locally; remote deployment
+requires explicit operation approval.

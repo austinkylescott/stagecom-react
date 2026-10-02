@@ -128,6 +128,29 @@ const unscheduled = await supabase.rpc('create_managed_event', {
 })
 throwIfError('create unscheduled long-content Event', unscheduled.error)
 await createDemoTeams(theater.id, personas)
+const castReviewEvent = await supabase.rpc('create_managed_event', {
+  p_actor_user_id: personas.producer.id,
+  p_director_user_id: personas.producer.id,
+  p_producer_user_ids: [],
+  p_slug: 'team-cast-review',
+  p_theater_id: theater.id,
+  p_title: 'Team Cast Invitation Review',
+})
+throwIfError('create Team Cast review Event', castReviewEvent.error)
+for (const persona of ['producer', 'multi']) {
+  const invited = await supabase.rpc('invite_event_cast_member', {
+    p_show_id: castReviewEvent.data[0].id,
+    p_actor_user_id: personas.producer.id,
+    p_member_user_id: personas[persona].id,
+  })
+  throwIfError('seed Team Cast invitation', invited.error)
+}
+const acceptedLeader = await supabase.rpc('respond_to_event_cast_invitation', {
+  p_show_id: castReviewEvent.data[0].id,
+  p_actor_user_id: personas.producer.id,
+  p_response: 'accepted',
+})
+throwIfError('seed explicit leader Cast acceptance', acceptedLeader.error)
 await createCalendarReviewData(theater.id, personas)
 await createDemoJoinLinks(theater.id, personas.owner.id)
 const secondTheater = await createDemoTheater(personas, SECOND_DEMO_THEATER)

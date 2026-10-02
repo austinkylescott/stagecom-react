@@ -142,3 +142,11 @@ environment.
 - Resetting targets only the `compass-rose` Theater slug and the seven exact
   `@demo.stagecom.test` Auth users.
 - Normal magic-link login remains available for testing the real auth journey.
+
+STA-73 adds **Team Cast Invitation Review** (`team-cast-review`) in Compass Rose.
+Parker is explicitly accepted Cast, Casey has a pending Event invitation, and
+Morgan is eligible through the overlapping accepted Teams. As Producer, select
+Ants 2 Gods and The Management in Cast & Team, review the three unique names, and
+send Morgan's invitation. Morgan can accept personally from Callsheet or the
+Event. This extends only owned demo records; local seed execution is verified.
+Remote migration and reseeding remain separate approval operations.
