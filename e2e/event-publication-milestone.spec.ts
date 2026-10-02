@@ -203,6 +203,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       admin.page.getByText('Admin authority accepted.'),
     ).toBeVisible()
     await admin.page.reload()
+    await waitForReactProps(
+      admin.page.getByRole('link', { name: 'Enter Theater' }),
+    )
     await admin.page.getByRole('link', { name: 'Enter Theater' }).click()
     await expect(
       admin.page.getByRole('link', { name: 'Settings' }),
@@ -416,6 +419,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       'onClick',
     )
     await producer.page
+      .getByRole('group', { name: 'Proposed Cast Members' })
       .getByRole('checkbox', { name: fixture.actors.cast.name, exact: true })
       .check()
     await producer.page
@@ -464,10 +468,11 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .click()
     await expect(multiRole.page).toHaveURL(/#cast-participation$/)
     await multiRole.page.goto('/app/callsheet')
-    await multiRole.page
+    const reviewFromCallsheet = multiRole.page
       .getByRole('region', { name: 'Theater needs attention' })
       .getByRole('link', { name: /Review Proposal Revision 1/ })
-      .click()
+    await waitForReactProps(reviewFromCallsheet)
+    await reviewFromCallsheet.click()
     await expect(multiRole.page).toHaveURL(/#proposal-revision-/)
 
     await openEventFromCallsheet(reviewer.page, fixture)
@@ -653,10 +658,10 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       member.page.getByRole('heading', { name: 'Theater Calendar' }),
     ).toBeVisible()
     await waitForReactHandler(
-      member.page.getByRole('button', { name: 'List' }),
+      member.page.getByRole('button', { name: 'Daybook' }),
       'onClick',
     )
-    await member.page.getByRole('button', { name: 'List' }).click()
+    await member.page.getByRole('button', { name: 'Daybook' }).click()
     await expect(
       member.page.getByText('Primary Venue unavailable').first(),
     ).toBeVisible()
@@ -701,6 +706,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       reviewer.page.getByText('Admin authority accepted.'),
     ).toBeVisible()
     await reviewer.page.reload()
+    await waitForReactProps(
+      reviewer.page.getByRole('link', { name: 'Enter Theater' }),
+    )
     await reviewer.page.getByRole('link', { name: 'Enter Theater' }).click()
     await expect(
       reviewer.page.getByRole('link', { name: 'Settings' }),
@@ -760,6 +768,9 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       reviewer.page.getByText('Theater ownership transfer accepted.'),
     ).toBeVisible()
     await reviewer.page.reload()
+    await waitForReactProps(
+      reviewer.page.getByRole('link', { name: 'Enter Theater' }),
+    )
     await reviewer.page.getByRole('link', { name: 'Enter Theater' }).click()
     await expect(
       reviewer.page.getByRole('link', { name: 'Settings' }),

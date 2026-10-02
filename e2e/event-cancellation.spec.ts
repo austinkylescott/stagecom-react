@@ -72,6 +72,9 @@ test('Producer requests cancellation and management preserves a public notice wh
     const ownerPage = await ownerContext.newPage()
     await ownerPage.goto('/app')
     await ownerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    await ownerPage
+      .getByRole('link', { name: 'Open Theater Operations' })
+      .click()
     const queue = ownerPage.getByRole('region', { name: 'Work Queue' })
     await expect(
       queue.getByText('Producer requested cancellation'),
@@ -221,6 +224,9 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
     const ownerPage = await ownerContext.newPage()
     await ownerPage.goto('/app')
     await ownerPage.getByRole('link', { name: 'Enter Theater' }).click()
+    await ownerPage
+      .getByRole('link', { name: 'Open Theater Operations' })
+      .click()
     await expect(
       ownerPage.getByRole('region', { name: 'Event pipeline' }),
     ).toContainText('1 Event')
@@ -318,6 +324,9 @@ test('Callsheet and Theater Operations separate Producer content from watch-only
       .eq('user_id', fixture.userIds[2])
     expect(grant.error).toBeNull()
     await castPage.reload()
+    await castPage
+      .getByRole('link', { name: 'Open Theater Operations' })
+      .click()
     await expect(
       castPage.getByRole('region', { name: 'Event pipeline' }),
     ).toContainText('1 Event')
@@ -385,6 +394,7 @@ test('Operator can inspect automatic completion history without a manual complet
     const page = await ownerContext.newPage()
     await page.goto('/app')
     await page.getByRole('link', { name: 'Enter Theater' }).click()
+    await page.getByRole('link', { name: 'Open Theater Operations' }).click()
     await page.getByRole('link', { name: 'Events', exact: true }).click()
     await page.getByRole('link', { name: 'Cancellation Night' }).click()
     await page.getByRole('link', { name: 'History', exact: true }).click()
@@ -488,8 +498,9 @@ test('safe completion failure stays watch-only until automatic recovery clears i
     const page = await ownerContext.newPage()
     await page.goto('/app')
     await page.getByRole('link', { name: 'Enter Theater' }).click()
+    await page.getByRole('link', { name: 'Open Theater Operations' }).click()
     const exceptions = page.getByRole('region', {
-      name: 'Operational Exceptions',
+      name: 'Urgent Operational Exceptions',
     })
     await expect(
       exceptions.getByRole('heading', { name: 'Automatic completion failed' }),

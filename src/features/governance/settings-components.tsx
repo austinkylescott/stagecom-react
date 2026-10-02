@@ -29,11 +29,10 @@ export function TheaterSettingsNavigation({
     >
       <div className="flex gap-2 overflow-x-auto pb-2">
         {getTheaterSettingsSections(roles).map((section) => (
-          <Button asChild variant="outline">
+          <Button key={section.id} asChild variant="outline">
             <Link
               activeProps={{ className: 'bg-foreground text-white' }}
 
-              key={section.id}
               params={{ theaterSlug }}
               to={`/app/$theaterSlug/settings/${section.id}`}
             >

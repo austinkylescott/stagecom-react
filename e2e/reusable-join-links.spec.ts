@@ -64,7 +64,7 @@ test('Owner creates, rotates, and revokes a governed Reusable Join Link', async 
     expect(firstLink?.token_hash).not.toBe(firstToken)
 
     const activeCard = page
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: '0 of 2 uses' })
     await activeCard.getByRole('button', { name: 'Rotate' }).click()
     await expect(shareInput).not.toHaveValue(firstShareUrl)
@@ -88,12 +88,12 @@ test('Owner creates, rotates, and revokes a governed Reusable Join Link', async 
     await page.goto(`/app/${fixture.theaterSlug}/members`)
     await page.waitForTimeout(1_000)
     const rotatedCard = page
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: '0 of 2 uses' })
       .filter({ has: page.getByRole('button', { name: 'Revoke' }) })
     await rotatedCard.getByRole('button', { name: 'Revoke' }).click()
     await expect(
-      page.locator('article').filter({ hasText: 'revoked' }),
+      page.getByRole('article').filter({ hasText: 'revoked' }),
     ).toHaveCount(2)
 
     const { data: revokedLink } = await fixture.admin

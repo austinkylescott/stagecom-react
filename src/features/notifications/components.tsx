@@ -41,6 +41,8 @@ export function NotificationInboxPage({
             : item,
         ),
       )
+    } catch {
+      setError('Could not mark this Notification read; retry when connected.')
     } finally {
       setPendingId(null)
     }
@@ -69,6 +71,8 @@ export function NotificationInboxPage({
         },
         ...current,
       ])
+    } catch {
+      setError('Could not dismiss this Notification; retry when connected.')
     } finally {
       setPendingId(null)
     }

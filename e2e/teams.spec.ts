@@ -88,6 +88,10 @@ test('Members search overlapping Teams and create, accept and leave through pers
     await teams
       .getByRole('button', { name: `View ${name}`, exact: true })
       .click()
+    await waitForReactHandler(
+      detail.getByLabel('Invite Theater Member'),
+      'onChange',
+    )
     await detail.getByRole('button', { name: 'Send Team invitation' }).click()
     await expect(teams.getByRole('alert')).toContainText(
       'Choose an active Theater Member',

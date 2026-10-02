@@ -23,21 +23,22 @@ type RemoteInvitationFixture = {
   theaterSlug: string
 }
 
-test('dev component baseline exposes brand tokens and typography choices', async ({
+test('dev component baseline exposes neutral stock components', async ({
   page,
 }) => {
   await page.goto('/dev/components')
-
   await expect(
-    page.getByRole('heading', { name: /stagecom component baseline/i }),
+    page.getByRole('heading', { name: 'Component baseline' }),
   ).toBeVisible()
-  await expect(page.getByText('--theater / #82bfb6')).toBeVisible()
-  await expect(page.getByText('--event / #eaa542')).toBeVisible()
-  await expect(page.getByText('--performer / #c76056')).toBeVisible()
-  await expect(page.getByText(/body text uses public sans/i)).toBeVisible()
   await expect(
-    page.getByText(/cubano carries stagecom identity/i),
+    page.getByText(
+      'Stock shadcn New York components with the default Neutral light theme.',
+    ),
   ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Disabled', exact: true }),
+  ).toBeDisabled()
+  await expect(page.getByRole('table')).toContainText('Olivia')
 })
 
 test('theater setup validates required fields and keeps slug editable', async ({
@@ -366,7 +367,7 @@ test('Owner creates and revokes a Targeted Invitation from the Members screen', 
       /\/join\//,
     )
     const invitationCard = page
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: secondRecipient })
     await expect(invitationCard).toContainText('pending')
     await invitationCard.getByRole('button', { name: 'Revoke' }).click()
