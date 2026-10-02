@@ -3377,10 +3377,6 @@ export type Database = {
         }
         Returns: Json
       }
-      planning_called: {
-        Args: { p_actor_id: string; p_target_id: string }
-        Returns: boolean
-      }
       planning_committed_confirmation: {
         Args: {
           p_call: Database['public']['Enums']['occurrence_call']
@@ -3389,23 +3385,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      planning_leader: {
-        Args: {
-          p_role: Database['public']['Enums']['event_leadership_role']
-          p_show_id: string
-          p_user_id: string
-        }
-        Returns: boolean
-      }
-      planning_participant: {
-        Args: { p_show_id: string; p_user_id: string }
-        Returns: boolean
-      }
       planning_target_blockers: { Args: { p_target_id: string }; Returns: Json }
-      planning_viewer: {
-        Args: { p_show_id: string; p_user_id: string }
-        Returns: boolean
-      }
       project_admin_invitation_notification: {
         Args: { p_activity_event_id: string }
         Returns: undefined

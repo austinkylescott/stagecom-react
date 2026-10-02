@@ -1,6 +1,6 @@
 begin;
 
-select plan(55);
+select plan(67);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values
@@ -84,6 +84,8 @@ select * from public.respond_to_event_cast_invitation(
   (select id from public.shows where slug = 'planning-event'),
   '73000000-0000-0000-0000-000000000003', 'accepted'
 );
+insert into public.show_occurrences(id,show_id,occurrence_type,visibility,position) values('73000000-0000-0000-0001-000000000002',current_setting('stagecom.test_event_id')::uuid,'rehearsal','internal',1);
+insert into public.show_candidate_slots(id,occurrence_id,starts_at,duration_minutes,local_starts_at,timezone_name,timezone_source,utc_offset_minutes,location_kind,location_name,off_site_approved,position,resource_id) values('73000000-0000-0000-0002-000000000003','73000000-0000-0000-0001-000000000002','2026-11-21T23:00Z',60,'2026-11-21T18:00','America/New_York','manual',-300,'primary_venue','Primary Venue',false,0,(select primary_venue_id from public.theaters where slug='planning-theater'));
 set local role authenticated;
 set local "request.jwt.claim.sub" = '73000000-0000-0000-0000-000000000001';
 select lives_ok(format('select public.manage_event_planning(%L, %L, %L::jsonb, %L)', current_setting('stagecom.test_event_id'), 'select', '{"occurrenceId":"73000000-0000-0000-0001-000000000001","slotId":"73000000-0000-0000-0002-000000000001","expectedVersion":0}', '73000000-0000-0000-0004-000000000001'), 'Producer selects a persisted planning target');
@@ -105,6 +107,12 @@ select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)'
 select throws_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',0,'confirmed',false),'73000000-0000-0000-0004-000000000004'),'23505',null,'Reusing confirmation command with changed input is denied');
 select throws_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'submit',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1),'73000000-0000-0000-0004-000000000055'),'42501',null,'Cast cannot submit a Producer plan');
 set local "request.jwt.claim.sub" = '73000000-0000-0000-0000-000000000001';
+select set_config('stagecom.test_unchanged_target_id',public.manage_event_planning(current_setting('stagecom.test_event_id')::uuid,'select',jsonb_build_object('occurrenceId','73000000-0000-0000-0001-000000000002','slotId','73000000-0000-0000-0002-000000000003','expectedVersion',0),'73000000-0000-0000-0004-000000000080')->>'targetId',true);
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000002';
+select public.manage_event_planning(current_setting('stagecom.test_event_id')::uuid,'call',jsonb_build_object('targetId',current_setting('stagecom.test_unchanged_target_id'),'expectedVersion',1,'userId','73000000-0000-0000-0000-000000000003','call','required','callVersion',0),'73000000-0000-0000-0004-000000000081');
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000003';
+select public.manage_event_planning(current_setting('stagecom.test_event_id')::uuid,'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_unchanged_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',0,'confirmed',true),'73000000-0000-0000-0004-000000000082');
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
 select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'submit',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1),'73000000-0000-0000-0004-000000000003'),'Producer submits exact revision after confirmation');
 reset role;
 insert into public.theater_member_capabilities(theater_id,user_id,capability) select theater_id,'73000000-0000-0000-0000-000000000002','reviewer' from public.shows where id=current_setting('stagecom.test_event_id')::uuid;
@@ -186,14 +194,14 @@ set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
 select set_config('stagecom.test_move_revision_id',(select proposal_revision_id::text from public.show_planning_targets where id=current_setting('stagecom.test_target_id')::uuid),true);
 set local role authenticated;
 set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000003';
-select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',1,'confirmed',false),'73000000-0000-0000-0004-000000000064'),'Participant may refuse a submitted time without rewriting the snapshot');
+select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_unchanged_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',1,'confirmed',false),'73000000-0000-0000-0004-000000000064'),'Participant may refuse a submitted time without rewriting the snapshot');
 reset role;
 set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000002';
-select throws_ok(format('select public.review_proposal_revision(%L,%L,%L,null,false,%L,1)',current_setting('stagecom.test_move_revision_id'),'73000000-0000-0000-0000-000000000002','approve','73000000-0000-0000-0004-000000000065'),'22023',null,'Current refusal blocks replacement approval');
+select throws_ok(format('select public.review_proposal_revision(%L,%L,%L,null,false,%L,1)',current_setting('stagecom.test_move_revision_id'),'73000000-0000-0000-0000-000000000002','approve','73000000-0000-0000-0004-000000000065'),'22023',null,'Current refusal on an unchanged Occurrence blocks replacement approval');
 select ok((select confirmed_candidate_slot_id='73000000-0000-0000-0002-000000000001'::uuid from public.show_occurrences where id='73000000-0000-0000-0001-000000000001'),'Failed approval retains the original committed time');
 set local role authenticated;
 set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000003';
-select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',2,'confirmed',true),'73000000-0000-0000-0004-000000000066'),'Participant reconfirms the pending revision');
+select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_unchanged_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',2,'confirmed',true),'73000000-0000-0000-0004-000000000066'),'Participant reconfirms the pending revision');
 reset role;
 set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
 select throws_ok(format('select public.review_proposal_revision(%L,%L,%L,%L,true,%L,1)',current_setting('stagecom.test_move_revision_id'),'73000000-0000-0000-0000-000000000001','approve','Audited approval','73000000-0000-0000-0004-000000000067'),'42501',null,'Owner override remains disabled until configured');
@@ -218,9 +226,43 @@ reset role;
 set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
 select set_config('stagecom.test_move_revision_id',(select proposal_revision_id::text from public.show_planning_targets where id=current_setting('stagecom.test_target_id')::uuid),true);
 update public.theaters set owner_self_approval_enabled=true where slug='planning-theater';
+create function private.fail_sta70_booking() returns trigger language plpgsql as $$ begin if new.candidate_slot_id='73000000-0000-0000-0002-000000000002' and new.kind='approved_commitment' then raise exception 'Injected replacement booking failure'; end if; return new; end; $$;
+create trigger fail_sta70_booking before insert on public.show_schedule_reservations for each row execute function private.fail_sta70_booking();
+select throws_ok(format('select public.review_proposal_revision(%L,%L,%L,%L,true,%L,1)',current_setting('stagecom.test_move_revision_id'),'73000000-0000-0000-0000-000000000001','approve','Audited replacement approval','73000000-0000-0000-0004-000000000072'),'P0001',null,'Booking failure rolls back the whole authorized replacement');
+select is((select confirmed_candidate_slot_id from public.show_occurrences where id='73000000-0000-0000-0001-000000000001'),'73000000-0000-0000-0002-000000000001'::uuid,'Failed booking restores the original committed slot');
+select ok(exists(select 1 from public.show_schedule_reservations where show_id=current_setting('stagecom.test_event_id')::uuid and candidate_slot_id='73000000-0000-0000-0002-000000000003' and status='active'),'Failed replacement restores the unchanged active booking');
+drop trigger fail_sta70_booking on public.show_schedule_reservations;
+drop function private.fail_sta70_booking();
 select lives_ok(format('select public.review_proposal_revision(%L,%L,%L,%L,true,%L,1)',current_setting('stagecom.test_move_revision_id'),'73000000-0000-0000-0000-000000000001','approve','Audited replacement approval','73000000-0000-0000-0004-000000000072'),'Configured reasoned Owner override atomically approves replacement');
 select ok((select confirmed_candidate_slot_id='73000000-0000-0000-0002-000000000002'::uuid from public.show_occurrences where id='73000000-0000-0000-0001-000000000001'),'Successful replacement commits the new time');
-select ok((select count(*)=1 from public.show_schedule_reservations where show_id=current_setting('stagecom.test_event_id')::uuid and status='active' and kind='approved_commitment'),'Exactly one new venue commitment persists');
+select ok((select count(*)=2 from public.show_schedule_reservations where show_id=current_setting('stagecom.test_event_id')::uuid and status='active' and kind='approved_commitment'),'New and unchanged venue commitments persist together');
+reset role;
+select public.set_occurrence_call('73000000-0000-0000-0001-000000000002','73000000-0000-0000-0000-000000000003','73000000-0000-0000-0000-000000000002','optional','73000000-0000-0000-0004-000000000083',1);
+select public.set_occurrence_call('73000000-0000-0000-0001-000000000002','73000000-0000-0000-0000-000000000003','73000000-0000-0000-0000-000000000002','required','73000000-0000-0000-0004-000000000084',2);
+select ok(not public.planning_committed_confirmation(current_setting('stagecom.test_unchanged_target_id')::uuid,'73000000-0000-0000-0000-000000000003','required'),'Existing Director Call edits cannot reuse old required consent');
+select is((select version from public.show_planning_calls where target_id=current_setting('stagecom.test_unchanged_target_id')::uuid and user_id='73000000-0000-0000-0000-000000000003'),3,'Current committed Call version is synchronized to planning');
+set local role authenticated;
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000003';
+select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_unchanged_target_id'),'expectedVersion',1,'callVersion',3,'confirmationVersion',3,'confirmed',true),'73000000-0000-0000-0004-000000000085'),'Participant reconfirms the current committed Call');
+select ok(not has_schema_privilege('authenticated','private','USAGE'),'Eligibility helpers remain outside the exposed authenticated schema');
+select is((select count(*) from public.show_planning_targets where show_id=current_setting('stagecom.test_event_id')::uuid),5::bigint,'Participant target RLS works with private helper functions');
+reset role;
+insert into public.show_resource_requests(id,show_id,resource_type,label,quantity,position) values('73000000-0000-0000-0005-000000000001',current_setting('stagecom.test_event_id')::uuid,'staff','Lighting',1,0);
+select public.invite_event_staff_member(current_setting('stagecom.test_event_id')::uuid,'73000000-0000-0000-0000-000000000001','73000000-0000-0000-0000-000000000004','73000000-0000-0000-0005-000000000001');
+select public.respond_to_event_staff_invitation((select id from public.show_staff_assignments where show_id=current_setting('stagecom.test_event_id')::uuid),'73000000-0000-0000-0000-000000000004','accepted');
+set local role authenticated;
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
+select set_config('stagecom.test_target_id',public.manage_event_planning(current_setting('stagecom.test_event_id')::uuid,'select',jsonb_build_object('occurrenceId','73000000-0000-0000-0001-000000000001','slotId','73000000-0000-0000-0002-000000000001','expectedVersion',0),'73000000-0000-0000-0004-000000000090')->>'targetId',true);
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000002';
+select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'call',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1,'userId','73000000-0000-0000-0000-000000000004','call','required','callVersion',0),'73000000-0000-0000-0004-000000000091'),'Director assigns an accepted staff participant a required Call');
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000003';
+select public.manage_event_planning(current_setting('stagecom.test_event_id')::uuid,'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',0,'confirmed',true),'73000000-0000-0000-0004-000000000092');
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
+select throws_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'submit',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1),'73000000-0000-0000-0004-000000000093'),'22023',null,'Accepted staffing coverage does not supply selected-time consent');
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000004';
+select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'confirm',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1,'callVersion',1,'confirmationVersion',0,'confirmed',true),'73000000-0000-0000-0004-000000000094'),'Accepted staff explicitly confirm separately from Cast membership');
+set local "request.jwt.claim.sub"='73000000-0000-0000-0000-000000000001';
+select lives_ok(format('select public.manage_event_planning(%L,%L,%L::jsonb,%L)',current_setting('stagecom.test_event_id'),'withdraw',jsonb_build_object('targetId',current_setting('stagecom.test_target_id'),'expectedVersion',1),'73000000-0000-0000-0004-000000000095'),'Producer withdraws the pending move without releasing the original booking');
 set local role anon;
 select throws_ok(format('select public.get_event_planning(%L)',current_setting('stagecom.test_event_id')),'42501',null,'Anonymous planning access is denied');
 reset role;

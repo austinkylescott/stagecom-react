@@ -93,7 +93,7 @@ regenerate/check types. Do not reset unrelated local records.
 
 The real authenticated browser journey follows Producer selection, Director
 Calls, participant confirmation, eligible exact-revision Review, approval,
-reload, Calendar and Callsheet. Cover self-authorship, configured Owner override,
+reload, Calendar Calendar, Callsheet, and permission loss in an open participant view. Cover self-authorship, configured Owner override,
 network recovery, 360/390px reflow and keyboard controls. Viewport emulation does
 not establish physical-device software-keyboard behavior.
 
@@ -106,13 +106,15 @@ migrations/seeding, deployment, merge, release and branding keep separate gates.
 
 - The forward migration applies to a disposable local database restored to the
   pre-planning schema; unrelated local demo data was not reset.
-- 55 transactional pgTAP assertions cover selection without booking/Calls,
+- 67 transactional pgTAP assertions cover selection without booking/Calls,
   explicit confirmation, membership loss (including retries), stale Call/target/
   Review versions, immutable snapshots with subsequent refusal, denial, hold
-  expiry, request-edits preserving health, and reasoned configured Owner override.
+  expiry, request-edits preserving health, and reasoned configured Owner override. Additional cases cover unchanged Primary
+  Venue Occurrences, committed Director Call edits, required staff, and injected
+  booking failure with full transaction rollback.
 - The authenticated local browser journey passes: Producer/Director, phone-width
   participant, Reviewer, network failure/retry, keyboard Enter, reload persistence,
-  original commitment during a move, hold and atomic replacement, and Callsheet.
+  original commitment during a move, hold and atomic replacement, Calendar, Callsheet, and permission loss in an open participant view.
 - 176 unit/integration tests, typecheck and production build pass.
 - Physical-device software-keyboard behavior is not established by viewport
   emulation and remains a review gate. No remote migration or seeding occurred.
@@ -123,3 +125,23 @@ exclusion constraint arbitrates conflicts. Holds overlapping the existing bookin
 cannot be granted; approval can replace overlapping dates in its transaction.
 The staged Call saves conservatively invalidate consent even when the same Call
 value is saved; a retry with the same command identity does not invalidate twice.
+
+## Independent review
+
+Standards found an eligibility-helper privacy breach and a nonblocking duplicate
+viability-count heuristic. Helpers now live in the unexposed private schema;
+authorized RLS reads and denied private-schema usage pass. No remaining documented
+standard breaches were found on recheck.
+
+Spec found missing consent rechecks for unchanged Occurrences and committed Call
+edit invalidation; fixing the former exposed a self-booking conflict for unchanged
+Primary Venue Occurrences. All three findings are fixed and covered by the local
+RPC regressions. Physical-device software-keyboard verification remains open.
+
+The complete browser suite finished with 20 passes and 15 failures. The confirmed
+b041592 baseline has 21 passes and 13 failures; those 13 failures also occurred on
+the branch. The two additional Calendar/navigation failures passed isolated reruns.
+The new planning journey passes, including persistence, retries and permission loss.
+The broad suite is not green, and its existing failures are not hidden by focused
+results. Local migration history was repaired after direct isolated application;
+the final forward migration is separately proven from the scratch baseline.

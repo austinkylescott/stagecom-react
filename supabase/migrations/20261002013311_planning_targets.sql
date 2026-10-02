@@ -49,26 +49,26 @@ alter table public.show_schedule_reservations add constraint show_schedule_reser
  or (kind='schedule_block' and schedule_block_id is not null and counteroffer_id is null and proposal_revision_id is null and planning_target_id is null)
 );
 
-create function public.planning_participant(p_show_id uuid,p_user_id uuid) returns boolean
+create function private.planning_participant(p_show_id uuid,p_user_id uuid) returns boolean
 language sql stable security definer set search_path=public as $$
  select exists(select 1 from shows s join theater_memberships m on m.theater_id=s.theater_id and m.user_id=p_user_id and m.status='active' where s.id=p_show_id)
  and (exists(select 1 from show_cast where show_id=p_show_id and user_id=p_user_id and status='accepted') or exists(select 1 from show_staff_assignments where show_id=p_show_id and user_id=p_user_id and status='accepted'));
 $$;
-create function public.planning_leader(p_show_id uuid,p_user_id uuid,p_role public.event_leadership_role) returns boolean
+create function private.planning_leader(p_show_id uuid,p_user_id uuid,p_role public.event_leadership_role) returns boolean
 language sql stable security definer set search_path=public as $$
  select exists(select 1 from shows s join theater_memberships m on m.theater_id=s.theater_id and m.user_id=p_user_id and m.status='active' join show_leadership l on l.show_id=s.id and l.user_id=m.user_id and l.role=p_role where s.id=p_show_id);
 $$;
-create function public.planning_viewer(p_show_id uuid,p_user_id uuid) returns boolean
+create function private.planning_viewer(p_show_id uuid,p_user_id uuid) returns boolean
 language sql stable security definer set search_path=public as $$
  select exists(select 1 from shows s join theater_memberships m on m.theater_id=s.theater_id and m.user_id=p_user_id and m.status='active' where s.id=p_show_id and (m.roles && array['owner','admin']::theater_role[] or exists(select 1 from theater_member_capabilities c where c.theater_id=s.theater_id and c.user_id=p_user_id and c.capability='reviewer')))
- or public.planning_leader(p_show_id,p_user_id,'producer') or public.planning_leader(p_show_id,p_user_id,'director');
+ or private.planning_leader(p_show_id,p_user_id,'producer') or private.planning_leader(p_show_id,p_user_id,'director');
 $$;
 
 alter table public.show_planning_targets enable row level security;
 alter table public.show_planning_calls enable row level security;
 alter table public.show_planning_confirmations enable row level security;
 alter table public.show_planning_commands enable row level security;
-create policy planning_targets_read on public.show_planning_targets for select to authenticated using (public.planning_viewer(show_id,auth.uid()) or (public.planning_participant(show_id,auth.uid()) and exists(select 1 from public.show_planning_calls c where c.target_id=id and c.user_id=auth.uid())));
+create policy planning_targets_read on public.show_planning_targets for select to authenticated using (private.planning_viewer(show_id,auth.uid()) or (private.planning_participant(show_id,auth.uid()) and exists(select 1 from public.show_planning_calls c where c.target_id=id and c.user_id=auth.uid())));
 -- Avoid a policy cycle through the target table by using the authorized read RPC.
 -- Direct participant-table reads are deliberately not granted to authenticated.
 grant select on public.show_planning_targets to authenticated;
@@ -84,16 +84,16 @@ begin
  if slotrow.id is null or jsonb_build_object('candidateSlotId',slotrow.id,'startsAt',slotrow.starts_at,'durationMinutes',slotrow.duration_minutes,'locationKind',slotrow.location_kind,'resourceId',slotrow.resource_id,'locationName',slotrow.location_name,'offSiteApproved',slotrow.off_site_approved,'localStartsAt',slotrow.local_starts_at,'timezoneName',slotrow.timezone_name,'timezoneSource',slotrow.timezone_source,'utcOffsetMinutes',slotrow.utc_offset_minutes) is distinct from t.slot then
   blockers:=blockers||jsonb_build_array(jsonb_build_object('code','stale_target','message','The Candidate Slot changed. Select it again and obtain fresh confirmations.'));
  end if;
- if t.base_revision_id is not null and t.base_revision_id is distinct from s.approved_proposal_revision_id then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','stale_base','message','The current approval changed. Withdraw and refresh the move.')); end if;
+ if t.state in ('planning','submitted') and t.base_revision_id is not null and t.base_revision_id is distinct from s.approved_proposal_revision_id then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','stale_base','message','The current approval changed. Withdraw and refresh the move.')); end if;
  if exists(select 1 from show_proposed_cast pc where pc.show_id=s.id and not exists(select 1 from show_planning_calls c where c.target_id=t.id and c.user_id=pc.user_id)) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','calls_incomplete','message','Director must assign a Call to every Proposed Cast Member.')); end if;
- select coalesce(jsonb_agg(jsonb_build_object('userId',c.user_id,'displayName',p.display_name)), '[]') into missing from show_planning_calls c join profiles p on p.id=c.user_id left join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id where c.target_id=t.id and c.call='required' and (not planning_participant(s.id,c.user_id) or f.confirmed is distinct from true or f.target_version<>t.version or f.call_version<>c.version);
+ select coalesce(jsonb_agg(jsonb_build_object('userId',c.user_id,'displayName',p.display_name)), '[]') into missing from show_planning_calls c join profiles p on p.id=c.user_id left join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id where c.target_id=t.id and c.call='required' and (not private.planning_participant(s.id,c.user_id) or f.confirmed is distinct from true or f.target_version<>t.version or f.call_version<>c.version);
  if jsonb_array_length(missing)>0 then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','missing_confirmations','message','Every required Cast/staff participant must explicitly confirm the selected time.','members',missing)); end if;
- if exists(select 1 from show_proposed_cast pc where pc.show_id=s.id and (not planning_participant(s.id,pc.user_id) or not exists(select 1 from show_cast cast_member where cast_member.show_id=s.id and cast_member.user_id=pc.user_id and cast_member.status='accepted'))) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','ineligible_cast','message','Remove ineligible Proposed Cast Members.')); end if;
- select count(*) into n from show_planning_calls c join show_proposed_cast pc on pc.show_id=s.id and pc.user_id=c.user_id join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id and f.confirmed and f.target_version=t.version and f.call_version=c.version where c.target_id=t.id and c.call<>'not_called' and planning_participant(s.id,c.user_id) and exists(select 1 from show_cast cast_member where cast_member.show_id=s.id and cast_member.user_id=c.user_id and cast_member.status='accepted');
+ if exists(select 1 from show_proposed_cast pc where pc.show_id=s.id and (not private.planning_participant(s.id,pc.user_id) or not exists(select 1 from show_cast cast_member where cast_member.show_id=s.id and cast_member.user_id=pc.user_id and cast_member.status='accepted'))) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','ineligible_cast','message','Remove ineligible Proposed Cast Members.')); end if;
+ select count(*) into n from show_planning_calls c join show_proposed_cast pc on pc.show_id=s.id and pc.user_id=c.user_id join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id and f.confirmed and f.target_version=t.version and f.call_version=c.version where c.target_id=t.id and c.call<>'not_called' and private.planning_participant(s.id,c.user_id) and exists(select 1 from show_cast cast_member where cast_member.show_id=s.id and cast_member.user_id=c.user_id and cast_member.status='accepted');
  if (select occurrence_type from show_occurrences where id=t.occurrence_id)='performance' and n<coalesce(s.minimum_viable_cast,1) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','minimum_viable_cast','message',format('%s called Cast Members confirmed; %s required for Minimum Viable Cast.',n,coalesce(s.minimum_viable_cast,1)))); end if;
  if t.slot->>'locationKind'='off_site' and (t.slot->>'offSiteApproved')::boolean is distinct from true then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','offsite_unapproved','message','The off-site location requires approval.')); end if;
  if exists(select 1 from show_resource_requests r where r.show_id=s.id and r.resource_type='staff' and public.event_staff_coverage(s.id,r.id)<r.quantity) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','staff_coverage','message','Accepted Event staffing does not meet requested coverage.')); end if;
- if t.slot->>'locationKind'='primary_venue' and exists(select 1 from show_schedule_reservations r join theaters th on th.id=s.theater_id where r.resource_id=(t.slot->>'resourceId')::uuid and r.status='active' and r.planning_target_id is distinct from t.id and (r.proposal_revision_id is distinct from t.base_revision_id or t.base_revision_id is null) and (r.planning_target_id is null or exists(select 1 from show_planning_targets ht where ht.id=r.planning_target_id and ht.hold_until>now())) and r.reserved_during && tstzrange((t.slot->>'startsAt')::timestamptz-make_interval(mins=>th.setup_buffer_minutes),(t.slot->>'startsAt')::timestamptz+make_interval(mins=>(t.slot->>'durationMinutes')::integer+th.turnover_buffer_minutes),'[)')) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','venue_conflict','message','The Primary Venue conflicts with an active buffered commitment or hold.')); end if;
+ if t.slot->>'locationKind'='primary_venue' and exists(select 1 from show_schedule_reservations r join theaters th on th.id=s.theater_id where r.resource_id=(t.slot->>'resourceId')::uuid and r.status='active' and r.planning_target_id is distinct from t.id and (r.proposal_revision_id is distinct from (case when t.state='committed' then s.approved_proposal_revision_id else t.base_revision_id end) or (case when t.state='committed' then s.approved_proposal_revision_id else t.base_revision_id end) is null) and (r.planning_target_id is null or exists(select 1 from show_planning_targets ht where ht.id=r.planning_target_id and ht.hold_until>now())) and r.reserved_during && tstzrange((t.slot->>'startsAt')::timestamptz-make_interval(mins=>th.setup_buffer_minutes),(t.slot->>'startsAt')::timestamptz+make_interval(mins=>(t.slot->>'durationMinutes')::integer+th.turnover_buffer_minutes),'[)')) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','venue_conflict','message','The Primary Venue conflicts with an active buffered commitment or hold.')); end if;
  return blockers;
 end;
 $$;
@@ -103,11 +103,11 @@ language plpgsql security definer set search_path=public as $$
 declare actor uuid:=auth.uid(); can_view boolean; result jsonb;
 begin
  if actor is null then raise insufficient_privilege using message='Sign in is required.'; end if;
- can_view:=planning_viewer(p_show_id,actor);
- if not can_view and not planning_participant(p_show_id,actor) then raise insufficient_privilege using message='Current Event planning access is required.'; end if;
+ can_view:=private.planning_viewer(p_show_id,actor);
+ if not can_view and not private.planning_participant(p_show_id,actor) then raise insufficient_privilege using message='Current Event planning access is required.'; end if;
  perform public.expire_planning_holds(now());
- select jsonb_build_object('canSelect',planning_leader(p_show_id,actor,'producer'),'canCall',planning_leader(p_show_id,actor,'director'),'canHold',exists(select 1 from shows s join theater_memberships m on m.theater_id=s.theater_id and m.user_id=actor and m.status='active' and m.roles && array['owner','admin']::theater_role[] where s.id=p_show_id),'targets',coalesce(jsonb_agg(jsonb_build_object('id',t.id,'occurrenceId',t.occurrence_id,'version',t.version,'state',t.state,'currentCommitment',t.state='committed' and exists(select 1 from shows cs join show_proposal_revisions cr on cr.id=cs.approved_proposal_revision_id cross join lateral jsonb_array_elements(cr.snapshot->'occurrences') co where cs.id=t.show_id and co->>'planningTargetId'=t.id::text),'replacement',t.base_revision_id is not null,'revisionId',t.proposal_revision_id,'slot',t.slot,'holdUntil',t.hold_until,'blockers',case when can_view then planning_target_blockers(t.id) else '[]'::jsonb end,'calls',(select coalesce(jsonb_agg(jsonb_build_object('userId',c.user_id,'displayName',p.display_name,'call',c.call,'version',c.version,'eligible',planning_participant(t.show_id,c.user_id),'own',c.user_id=actor,'confirmed',coalesce(f.confirmed and f.target_version=t.version and f.call_version=c.version,false),'confirmationVersion',coalesce(f.version,0)) order by p.display_name),'[]') from show_planning_calls c join profiles p on p.id=c.user_id left join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id where c.target_id=t.id and (can_view or c.user_id=actor))) order by t.created_at desc),'[]')) into result from show_planning_targets t where t.show_id=p_show_id and (can_view or exists(select 1 from show_planning_calls c where c.target_id=t.id and c.user_id=actor));
- return result||jsonb_build_object('participants',case when can_view then (select coalesce(jsonb_agg(jsonb_build_object('userId',p.id,'displayName',p.display_name) order by p.display_name),'[]') from profiles p where planning_participant(p_show_id,p.id)) else '[]'::jsonb end);
+ select jsonb_build_object('canSelect',private.planning_leader(p_show_id,actor,'producer'),'canCall',private.planning_leader(p_show_id,actor,'director'),'canHold',exists(select 1 from shows s join theater_memberships m on m.theater_id=s.theater_id and m.user_id=actor and m.status='active' and m.roles && array['owner','admin']::theater_role[] where s.id=p_show_id),'targets',coalesce(jsonb_agg(jsonb_build_object('id',t.id,'occurrenceId',t.occurrence_id,'version',t.version,'state',t.state,'currentCommitment',t.state='committed' and exists(select 1 from shows cs join show_proposal_revisions cr on cr.id=cs.approved_proposal_revision_id cross join lateral jsonb_array_elements(cr.snapshot->'occurrences') co where cs.id=t.show_id and co->>'planningTargetId'=t.id::text),'replacement',t.base_revision_id is not null,'revisionId',t.proposal_revision_id,'slot',t.slot,'holdUntil',t.hold_until,'blockers',case when can_view then planning_target_blockers(t.id) else '[]'::jsonb end,'calls',(select coalesce(jsonb_agg(jsonb_build_object('userId',c.user_id,'displayName',p.display_name,'call',c.call,'version',c.version,'eligible',private.planning_participant(t.show_id,c.user_id),'own',c.user_id=actor,'confirmed',coalesce(f.confirmed and f.target_version=t.version and f.call_version=c.version,false),'confirmationVersion',coalesce(f.version,0)) order by p.display_name),'[]') from show_planning_calls c join profiles p on p.id=c.user_id left join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id where c.target_id=t.id and (can_view or c.user_id=actor))) order by t.created_at desc),'[]')) into result from show_planning_targets t where t.show_id=p_show_id and (can_view or exists(select 1 from show_planning_calls c where c.target_id=t.id and c.user_id=actor));
+ return result||jsonb_build_object('participants',case when can_view then (select coalesce(jsonb_agg(jsonb_build_object('userId',p.id,'displayName',p.display_name) order by p.display_name),'[]') from profiles p where private.planning_participant(p_show_id,p.id)) else '[]'::jsonb end);
 end;
 $$;
 
@@ -116,7 +116,7 @@ language plpgsql security definer set search_path=public as $$
 declare s shows; t show_planning_targets; o show_occurrences; snapshot jsonb; occurrences jsonb:='[]'; item jsonb; blockers jsonb:='[]'; revision show_proposal_revisions; base show_proposal_revisions; n integer;
 begin
  select * into s from shows where id=p_show_id for update;
- if not planning_leader(s.id,p_actor_id,'producer') or not is_eligible_event_producer(s.theater_id,p_actor_id) then raise insufficient_privilege using message='Eligible Producer access is required.'; end if;
+ if not private.planning_leader(s.id,p_actor_id,'producer') or not is_eligible_event_producer(s.theater_id,p_actor_id) then raise insufficient_privilege using message='Eligible Producer access is required.'; end if;
  if s.lifecycle_status not in ('draft','approved') then raise object_not_in_prerequisite_state using message='The Event is already in review or closed.'; end if;
  if s.minimum_viable_cast is null or s.target_cast_size is null then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','thresholds_missing','message','Declare target cast size and Minimum Viable Cast.')); end if;
  if not exists(select 1 from show_proposed_cast where show_id=s.id) then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','proposed_cast_empty','message','Select accepted Proposed Cast before submission.')); end if;
@@ -130,13 +130,15 @@ begin
  for o in select * from show_occurrences where show_id=s.id order by position loop
   select * into t from show_planning_targets where occurrence_id=o.id and state='planning';
   if t.id is null then
-   if base.id is not null then select value into item from jsonb_array_elements(base.snapshot->'occurrences') where value->>'id'=o.id::text;
+   if base.id is not null then
+    select value into item from jsonb_array_elements(base.snapshot->'occurrences') where value->>'id'=o.id::text;
+    if item ? 'planningTargetId' then blockers:=blockers||planning_target_blockers((item->>'planningTargetId')::uuid); end if;
    else blockers:=blockers||jsonb_build_array(jsonb_build_object('code','target_missing','message',format('Select a planning target for Occurrence %s.',o.position+1))); item:=null;
    end if;
   else
    if t.base_revision_id is distinct from base.id then blockers:=blockers||jsonb_build_array(jsonb_build_object('code','stale_base','message','The selected target belongs to an older approval.')); end if;
    blockers:=blockers||planning_target_blockers(t.id);
-   select count(*) into n from show_planning_calls c join show_proposed_cast pc on pc.show_id=s.id and pc.user_id=c.user_id join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id and f.confirmed and f.call_version=c.version and f.target_version=t.version where c.target_id=t.id and c.call<>'not_called' and planning_participant(s.id,c.user_id) and exists(select 1 from show_cast cast_member where cast_member.show_id=s.id and cast_member.user_id=c.user_id and cast_member.status='accepted');
+   select count(*) into n from show_planning_calls c join show_proposed_cast pc on pc.show_id=s.id and pc.user_id=c.user_id join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id and f.confirmed and f.call_version=c.version and f.target_version=t.version where c.target_id=t.id and c.call<>'not_called' and private.planning_participant(s.id,c.user_id) and exists(select 1 from show_cast cast_member where cast_member.show_id=s.id and cast_member.user_id=c.user_id and cast_member.status='accepted');
    item:=jsonb_build_object('id',o.id,'type',o.occurrence_type,'visibility',o.visibility,'position',o.position,'confirmedSlot',t.slot,'calls',(select coalesce(jsonb_agg(jsonb_build_object('userId',c.user_id,'displayName',p.display_name,'call',c.call)),'[]') from show_planning_calls c join profiles p on p.id=c.user_id where c.target_id=t.id),'viability',jsonb_build_object('availableCalledCastCount',n,'minimumViableCast',s.minimum_viable_cast),'planningTargetId',t.id,'confirmations',(select coalesce(jsonb_agg(jsonb_build_object('userId',f.user_id,'displayName',(select display_name from profiles where id=f.user_id),'confirmed',f.confirmed,'respondedAt',f.responded_at,'targetVersion',f.target_version,'callVersion',f.call_version)),'[]') from show_planning_confirmations f where f.target_id=t.id));
   end if;
   if item is not null then occurrences:=occurrences||jsonb_build_array(item); end if;
@@ -167,9 +169,9 @@ begin
  perform 1 from show_staff_assignments where show_id=s.id order by id for share;
  perform 1 from show_leadership where show_id=s.id order by user_id,role for share;
  perform 1 from theater_member_capabilities where theater_id=s.theater_id order by user_id,capability for share;
- producer:=planning_leader(s.id,actor,'producer'); director:=planning_leader(s.id,actor,'director');
+ producer:=private.planning_leader(s.id,actor,'producer'); director:=private.planning_leader(s.id,actor,'director');
  operator:=exists(select 1 from theater_memberships where theater_id=s.theater_id and user_id=actor and status='active' and roles && array['owner','admin']::theater_role[]);
- if not ((p_action in ('select','withdraw','submit') and producer) or (p_action='call' and director) or (p_action='hold' and operator) or (p_action='confirm' and planning_participant(s.id,actor))) then raise insufficient_privilege using message='Current authority for this planning action is required.'; end if;
+ if not ((p_action in ('select','withdraw','submit') and producer) or (p_action='call' and director) or (p_action='hold' and operator) or (p_action='confirm' and private.planning_participant(s.id,actor))) then raise insufficient_privilege using message='Current authority for this planning action is required.'; end if;
  if p_action not in ('select','call','confirm','hold','withdraw','submit') or p_input is null or jsonb_typeof(p_input)<>'object' or (p_input->>'expectedVersion') is null or (p_input->>'expectedVersion')::integer<0 or p_command_id is null then raise invalid_parameter_value using message='A valid planning action, command identity and expected version are required.'; end if;
  select * into prior from show_planning_commands where id=p_command_id;
  if found then
@@ -200,7 +202,7 @@ begin
   if p_action='call' then
    if t.state<>'planning' then raise object_not_in_prerequisite_state using message='Submitted Calls are immutable. Withdraw before editing.'; end if;
    participant:=(p_input->>'userId')::uuid;
-   if not planning_participant(s.id,participant) then raise invalid_parameter_value using message='Calls require accepted active Cast or Event staff.'; end if;
+   if not private.planning_participant(s.id,participant) then raise invalid_parameter_value using message='Calls require accepted active Cast or Event staff.'; end if;
    select * into c from show_planning_calls where target_id=t.id and user_id=participant for update;
    if (p_input->>'callVersion') is null or coalesce(c.version,0)<>(p_input->>'callVersion')::integer then raise object_not_in_prerequisite_state using message='Call changed. Refresh before saving again.'; end if;
    insert into show_planning_calls(target_id,user_id,call) values(t.id,participant,(p_input->>'call')::occurrence_call) on conflict(target_id,user_id) do update set call=excluded.call,version=show_planning_calls.version+1;
@@ -235,8 +237,8 @@ begin
  return result;
 end;
 $$;
-revoke all on function public.planning_participant(uuid,uuid),public.planning_leader(uuid,uuid,public.event_leadership_role),public.planning_viewer(uuid,uuid),public.planning_target_blockers(uuid),public.get_event_planning(uuid),public.manage_event_planning(uuid,text,jsonb,uuid) from public,anon,authenticated;
-grant execute on function public.planning_participant(uuid,uuid),public.planning_leader(uuid,uuid,public.event_leadership_role),public.planning_viewer(uuid,uuid),public.get_event_planning(uuid),public.manage_event_planning(uuid,text,jsonb,uuid) to authenticated,service_role;
+revoke all on function private.planning_participant(uuid,uuid),private.planning_leader(uuid,uuid,public.event_leadership_role),private.planning_viewer(uuid,uuid),public.planning_target_blockers(uuid),public.get_event_planning(uuid),public.manage_event_planning(uuid,text,jsonb,uuid) from public,anon,authenticated;
+grant execute on function private.planning_participant(uuid,uuid),private.planning_leader(uuid,uuid,public.event_leadership_role),private.planning_viewer(uuid,uuid),public.get_event_planning(uuid),public.manage_event_planning(uuid,text,jsonb,uuid) to authenticated,service_role;
 
 -- Keep the existing decision authorization, audited override and notification
 -- projection. The wrapper adds planning concurrency and booking persistence.
@@ -270,6 +272,10 @@ begin
   if p_action='approve' then blockers:=blockers||planning_target_blockers(t.id); end if;
  end loop;
  if p_action='approve' then
+  -- Recheck the entire replacement, including unchanged committed targets.
+  for item in select value from jsonb_array_elements(r.snapshot->'occurrences') loop
+   if item ? 'planningTargetId' and not (r.snapshot->'planningTargetIds' ? (item->>'planningTargetId')) then blockers:=blockers||planning_target_blockers((item->>'planningTargetId')::uuid); end if;
+  end loop;
   perform public.expire_planning_holds(now());
   if jsonb_array_length(blockers)>0 then raise invalid_parameter_value using message='Approval is blocked.',detail=blockers::text; end if;
   select coalesce(jsonb_agg(user_id order by user_id),'[]') into current_ids from show_proposed_cast where show_id=s.id;
@@ -277,15 +283,18 @@ begin
   -- Releases and replacement reservations are one transaction. Exclusion or
   -- authorization failure restores the original booking and hold automatically.
   update show_schedule_reservations set status='released',released_at=now() where status='active' and (proposal_revision_id=s.approved_proposal_revision_id or planning_target_id in(select id from show_planning_targets where proposal_revision_id=r.id));
+  perform set_config('stagecom.planning_swap','true',true);
   for t in select * from show_planning_targets where proposal_revision_id=r.id loop
    update show_occurrences set confirmed_candidate_slot_id=(t.slot->>'candidateSlotId')::uuid,starts_at=(t.slot->>'startsAt')::timestamptz,ends_at=(t.slot->>'startsAt')::timestamptz+make_interval(mins=>(t.slot->>'durationMinutes')::integer) where id=t.occurrence_id;
-   delete from show_occurrence_calls where occurrence_id=t.occurrence_id;
-   insert into show_occurrence_calls(occurrence_id,show_id,user_id,call,actor_user_id,last_command_id) select t.occurrence_id,t.show_id,user_id,call,p_actor_user_id,p_command_id from show_planning_calls where target_id=t.id;
+   delete from show_occurrence_calls where occurrence_id=t.occurrence_id and user_id not in(select user_id from show_planning_calls where target_id=t.id);
+   insert into show_occurrence_calls(occurrence_id,show_id,user_id,call,version,actor_user_id,last_command_id) select t.occurrence_id,t.show_id,user_id,call,1,p_actor_user_id,gen_random_uuid() from show_planning_calls where target_id=t.id
+   on conflict(occurrence_id,user_id) do update set call=excluded.call,version=show_occurrence_calls.version+1,actor_user_id=excluded.actor_user_id,last_command_id=excluded.last_command_id,assigned_at=now();
   end loop;
  elsif p_action='request_edits' and s.approved_proposal_revision_id is not null then
   select array_agg(id) into old_reservations from show_schedule_reservations where proposal_revision_id=s.approved_proposal_revision_id and status='active';
  end if;
  decision:=review_proposal_revision_without_planning(p_proposal_revision_id,p_actor_user_id,p_action,p_reason,p_owner_override,p_command_id,p_expected_version);
+ perform set_config('stagecom.planning_swap','false',true);
  if p_action='request_edits' and s.approved_proposal_revision_id is not null then
   update shows set lifecycle_status=s.lifecycle_status,status=s.status,approved_proposal_revision_id=s.approved_proposal_revision_id where id=s.id;
   -- Restoring the old pointer is not a new approval and must not reset health.
@@ -309,7 +318,7 @@ declare result jsonb; r show_proposal_revisions;
 begin
  if exists(select 1 from show_planning_targets where show_id=p_show_id and state in ('planning','submitted')) then
   select * into r from show_proposal_revisions where command_id=p_command_id;
-  if r.id is not null and r.show_id=p_show_id and r.submitted_by=p_actor_user_id and planning_leader(p_show_id,p_actor_user_id,'producer') then return r; end if;
+  if r.id is not null and r.show_id=p_show_id and r.submitted_by=p_actor_user_id and private.planning_leader(p_show_id,p_actor_user_id,'producer') then return r; end if;
   perform 1 from theaters where id=(select theater_id from shows where id=p_show_id) for update;
   result:=submit_planning_revision(p_show_id,p_actor_user_id,p_command_id);
   select * into r from show_proposal_revisions where id=(result->>'revisionId')::uuid;
@@ -321,14 +330,14 @@ $$;
 revoke all on function public.submit_event_proposal_revision_without_planning(uuid,uuid,uuid),public.submit_event_proposal_revision(uuid,uuid,uuid) from public,anon,authenticated;
 grant execute on function public.submit_event_proposal_revision(uuid,uuid,uuid) to service_role;
 
-create function public.planning_called(p_target_id uuid,p_actor_id uuid) returns boolean
+create function private.planning_called(p_target_id uuid,p_actor_id uuid) returns boolean
 language sql stable security definer set search_path=public as $$
  select exists(select 1 from show_planning_calls where target_id=p_target_id and user_id=p_actor_id);
 $$;
-revoke all on function public.planning_called(uuid,uuid) from public,anon,authenticated;
-grant execute on function public.planning_called(uuid,uuid) to authenticated,service_role;
+revoke all on function private.planning_called(uuid,uuid) from public,anon,authenticated;
+grant execute on function private.planning_called(uuid,uuid) to authenticated,service_role;
 drop policy planning_targets_read on public.show_planning_targets;
-create policy planning_targets_read on public.show_planning_targets for select to authenticated using (public.planning_viewer(show_id,auth.uid()) or (public.planning_participant(show_id,auth.uid()) and public.planning_called(id,auth.uid())));
+create policy planning_targets_read on public.show_planning_targets for select to authenticated using (private.planning_viewer(show_id,auth.uid()) or (private.planning_participant(show_id,auth.uid()) and private.planning_called(id,auth.uid())));
 
 create function public.expire_planning_holds(p_now timestamptz default now()) returns integer
 language plpgsql security definer set search_path=public as $$
@@ -370,7 +379,7 @@ grant execute on function public.save_event_operational_plan(uuid,uuid,integer,i
 
 create function public.planning_committed_confirmation(p_target_id uuid,p_user_id uuid,p_call public.occurrence_call) returns boolean
 language sql stable security definer set search_path=public as $$
- select exists(select 1 from show_planning_targets t join show_planning_calls c on c.target_id=t.id and c.user_id=p_user_id and c.call=p_call join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id and f.confirmed and f.target_version=t.version and f.call_version=c.version where t.id=p_target_id and t.state='committed' and planning_participant(t.show_id,p_user_id));
+ select exists(select 1 from show_planning_targets t join show_planning_calls c on c.target_id=t.id and c.user_id=p_user_id and c.call=p_call join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id and f.confirmed and f.target_version=t.version and f.call_version=c.version where t.id=p_target_id and t.state='committed' and private.planning_participant(t.show_id,p_user_id));
 $$;
 revoke all on function public.planning_committed_confirmation(uuid,uuid,public.occurrence_call) from public,anon,authenticated;
 
@@ -556,7 +565,7 @@ create function public.get_my_planning_actions() returns jsonb
 language plpgsql security definer set search_path=public as $$
 begin
  if auth.uid() is null then raise insufficient_privilege using message='Sign in is required.'; end if;
- return (select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'startsAt',t.slot->>'startsAt','eventSlug',s.slug,'eventTitle',s.title,'theaterSlug',th.slug,'theaterName',th.name)),'[]') from show_planning_targets t join shows s on s.id=t.show_id join theaters th on th.id=s.theater_id join show_planning_calls c on c.target_id=t.id and c.user_id=auth.uid() and c.call<>'not_called' left join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id where t.state in ('planning','submitted') and s.lifecycle_status not in ('cancelled','completed') and planning_participant(s.id,auth.uid()) and (f.confirmed is distinct from true or f.target_version<>t.version or f.call_version<>c.version));
+ return (select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'startsAt',t.slot->>'startsAt','eventSlug',s.slug,'eventTitle',s.title,'theaterSlug',th.slug,'theaterName',th.name)),'[]') from show_planning_targets t join shows s on s.id=t.show_id join theaters th on th.id=s.theater_id join show_planning_calls c on c.target_id=t.id and c.user_id=auth.uid() and c.call<>'not_called' left join show_planning_confirmations f on f.target_id=c.target_id and f.user_id=c.user_id where t.state in ('planning','submitted') and s.lifecycle_status not in ('cancelled','completed') and private.planning_participant(s.id,auth.uid()) and (f.confirmed is distinct from true or f.target_version<>t.version or f.call_version<>c.version));
 end;
 $$;
 revoke all on function public.get_my_planning_actions() from public,anon,authenticated;
@@ -780,3 +789,26 @@ begin
   return v_counteroffer;
 end;
 $function$;
+
+-- Existing Director commands still own committed Calls. Synchronize their
+-- versions into current planning consent without rewriting revision snapshots.
+create function private.sync_committed_planning_call() returns trigger
+language plpgsql security definer set search_path=public as $$
+declare v_target_id uuid;
+begin
+ if current_setting('stagecom.planning_swap',true)='true' then return new; end if;
+ select (occurrence->>'planningTargetId')::uuid into v_target_id
+ from shows s join show_proposal_revisions r on r.id=s.approved_proposal_revision_id
+ cross join lateral jsonb_array_elements(r.snapshot->'occurrences') occurrence
+ where s.id=new.show_id and occurrence->>'id'=new.occurrence_id::text;
+ if v_target_id is not null then
+  insert into show_planning_calls(target_id,user_id,call,version)
+  values(v_target_id,new.user_id,new.call,new.version)
+  on conflict(target_id,user_id) do update set call=excluded.call,version=show_planning_calls.version+1;
+  perform private.evaluate_event_operational_health(new.show_id,new.actor_user_id,'occurrence_call_changed');
+ end if;
+ return new;
+end;
+$$;
+revoke all on function private.sync_committed_planning_call() from public,anon,authenticated;
+create trigger sync_committed_planning_call after insert or update on public.show_occurrence_calls for each row execute function private.sync_committed_planning_call();

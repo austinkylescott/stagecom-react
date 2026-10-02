@@ -186,7 +186,12 @@ test('planning confirmation persists through exact Review and an atomic replacem
     )
     await cast.route('**/_serverFn/**', (route) =>
       route.request().method() === 'POST' &&
-      (route.request().postData()?.includes('confirmationVersion') ?? false)
+      Buffer.from(
+        new URL(route.request().url()).pathname.split('/').at(-1)!,
+        'base64url',
+      )
+        .toString()
+        .includes('managePlanningFn')
         ? route.abort('failed')
         : route.continue(),
     )
@@ -337,6 +342,15 @@ test('planning confirmation persists through exact Review and an atomic replacem
       lifecycle_status: 'approved',
       publication_status: 'unpublished',
     })
+    await reviewer.goto(
+      '/app/compass-rose/calendar?calendarView=month&calendarPeriod=2026-11-01',
+    )
+    await expect(
+      reviewer.getByRole('link', { name: /^Planning confirmation review,/ }),
+    ).toHaveCount(1)
+    await expect(
+      reviewer.getByRole('link', { name: /^Planning confirmation review,/ }),
+    ).toHaveAttribute('href', new RegExp(`occurrence-${occurrenceId}`))
     await cast.goto('/app/callsheet')
     await expect(
       cast.getByRole('region', { name: 'Confirmed Calls' }),
@@ -354,13 +368,21 @@ test('planning confirmation persists through exact Review and an atomic replacem
         await fixture.rpc('withdraw_from_event_cast', {
           p_show_id: eventId,
           p_actor_user_id: member.id,
+          p_command_id: crypto.randomUUID(),
+          p_expected_health_version: (
+            await fixture
+              .from('shows')
+              .select('operational_health_version')
+              .eq('id', eventId)
+              .single()
+          ).data!.operational_health_version,
         })
       ).error,
     ).toBeNull()
     await personal
       .getByRole('button', { name: 'Confirm selected time', exact: true })
       .click()
-    await expect(personal.getByRole('alert')).toContainText('accepted active')
+    await expect(personal.getByRole('alert')).toContainText('Current authority')
     await personal
       .getByRole('button', { name: 'Refresh planning; keep input' })
       .click()
