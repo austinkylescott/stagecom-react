@@ -61,11 +61,31 @@ migration/seeding retains per-operation approval.
 
 ## Integration boundary
 
-This change is prepared as a forward migration. Remote application and demo seed
-execution have not been authorized for STA-72. Use the isolated local stack and
-the extended database-backed demo for review until that operation is approved.
-Team RPC projections and application validation change together; deploy them
-with the migration. Generated types reflect the verified pending local schema.
+After explicit maintainer approval on 2026-10-02, migration
+`20261002174613_team_authority_continuity.sql` was applied to `stagecom`
+(`obufimjayisdhkjjxhfd`). Stored migration SQL exactly matches the reviewed local
+file; its filename matches the assigned remote version. Generated types now
+come from remote; the public schema matches the locally verified schema.
+Team RPC projections and application validation change together; deploy the
+application with the migrated database. No merge or release is approved.
+
+The approved scoped remote demo seed completed. Parker owns Ants 2 Gods,
+The Management and Authority Review Team with three, two and three accepted
+Members respectively. Casey personally accepted Admin authority and recovery
+nomination on The Management. Remote persona authentication and Team reads,
+anonymous RPC denial, direct-table denial, internal-function grants and the
+enabled recovery trigger were verified.
+
+Remote security advisors include expected RLS-without-policy notices for private
+command tables and authenticated security-definer notices for authorized RPCs.
+They also report public-schema extensions, existing anonymous executable
+functions outside STA-72, and disabled leaked-password protection. This operation
+does not remediate those broader findings. Team RPCs deny anonymous execution;
+both recovery functions deny authenticated and anonymous execution.
+Advisor guidance: [private-table RLS notices](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy),
+[anonymous security-definer grants](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable),
+[extension placement](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public),
+and [leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
 
 ## Verification and review
 

@@ -157,10 +157,13 @@ Do not use local schema as the implicit source of truth after a remote migration
 
 ## Team authority continuity (STA-72)
 
-The pending `team_authority_continuity` forward migration adds accepted Team
+The applied `20261002174613_team_authority_continuity` forward migration adds accepted Team
 Admin authority, ownership/recovery offers and membership-loss recovery. It
 extends the existing authenticated Team RPCs and preserves direct-table denial.
 The existing Theater deactivation command acquires the full ordered membership
 lock set before Team recovery. See `docs/design/team-authority-contract.md`.
-Local types were generated from the complete forward chain; remote application
-and remote type reconciliation require explicit operation approval.
+After explicit maintainer approval on 2026-10-02 it was applied to the connected
+remote project. Stored SQL exactly matches the reviewed forward migration.
+Committed types were regenerated from remote; the public schema matches the
+verified local forward chain. The scoped remote demo seed and authenticated
+persona reads also passed. Future remote operations still require approval.

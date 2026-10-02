@@ -4,8 +4,9 @@ Implementation status: Partially implemented; STA-71 scope implemented and its
 approved migration integrated into remote dev, with verification recorded in
 the review contract. The approved demo seed is persisted in the current single
 remote project.
-STA-72 adds consent-based authority and ownership continuity; its forward
-migration is locally verified and awaits separate remote integration approval.
+STA-72 adds consent-based authority and ownership continuity. Its approved
+forward migration and scoped demo seed were integrated into the same remote
+project on 2026-10-02, with remote types, persona reads and grants verified.
 
 Active Theater Members find people by name, profile avatar, and any selected
 Team filter. Names are always displayed; Members may show several Team labels.
