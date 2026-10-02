@@ -77,3 +77,15 @@ The pgTAP suite owns transactional concurrency, immutable revision,
 reservation, lifecycle-clock, and deduplication invariants. Counteroffer expiry
 and approaching-expiration notification maintenance both accept an explicit
 clock instant, so the suite never waits for wall time.
+
+## Public discovery and private return (STA-74)
+
+Implemented and integrated with `stagecom` after explicit migration and scoped
+demo-seed approval on 2026-10-02. Public
+navigation exposes `/theater` discovery and the existing Theater/Event public
+destinations. Event copy, credits, admission and Performances come exclusively
+from published snapshots. Complete 4:5 posters have original-image access and a
+missing-image fallback; essential details remain separate accessible text.
+Published presentation and current private plan are visibly labeled. Performance
+links retain the snapshot Occurrence ID through existing sign-in and Event
+permission checks. See [review evidence](../../docs/design/public-programming-review.md).

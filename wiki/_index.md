@@ -28,6 +28,7 @@ Every wiki page declares one of these implementation states:
 - Foundation slice: `wiki/features/first-slice.md`
 - First meaningful milestone: `wiki/features/event-publication-milestone.md`
 - Operational-workspaces milestone and verification: `wiki/features/operational-workspaces.md`
+- Published Theater/Event discovery (STA-74): `docs/design/public-programming-review.md`
 - Event lifecycle: `wiki/workflows/event-lifecycle.md`
 - Casting and availability: `wiki/workflows/casting-and-availability.md`
 - Availability polls and their persistence contract: `wiki/features/availability-polls.md`

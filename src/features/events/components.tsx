@@ -1,3 +1,4 @@
+import { EventPoster } from '@/features/public-programming/poster'
 import { useRouter } from '@tanstack/react-router'
 import { TeamCastInvitations } from '@/features/team-cast-invitations/components'
 import { EventPlanning } from '@/features/event-planning/components'
@@ -210,6 +211,7 @@ export function PublishedEventPage({
     description: string
     imageUrl: string | null
     occurrences: Array<{
+      id?: string
       durationMinutes: number
       localStartsAt: string
       locationName: string
@@ -219,17 +221,23 @@ export function PublishedEventPage({
     }>
     title: string
   }
-  event: { lifecycleStatus: string }
+  event: { lifecycleStatus: string; slug?: string }
   theater: { name: string; slug: string }
 }) {
   return (
-    <main className="page-wrap py-6">
+    <main className="page-wrap min-w-0 break-words py-6">
       <p className="text-xs font-medium tracking-normal text-muted-foreground">
-        {theater.name} · Event
+        <a className="underline" href={`/theater/${theater.slug}`}>
+          {theater.name}
+        </a>{' '}
+        · Event
       </p>
       <h1 className="display-title mt-3 text-2xl font-medium text-foreground sm:text-5xl">
         {content.title}
       </h1>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Published presentation
+      </p>
       {event.lifecycleStatus === 'cancelled' ? (
         <div className="mt-6 rounded-md border border-border bg-muted px-5 py-4 text-foreground">
           <p className="font-semibold">This Event has been cancelled.</p>
@@ -239,39 +247,49 @@ export function PublishedEventPage({
           </p>
         </div>
       ) : null}
-      {content.imageUrl ? (
-        <img
-          alt=""
-          className="mt-6 max-h-[32rem] w-full rounded-lg object-cover"
-          src={content.imageUrl}
-        />
+      {event.slug ? (
+        <div className="mt-4 rounded-md border p-4 text-sm">
+          <a
+            className="underline"
+            href={`/app/${theater.slug}/events/${event.slug}#overview`}
+          >
+            Open private Event
+          </a>
+          <p className="mt-2 text-muted-foreground">
+            Sign in with Event access to view the current private plan. Its copy
+            and schedule may differ from this published presentation.
+          </p>
+        </div>
       ) : null}
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <Card className=" px-6 py-6 gap-0">
-          <p className="whitespace-pre-wrap text-lg">{content.description}</p>
-          {content.castCredits.length > 0 ? (
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold">Cast</h2>
-              <ul className="mt-2 grid gap-1">
-                {content.castCredits.map((credit) => (
-                  <li key={`${credit.position}-${credit.displayName}`}>
-                    {credit.displayName}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </Card>
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
+        <EventPoster imageUrl={content.imageUrl} title={content.title} />
+
         <aside className="rounded-lg px-6 py-6">
           <h2 className="text-xl font-semibold">Performances</h2>
           <ul className="mt-3 grid gap-4">
             {content.occurrences.map((occurrence) => (
               <li key={`${occurrence.startsAt}-${occurrence.locationName}`}>
-                <p className="font-medium">{occurrence.localStartsAt}</p>
+                <p className="font-medium">
+                  <time dateTime={occurrence.startsAt}>
+                    {new Intl.DateTimeFormat('en-US', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone: occurrence.timezoneName,
+                    }).format(new Date(occurrence.startsAt))}
+                  </time>
+                </p>
                 <p className="text-sm text-muted-foreground">
                   {occurrence.locationName} · {occurrence.durationMinutes}{' '}
                   minutes · {occurrence.timezoneName}
                 </p>
+                {event.slug && occurrence.id ? (
+                  <a
+                    className="mt-2 inline-block text-sm underline"
+                    href={`/app/${theater.slug}/events/${event.slug}#occurrence-${occurrence.id}`}
+                  >
+                    Open this Performance in the private Event
+                  </a>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -298,6 +316,21 @@ export function PublishedEventPage({
           ) : null}
         </aside>
       </div>
+      <Card className="mt-6 px-6 py-6 gap-0">
+        <p className="whitespace-pre-wrap text-lg">{content.description}</p>
+        {content.castCredits.length > 0 ? (
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold">Cast</h2>
+            <ul className="mt-2 grid gap-1">
+              {content.castCredits.map((credit) => (
+                <li key={`${credit.position}-${credit.displayName}`}>
+                  {credit.displayName}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </Card>
     </main>
   )
 }
@@ -340,6 +373,7 @@ export function ManagedEventWorkspace({
   }
   event: {
     id: string
+    slug: string
     approved_proposal_revision_id: string | null
     lifecycle_status: EventLifecycle
     minimum_viable_cast: number | null
@@ -678,6 +712,15 @@ export function ManagedEventWorkspace({
       >
         Back to Event portfolio
       </a>
+      <p className="mt-3 text-sm text-muted-foreground">Current private plan</p>
+      {event.publication_status === 'published' ? (
+        <a
+          className="mt-2 inline-block text-sm underline"
+          href={`/theater/${theater.slug}/${event.slug}`}
+        >
+          View published presentation
+        </a>
+      ) : null}
       <EventWorkspaceNavigation
         activeSection={activeSection}
         onSectionSelect={setActiveSection}

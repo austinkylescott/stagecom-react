@@ -1,4 +1,9 @@
 import {
+  PublicProgrammingPending,
+  PublicProgrammingError,
+  PublicProgrammingNotFound,
+} from '@/features/public-programming/components'
+import {
   Outlet,
   createFileRoute,
   notFound,
@@ -12,6 +17,11 @@ import {
 } from '@/features/theaters/server-functions'
 
 export const Route = createFileRoute('/theater/$theaterSlug')({
+  staleTime: 0,
+  gcTime: 0,
+  pendingComponent: PublicProgrammingPending,
+  errorComponent: PublicProgrammingError,
+  notFoundComponent: PublicProgrammingNotFound,
   loader: async ({ params }) => {
     const result = await getPublishedTheaterBySlugFn({
       data: { theaterSlug: params.theaterSlug },

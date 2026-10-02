@@ -224,6 +224,24 @@ async function clearDemoTheater() {
       )
     throwIfError('find owned demo Events', error)
     if (events.length) {
+      const { data: revisions, error: revisionError } = await supabase
+        .from('show_public_content_revisions')
+        .select('id')
+        .in(
+          'show_id',
+          events.map((item) => item.id),
+        )
+      throwIfError('find owned public revisions', revisionError)
+      if (revisions.length) {
+        const removed = await supabase
+          .from('show_public_occurrence_snapshots')
+          .delete()
+          .in(
+            'revision_id',
+            revisions.map((item) => item.id),
+          )
+        throwIfError('clear owned public Occurrence snapshots', removed.error)
+      }
       const { data: occurrences, error: occurrenceError } = await supabase
         .from('show_occurrences')
         .select('id')
@@ -628,6 +646,12 @@ async function createCalendarReviewData(theaterId, personas) {
   for (const [slug, title, day, kind] of [
     ['calendar-performance', 'Calendar Performance', 10, 'approved_commitment'],
     ['calendar-hold', 'Calendar Hold', 12, 'counteroffer_hold'],
+    [
+      'public-stories',
+      'An Evening of Stories, Songs, and Unexpected Encounters from Across Our Community',
+      18,
+      'approved_commitment',
+    ],
   ]) {
     const created = await supabase.rpc('create_managed_event', {
       p_actor_user_id: personas.owner.id,
@@ -725,6 +749,7 @@ async function createCalendarReviewData(theaterId, personas) {
     const state = await supabase
       .from('shows')
       .update({
+        status: kind === 'approved_commitment' ? 'approved' : 'draft',
         lifecycle_status:
           kind === 'approved_commitment' ? 'approved' : 'in_review',
         approved_proposal_revision_id:
@@ -747,6 +772,8 @@ async function createCalendarReviewData(theaterId, personas) {
         reserved_during: `[${new Date(Date.parse(time(day)) - 60 * 60_000).toISOString()},${new Date(Date.parse(time(day)) + 120 * 60_000).toISOString()})`,
       })
     throwIfError('create Calendar review reservation', reservation.error)
+    if (kind === 'approved_commitment')
+      await createPublishedReviewData(showId, slug, title, personas)
   }
   const block = await supabase.rpc('create_schedule_block', {
     p_actor_user_id: personas.owner.id,
@@ -849,4 +876,48 @@ async function createDemoTeams(theaterId, personas) {
       }
     }
   }
+}
+
+// Publish through the delivered domain commands, then retain a distinct working copy.
+async function createPublishedReviewData(showId, slug, title, personas) {
+  const imageUrl = `${appUrl}/demo/${slug === 'calendar-performance' ? 'programming-poster.svg' : 'missing-poster.png'}`
+  const publicInput = {
+    p_show_id: showId,
+    p_actor_user_id: personas.producer.id,
+    p_command_id: crypto.randomUUID(),
+    p_title: title,
+    p_description:
+      'An audience evening at Compass Rose. Published details remain available independently of the private working plan.\n\n' +
+      'Stories bring our community together. '.repeat(35),
+    p_image_url: imageUrl,
+    p_admission_price_cents: slug === 'calendar-performance' ? 0 : 1800,
+    p_sales_channel:
+      slug === 'calendar-performance' ? 'no_advance_ticketing' : 'external',
+    p_external_url:
+      slug === 'calendar-performance'
+        ? undefined
+        : 'https://example.com/compass-rose-tickets',
+    p_credits: [],
+  }
+  const saved = await supabase.rpc(
+    'save_event_public_content_draft',
+    publicInput,
+  )
+  throwIfError('save public discovery snapshot', saved.error)
+  const published = await supabase.rpc('publish_event', {
+    p_actor_user_id: personas.owner.id,
+    p_command_id: crypto.randomUUID(),
+    p_show_id: showId,
+    p_public_content_revision_id: saved.data.id,
+    p_expected_version: saved.data.version,
+  })
+  throwIfError('publish public discovery snapshot', published.error)
+  const working = await supabase.rpc('save_event_public_content_draft', {
+    ...publicInput,
+    p_command_id: crypto.randomUUID(),
+    p_title: `Private working copy: ${title}`,
+    p_description:
+      'PRIVATE REVIEW COPY — this revision has never been published.',
+  })
+  throwIfError('save distinct unpublished working copy', working.error)
 }

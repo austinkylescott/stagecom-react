@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CompleteProfileRouteImport } from './routes/complete-profile'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TheaterIndexRouteImport } from './routes/theater.index'
 import { Route as TheaterTheaterSlugRouteImport } from './routes/theater.$theaterSlug'
 import { Route as OnboardingTheaterRouteImport } from './routes/onboarding.theater'
 import { Route as JoinInviteTokenRouteImport } from './routes/join.$inviteToken'
@@ -85,6 +86,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TheaterIndexRoute = TheaterIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TheaterRoute,
 } as any)
 const TheaterTheaterSlugRoute = TheaterTheaterSlugRouteImport.update({
   id: '/$theaterSlug',
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
+  '/theater/': typeof TheaterIndexRoute
   '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
@@ -284,7 +291,6 @@ export interface FileRoutesByTo {
   '/logout': typeof LogoutRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/signup': typeof SignupRoute
-  '/theater': typeof TheaterRouteWithChildren
   '/app/calendar': typeof AppCalendarRoute
   '/app/callsheet': typeof AppCallsheetRoute
   '/app/notifications': typeof AppNotificationsRoute
@@ -297,6 +303,7 @@ export interface FileRoutesByTo {
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
+  '/theater': typeof TheaterIndexRoute
   '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
@@ -335,6 +342,7 @@ export interface FileRoutesById {
   '/join/$inviteToken': typeof JoinInviteTokenRoute
   '/onboarding/theater': typeof OnboardingTheaterRoute
   '/theater/$theaterSlug': typeof TheaterTheaterSlugRouteWithChildren
+  '/theater/': typeof TheaterIndexRoute
   '/app/$theaterSlug/calendar': typeof AppTheaterSlugCalendarRoute
   '/app/$theaterSlug/events': typeof AppTheaterSlugEventsRouteWithChildren
   '/app/$theaterSlug/members': typeof AppTheaterSlugMembersRoute
@@ -375,6 +383,7 @@ export interface FileRouteTypes {
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
+    | '/theater/'
     | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
@@ -399,7 +408,6 @@ export interface FileRouteTypes {
     | '/logout'
     | '/onboarding'
     | '/signup'
-    | '/theater'
     | '/app/calendar'
     | '/app/callsheet'
     | '/app/notifications'
@@ -412,6 +420,7 @@ export interface FileRouteTypes {
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
+    | '/theater'
     | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/join/$inviteToken'
     | '/onboarding/theater'
     | '/theater/$theaterSlug'
+    | '/theater/'
     | '/app/$theaterSlug/calendar'
     | '/app/$theaterSlug/events'
     | '/app/$theaterSlug/members'
@@ -541,6 +551,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/theater/': {
+      id: '/theater/'
+      path: '/'
+      fullPath: '/theater/'
+      preLoaderRoute: typeof TheaterIndexRouteImport
+      parentRoute: typeof TheaterRoute
     }
     '/theater/$theaterSlug': {
       id: '/theater/$theaterSlug'
@@ -845,10 +862,12 @@ const TheaterTheaterSlugRouteWithChildren =
 
 interface TheaterRouteChildren {
   TheaterTheaterSlugRoute: typeof TheaterTheaterSlugRouteWithChildren
+  TheaterIndexRoute: typeof TheaterIndexRoute
 }
 
 const TheaterRouteChildren: TheaterRouteChildren = {
   TheaterTheaterSlugRoute: TheaterTheaterSlugRouteWithChildren,
+  TheaterIndexRoute: TheaterIndexRoute,
 }
 
 const TheaterRouteWithChildren =

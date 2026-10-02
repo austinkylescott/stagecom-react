@@ -87,6 +87,14 @@ describe('public Theater discovery', () => {
     expect(container.querySelector('article img')?.getAttribute('src')).toBe(
       'https://example.com/moonlight.jpg',
     )
+    expect(
+      screen.getByRole('img', { name: 'Moonlight poster' }).className,
+    ).toContain('object-contain')
+    expect(
+      screen
+        .getByRole('link', { name: 'Open original poster' })
+        .getAttribute('href'),
+    ).toBe('https://example.com/moonlight.jpg')
     expect(screen.getByText('Free admission')).toBeTruthy()
     expect(screen.getByText('Upcoming Event')).toBeTruthy()
   })
