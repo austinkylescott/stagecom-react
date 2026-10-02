@@ -199,4 +199,9 @@ migrations; use `npm run db:types:check:local` to verify the committed file.
 `theater_teams` and `team_memberships` store independent, overlapping Team
 relationships. Pending invitations require recipient consent. `team_commands`
 stores retry receipts; explicit `activity_events` preserve creation, invitations,
-responses and departure. See [the contract](../../docs/design/teams-contract.md).
+responses and departure. Team membership records consent-based `admin_state`;
+Teams persist ownership offers, departure intent and a consenting recovery nominee.
+Theater membership loss triggers Team membership/authority termination and
+transactional recovery. Current `joined_at`, then user UUID, orders fallback
+succession. Dissolved records and activity events retain facts. See the
+[authority contract](../../docs/design/team-authority-contract.md).

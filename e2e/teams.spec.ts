@@ -162,12 +162,13 @@ test('Members search overlapping Teams and create, accept and leave through pers
       .click()
     await expect(
       detail.getByRole('button', { name: 'Leave Team', exact: true }),
-    ).toBeDisabled()
+    ).toBeEnabled()
     await recipientDetail
       .getByRole('button', { name: 'Leave Team', exact: true })
       .click()
-    await recipientDetail
-      .getByRole('button', { name: 'Confirm leave Team' })
+    await recipient
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Confirm action' })
       .click()
     await expect(
       recipientDetail.getByRole('button', { name: 'Leave Team', exact: true }),
@@ -206,7 +207,10 @@ test('Members search overlapping Teams and create, accept and leave through pers
     await detail
       .getByRole('button', { name: 'Leave Team', exact: true })
       .click()
-    await detail.getByRole('button', { name: 'Confirm leave Team' }).click()
+    await creator
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Confirm action' })
+      .click()
     await expect(
       teams.getByRole('button', { name: `View ${name}`, exact: true }),
     ).toHaveCount(0)

@@ -21,8 +21,16 @@ A named, Theater-local grouping of consenting Theater Members. A Theater Member
 may belong to several Teams; Team membership is independent of Event participation.
 
 **Team Owner**:
-The accountable Member of a Team who manages its invitations. Team ownership
-confers no Theater Operator or Event authority.
+The accountable Member of a Team who manages its membership and consent-based
+authority. Team ownership confers no Theater Operator or Event authority.
+
+**Team Admin**:
+An accepted Team Member who has personally accepted delegated administration
+of that Team. Team Admin authority confers no Theater or Event authority.
+
+**Team Recovery Nominee**:
+An accepted Team Member who has consented to succeed the Owner if that Owner
+loses Theater membership. Pending nomination grants no recovery priority.
 
 **Team Invitation**:
 A pending offer to join a Team. The recipient becomes a Team Member only by

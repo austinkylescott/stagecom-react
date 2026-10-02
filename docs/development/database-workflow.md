@@ -154,3 +154,13 @@ Recommended order for schema work:
 5. Update `docs/` and `wiki/` when behavior, schema, roles, or permissions change.
 
 Do not use local schema as the implicit source of truth after a remote migration has landed.
+
+## Team authority continuity (STA-72)
+
+The pending `team_authority_continuity` forward migration adds accepted Team
+Admin authority, ownership/recovery offers and membership-loss recovery. It
+extends the existing authenticated Team RPCs and preserves direct-table denial.
+The existing Theater deactivation command acquires the full ordered membership
+lock set before Team recovery. See `docs/design/team-authority-contract.md`.
+Local types were generated from the complete forward chain; remote application
+and remote type reconciliation require explicit operation approval.

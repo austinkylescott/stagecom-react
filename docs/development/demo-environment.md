@@ -46,6 +46,14 @@ Team memberships independent of their Event relationships. People supports
 creating a Team as Morgan and inviting Parker to accept personally. Reset clears
 only Teams belonging to the two owned demo Theaters before clearing membership.
 
+STA-72 adds **Authority Review Team** with Parker, Morgan and Casey for the
+consent/departure walkthrough. **The Management** gives Casey accepted Team
+Admin authority and an accepted recovery nomination through authenticated
+commands. Ants 2 Gods retains the original membership story. The automated
+recovery scenario creates an isolated local Auth actor and persists their Theater
+and Team membership before racing transfer acceptance with deactivation.
+These extensions have been seeded only locally; remote seeding needs approval.
+
 Seven personas are available:
 
 - Theater Owner

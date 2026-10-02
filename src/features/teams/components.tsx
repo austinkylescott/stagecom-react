@@ -14,13 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getTeamWorkspaceFn, manageTeamFn } from './server-functions'
 import type { TheaterDirectoryMember } from '@/features/memberships/queries'
-import type { TeamCommand, TeamWorkspace } from './schemas'
-
-type Action =
-  | Omit<Extract<TeamCommand, { action: 'create' }>, 'theaterId' | 'commandId'>
-  | Omit<Extract<TeamCommand, { action: 'invite' }>, 'theaterId' | 'commandId'>
-  | Omit<Extract<TeamCommand, { action: 'respond' }>, 'theaterId' | 'commandId'>
-  | Omit<Extract<TeamCommand, { action: 'leave' }>, 'theaterId' | 'commandId'>
+import { TeamGovernance } from './governance'
+import type { TeamAction, TeamWorkspace } from './schemas'
 
 export function PeopleAndTeams({
   theaterId,
@@ -37,11 +32,11 @@ export function PeopleAndTeams({
   const [name, setName] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [recipient, setRecipient] = useState('')
-  const [confirmLeave, setConfirmLeave] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   // Retain identity through an uncertain network outcome, including a failed refresh.
+  const refreshButton = useRef<HTMLButtonElement | null>(null)
   const pending = useRef<{ key: string; commandId: string } | null>(null)
   const selected = workspace.teams.find((team) => team.id === selectedId)
   const actorId = workspace.actorId
@@ -69,8 +64,8 @@ export function PeopleAndTeams({
     )
     return result.data
   }
-  async function run(action: Action) {
-    if (busy) return
+  async function run(action: TeamAction) {
+    if (busy) return false
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -83,11 +78,10 @@ export function PeopleAndTeams({
       })
       if (!result.ok) {
         setError(result.error.message)
-        return
+        return false
       }
       await refresh()
       pending.current = null
-      setConfirmLeave(false)
       if (action.action === 'create') {
         setName('')
         setSelectedId(result.data.teamId)
@@ -100,12 +94,16 @@ export function PeopleAndTeams({
             ? `Invitation ${action.response}.`
             : action.action === 'leave'
               ? 'You left the Team. Independent Event participation is unchanged.'
-              : 'Team created. You are its Owner.',
+              : action.action === 'create'
+                ? 'Team created. You are its Owner.'
+                : 'Team administration saved.',
       )
+      return true
     } catch {
       setError(
         'Teams could not be saved. Your input is preserved; retry when connected.',
       )
+      return false
     } finally {
       setBusy(false)
     }
@@ -242,6 +240,7 @@ export function PeopleAndTeams({
           )}
           {message && <p role="status">{message}</p>}
           <Button
+            ref={refreshButton}
             variant="outline"
             disabled={busy}
             onClick={async () => {
@@ -249,7 +248,6 @@ export function PeopleAndTeams({
               setError(null)
               try {
                 await refresh()
-                setConfirmLeave(false)
               } catch {
                 setError('Teams could not be loaded. Retry when connected.')
               } finally {
@@ -296,7 +294,6 @@ export function PeopleAndTeams({
                 onClick={() => {
                   setSelectedId(team.id)
                   setRecipient('')
-                  setConfirmLeave(false)
                 }}
               >
                 View {team.name}
@@ -327,6 +324,7 @@ export function PeopleAndTeams({
                   <li className="break-words" key={id}>
                     {displayName(id)}
                     {id === actorId ? ' · You' : ''}
+                    {selected.adminIds.includes(id) ? ' · Team Admin' : ''}
                   </li>
                 ))}
               </ul>
@@ -372,111 +370,66 @@ export function PeopleAndTeams({
                   )}
                 </div>
               ))}
-              {selected.ownerId === actorId && selected.ownerEligible && (
-                <form
-                  className="grid gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    if (!recipient) {
-                      setError('Choose an active Theater Member.')
-                      return
-                    }
-                    void run({
-                      action: 'invite',
-                      teamId: selected.id,
-                      expectedVersion: selected.version,
-                      memberUserId: recipient,
-                    })
-                  }}
-                >
-                  <Label htmlFor="team-recipient">Invite Theater Member</Label>
-                  <select
-                    id="team-recipient"
-                    className="w-full min-w-0 rounded-md border bg-background p-2 text-sm"
-                    value={recipient}
-                    disabled={busy}
-                    onChange={(event) => setRecipient(event.target.value)}
-                  >
-                    <option value="">Choose a Member</option>
-                    {members
-                      .filter(
-                        (member) =>
-                          !selected.memberIds.includes(member.userId) &&
-                          !selected.invitations.some(
-                            (invitation) => invitation.userId === member.userId,
-                          ),
-                      )
-                      .map((member) => (
-                        <option key={member.userId} value={member.userId}>
-                          {member.displayName}
-                        </option>
-                      ))}
-                  </select>
-                  <Button disabled={busy} type="submit">
-                    Send Team invitation
-                  </Button>
-                </form>
-              )}
-              {selected.memberIds.includes(actorId) && (
-                <div className="grid gap-2">
-                  {selected.ownerId === actorId &&
-                    selected.memberIds.length > 1 && (
-                      <p className="text-sm text-muted-foreground">
-                        Transfer ownership with successor consent before
-                        leaving. Team administration is coming in a subsequent
-                        update.
-                      </p>
-                    )}
-                  {confirmLeave ? (
-                    <div
-                      role="group"
-                      aria-label="Confirm Team departure"
-                      className="grid gap-2"
-                    >
-                      <p>
-                        {selected.ownerId === actorId
-                          ? 'Leaving dissolves this Team and closes pending invitations.'
-                          : 'Leave this Team?'}{' '}
-                        Independent Event participation is unchanged.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="destructive"
-                          disabled={busy}
-                          onClick={() =>
-                            void run({
-                              action: 'leave',
-                              teamId: selected.id,
-                              expectedVersion: selected.version,
-                            })
-                          }
-                        >
-                          Confirm leave Team
-                        </Button>
-                        <Button
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() => setConfirmLeave(false)}
-                        >
-                          Keep membership
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      disabled={
-                        busy ||
-                        (selected.ownerId === actorId &&
-                          selected.memberIds.length > 1)
+              {(selected.ownerId === actorId ||
+                selected.adminIds.includes(actorId)) &&
+                selected.ownerEligible && (
+                  <form
+                    className="grid gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      if (!recipient) {
+                        setError('Choose an active Theater Member.')
+                        return
                       }
-                      onClick={() => setConfirmLeave(true)}
+                      void run({
+                        action: 'invite',
+                        teamId: selected.id,
+                        expectedVersion: selected.version,
+                        memberUserId: recipient,
+                      })
+                    }}
+                  >
+                    <Label htmlFor="team-recipient">
+                      Invite Theater Member
+                    </Label>
+                    <select
+                      id="team-recipient"
+                      className="w-full min-w-0 rounded-md border bg-background p-2 text-sm"
+                      value={recipient}
+                      disabled={busy}
+                      onChange={(event) => setRecipient(event.target.value)}
                     >
-                      Leave Team
+                      <option value="">Choose a Member</option>
+                      {members
+                        .filter(
+                          (member) =>
+                            !selected.memberIds.includes(member.userId) &&
+                            !selected.invitations.some(
+                              (invitation) =>
+                                invitation.userId === member.userId,
+                            ),
+                        )
+                        .map((member) => (
+                          <option key={member.userId} value={member.userId}>
+                            {member.displayName}
+                          </option>
+                        ))}
+                    </select>
+                    <Button disabled={busy} type="submit">
+                      Send Team invitation
                     </Button>
-                  )}
-                </div>
-              )}
+                  </form>
+                )}
+              <TeamGovernance
+                key={selected.id}
+                team={selected}
+                actorId={actorId}
+                displayName={displayName}
+                busy={busy}
+                error={error}
+                run={run}
+                focusFallback={() => refreshButton.current?.focus()}
+              />
             </section>
           )}
         </CardContent>

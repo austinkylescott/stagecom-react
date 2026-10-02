@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5'
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -2290,6 +2310,7 @@ export type Database = {
       }
       team_memberships: {
         Row: {
+          admin_state: string
           invited_by: string
           joined_at: string | null
           state: string
@@ -2299,6 +2320,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_state?: string
           invited_by: string
           joined_at?: string | null
           state: string
@@ -2308,6 +2330,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_state?: string
           invited_by?: string
           joined_at?: string | null
           state?: string
@@ -2679,8 +2702,12 @@ export type Database = {
           id: string
           name: string
           owner_user_id: string
+          recovery_accepted: boolean
+          recovery_user_id: string | null
           state: string
+          successor_user_id: string | null
           theater_id: string
+          transfer_departure: boolean
           version: number
         }
         Insert: {
@@ -2688,8 +2715,12 @@ export type Database = {
           id: string
           name: string
           owner_user_id: string
+          recovery_accepted?: boolean
+          recovery_user_id?: string | null
           state?: string
+          successor_user_id?: string | null
           theater_id: string
+          transfer_departure?: boolean
           version?: number
         }
         Update: {
@@ -2697,14 +2728,32 @@ export type Database = {
           id?: string
           name?: string
           owner_user_id?: string
+          recovery_accepted?: boolean
+          recovery_user_id?: string | null
           state?: string
+          successor_user_id?: string | null
           theater_id?: string
+          transfer_departure?: boolean
           version?: number
         }
         Relationships: [
           {
             foreignKeyName: 'theater_teams_owner_user_id_fkey'
             columns: ['owner_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_teams_recovery_user_id_fkey'
+            columns: ['recovery_user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'theater_teams_successor_user_id_fkey'
+            columns: ['successor_user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -3680,6 +3729,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      reconcile_team_ownership: {
+        Args: { p_team_id: string }
+        Returns: undefined
+      }
       record_candidate_slot_availability: {
         Args: {
           p_actor_user_id: string
@@ -4623,6 +4676,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_visibility: ['admin_only', 'member_visible', 'self_only'],
