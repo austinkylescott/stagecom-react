@@ -104,7 +104,7 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
 
     await page.goto(`/app/${fixture.theaterSlug}/members`)
     const memberCard = page
-      .locator('article')
+      .getByRole('article')
       .filter({ hasText: 'Governed Member' })
     await waitForReactHandler(
       memberCard.getByRole('button', { name: 'Designate proposer' }),
@@ -145,7 +145,7 @@ test('Owner governs Producer eligibility and creates an explicit managed Event t
     )
     await expect(
       page.getByText('Operational health').locator('..'),
-    ).toContainText('on_track')
+    ).toContainText('on track')
 
     await page.getByRole('link', { name: 'Schedule & Plan' }).click()
     await page.getByLabel('Target cast size').fill('8')

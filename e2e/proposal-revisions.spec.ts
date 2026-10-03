@@ -457,7 +457,7 @@ test('Theater work is an Exception for its author and a decision for another Rev
       password: fixture.password,
       supabaseUrl: fixture.supabaseUrl,
     })
-    await page.goto(`/app/${fixture.theaterSlug}`)
+    await page.goto(`/app/${fixture.theaterSlug}/operations`)
     await page.getByText('Other conditions to monitor (1)').click()
     await expect(
       page.getByText(
@@ -475,7 +475,7 @@ test('Theater work is an Exception for its author and a decision for another Rev
       password: fixture.password,
       supabaseUrl: fixture.supabaseUrl,
     })
-    await page.goto(`/app/${fixture.theaterSlug}`)
+    await page.goto('/app/callsheet')
     await expect(
       page.getByRole('link', { name: 'Review Proposal Revision 1' }),
     ).toBeVisible()
@@ -826,7 +826,9 @@ test('published approved Event becomes At Risk after Cast withdrawal without dis
       page.getByText('approved', { exact: true }).first(),
     ).toBeVisible()
     await expect(page.getByText('published', { exact: true })).toBeVisible()
-    await expect(page.getByText('at_risk', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('Operational health').locator('..'),
+    ).toContainText('at risk')
     await expect(
       page.getByRole('button', { name: 'Revise Event' }),
     ).toBeVisible()
@@ -1031,11 +1033,11 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
     const ownerPage = await ownerContext.newPage()
     await ownerPage.goto(`/app/${fixture.theaterSlug}/members`)
     const memberCard = ownerPage
-      .locator('section')
+      .getByRole('region', { name: 'Access & Roles', exact: true })
       .filter({
         has: ownerPage.getByRole('heading', { name: 'Access & Roles' }),
       })
-      .locator('article')
+      .getByRole('article')
       .filter({
         has: ownerPage.getByRole('heading', { name: 'Accepted Cast' }),
       })
@@ -1075,7 +1077,9 @@ test('Owner deactivates a Theater Member while preserving history and surfacing 
     await expect(
       ownerPage.getByText('published', { exact: true }),
     ).toBeVisible()
-    await expect(ownerPage.getByText('at_risk', { exact: true })).toBeVisible()
+    await expect(
+      ownerPage.getByText('Operational health').locator('..'),
+    ).toContainText('at risk')
     await expect(ownerPage.getByText(/Accepted Cast · producer/)).toHaveCount(0)
     await ownerPage.getByRole('link', { name: 'Cast & Team' }).click()
     await expect(

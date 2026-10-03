@@ -363,6 +363,13 @@ test('planning confirmation persists through exact Review and an atomic replacem
         exact: true,
       }),
     ).toBeVisible()
+    await waitForReactHandler(
+      personal.getByRole('button', {
+        name: 'Confirm selected time',
+        exact: true,
+      }),
+      'onClick',
+    )
     expect(
       (
         await fixture.rpc('withdraw_from_event_cast', {

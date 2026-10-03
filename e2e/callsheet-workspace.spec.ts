@@ -195,6 +195,11 @@ test('Member answers a personal action and keeps a confirmed Call across Theater
       .getByRole('link', { name: 'Callsheet', exact: true })
       .first()
       .click()
+    await expect(page).toHaveURL(/\/app\/callsheet$/)
+    await waitForReactHandler(
+      page.getByRole('button', { name: 'Open navigation' }),
+      'onClick',
+    )
     await expect(agenda.getByText('Opening Night')).toBeVisible()
     for (const width of [360, 390]) {
       await page.setViewportSize({ width, height: 844 })
