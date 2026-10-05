@@ -1,0 +1,49 @@
+name: Deploy release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-branch:
+        description: 'Release branch to deploy, for example release/0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate release and pin its commit
+        id: source
+        env:
+          RELEASE_BRANCH: ${{ inputs.release-branch }}
+        run: |
+          node scripts/check-delivery-policy.mjs deploy "$RELEASE_BRANCH" production
+          git fetch origin "refs/heads/$RELEASE_BRANCH"
+          printf 'sha=%s\n' "$(git rev-parse FETCH_HEAD)" >> "$GITHUB_OUTPUT"
+  checks:
+    needs: resolve
+    uses: ./.github/workflows/verify.yml
+    with:
+      source-ref: ${{ needs.resolve.outputs.sha }}
+      profile: full
+  deploy:
+    needs: [resolve, checks]
+    uses: ./.github/workflows/deploy-vercel.yml
+    with:
+      target: production
+      source-sha: ${{ needs.resolve.outputs.sha }}
+      source-branch: ${{ inputs.release-branch }}
+    secrets: inherit

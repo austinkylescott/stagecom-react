@@ -172,6 +172,9 @@ test('connected neutral review spans all workspace pages and relationship presen
         await inspect(page, `${label}-cast-team`)
       }
       await page.getByRole('link', { name: 'Back to Event portfolio' }).click()
+      await expect(page).toHaveURL(/\/app\/compass-rose\/events$/, {
+        timeout: 20_000,
+      })
       await expect(
         page.getByRole('heading', { name: 'Event portfolio', level: 1 }),
       ).toBeVisible()
