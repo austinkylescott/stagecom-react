@@ -27,7 +27,11 @@ When given a Linear issue identifier or URL, read its complete description, comm
   lifecycle described in `docs/agents/delivery-workflow.md`.
 
 Invoking the `implement` skill authorizes the ordinary ticket-scoped lifecycle
-through `In Progress` and `In Review`. `Done` still requires a verified merge.
+through `In Progress` and `In Review`. `Done` requires verified incorporation
+of the validated production release into `main`; merging to `dev` or a release
+branch does not complete the ticket. Disable premature Git integration closure
+for those targets. Use contributing references on sandbox/release-assembly PRs
+and closing references on the final release-to-main PR.
 See `docs/agents/delivery-workflow.md` for the complete authorization boundary.
 
 ## Wayfinding Operations
