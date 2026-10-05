@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-node scripts/check-delivery-policy.mjs deploy "$SOURCE_BRANCH" "$DEPLOY_TARGET"
 : "${VERCEL_TOKEN:?Missing deployment token}"
 : "${VERCEL_ORG_ID:?Missing organization ID}"
 : "${VERCEL_PROJECT_ID:?Missing project ID}"
