@@ -49,25 +49,9 @@ jobs:
           [[ "$VERCEL_CLI_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
       - name: Install pinned CLI
         run: npm install --global "vercel@$VERCEL_CLI_VERSION"
-      - name: Pull host configuration
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-      - name: Check production demo access is disabled
-        if: inputs.target == 'production'
-        run: |
-          node --input-type=module <<'JS'
-          import { readFileSync } from 'node:fs'
-          import { parseEnv } from 'node:util'
-          const env = parseEnv(readFileSync('.vercel/.env.production.local', 'utf8'))
-          if (env.STAGECOM_DEMO_MODE !== 'false' || env.STAGECOM_DEMO_PASSWORD) {
-            throw new Error('Production must disable demo mode and omit the demo password.')
-          }
-          JS
-      - name: Build with the target project's environment
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-      - name: Deploy verified source
+      - name: Build and deploy to the selected Vercel environment
         env:
+          DEPLOY_TARGET: ${{ inputs.target }}
           SOURCE_BRANCH: ${{ inputs.source-branch }}
           SOURCE_SHA: ${{ inputs.source-sha }}
-        run: |
-          url=$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN" --meta "gitCommitRef=$SOURCE_BRANCH" --meta "gitCommitSha=$SOURCE_SHA")
-          printf 'Deployment: %s\nSource: %s (%s)\n' "$url" "$SOURCE_BRANCH" "$SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+        run: bash scripts/deploy-vercel.sh

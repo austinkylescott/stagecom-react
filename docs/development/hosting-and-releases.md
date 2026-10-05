@@ -1,25 +1,33 @@
 # Hosting and releases
 
-Status: repository configuration prepared; hosted account setup and first remote
-workflow execution are pending. Baseline: GitHub main `67cc05f`, verified live
-on 2026-10-05. No remote migration, seed, deployment or branch reset was performed.
+Status (2026-10-05): draft PR #73 prepares delivery automation. The existing
+Vercel project `stagecom-react-dev` already has a ready Production deployment
+from main (`00d4f1f`). A hosted dev Preview deployment has not been set up.
+This revision changes repository configuration only; it does not deploy or
+alter the existing site.
 
 ## Environment layout
 
-Use separate Vercel projects for hosted dev and production. Vercel may call each
-project's stable URL a production deployment; only the Stagecom production
-project is the real production environment.
+Use **one Vercel project**, `stagecom-react-dev`, with two hosted environments.
+The project name does not determine which environment a deployment uses.
+Vercel's Development environment is for local settings; the hosted dev site
+uses Preview. No custom Vercel environment or second hosting project is needed.
 
-| Site       | Source                                         | Supabase                             | Demo access                                            |
-| ---------- | ---------------------------------------------- | ------------------------------------ | ------------------------------------------------------ |
-| Dev        | `dev` after CI passes                          | Verified integration/review database | Only after complete site access protection is verified |
-| Production | Explicitly selected `release/<version>` commit | Separate production project          | Disabled                                               |
+| Site       | Source                                                    | Vercel environment               | Supabase                             | Demo access                                     |
+| ---------- | --------------------------------------------------------- | -------------------------------- | ------------------------------------ | ----------------------------------------------- |
+| Dev        | `dev` after fast CI passes                                | Preview, stable `dev` branch URL | Integration/review database          | Only after complete site protection is verified |
+| Production | Approved, pinned `release/<version>` commit after full CI | Production, production domain    | Separate production database project | Disabled                                        |
+| Main       | Observed release history                                  | No deployment                    | —                                    | —                                               |
 
-The currently documented Supabase integration project is
-`obufimjayisdhkjjxhfd`. Inspect its current data and intended role before using
-it for hosted persona review. The existing Vercel project named `stagecom` may
-belong to older work; inspect it before repurposing it. Do not assume the name
-establishes the app source, environment or correct database.
+Set Preview variables for branch `dev` and Production variables separately in
+the same project. Both GitHub environments reference the same Vercel project ID
+and organization ID. Separate Vercel environments do not isolate databases;
+Supabase production remains separate from the integration database.
+
+The documented Supabase integration project is `obufimjayisdhkjjxhfd`.
+Inspect its current data and intended role before using it for persona review.
+The older Vercel project `stagecom` is a separate Nuxt application and is not
+part of this delivery setup.
 
 The persona chooser grants real test-account sessions to visitors. Its server
 password is not a visitor access gate. Protect the whole dev site, including
@@ -47,9 +55,12 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
 - `release.yml` is manually dispatched with a release branch. It pins the
   branch's commit before verification; deployment uses that same SHA even if
   the branch changes while checks run. The workflow never merges into main.
-- `deploy-vercel.yml` uses the chosen project's production environment for its
-  stable URL, pulls configuration, builds and deploys prebuilt output. Production
-  explicitly checks that demo mode is false and the demo password is absent.
+- `deploy-vercel.yml` calls `scripts/deploy-vercel.sh` in the same Vercel project.
+  Dev pulls Preview variables with `--git-branch=dev`, builds and deploys without
+  `--prod`, and supplies GitHub branch/SHA metadata for branch URL assignment.
+  Production pulls Production variables, checks demo mode is false and the demo
+  password is absent, then builds and deploys with `--prod`. Both paths upload
+  the verified source's prebuilt output.
 - `vercel.json` disables Git deployments. GitHub checks alone do not prevent
   Vercel's independent auto-deploy path; keep this setting disabled.
 
@@ -72,28 +83,32 @@ reproduction details, baseline limits, and focused verification.
 
 ## Account setup
 
-1. Resolve Vercel access for the intended team. Reading `stagecom` by name without
-   an explicit team works and identifies the older Nuxt project. Requests with
-   explicit team `team_5DinBWVxQJQbFt4CBlz5R5cZ` return 403 for
-   `austin-scotts-projects`; listing teams returns none. Do not disconnect the
-   plugin merely because one scoping path fails. Team-scoped project creation
-   may require adjusted authorization or a dashboard step.
-2. Inspect the existing project and create/reuse the two intended projects.
-   Do not import/deploy the current main branch as an initial project deployment.
-   Use link-only setup, or import the prepared release after its configuration
-   is published and automatic Git deployment is disabled.
-   Configure TanStack Start, Node 24, `npm ci`, `npm run build` and
-   `NITRO_PRESET=vercel`. Configure protection before enabling review personas.
-3. Set each Vercel project's own public build/runtime variables:
+1. Reuse `stagecom-react-dev` in `austin-scotts-projects`. Live read-only
+   inspection confirmed access and a ready Production deployment. Configure
+   TanStack Start, Node 24, `npm ci`, `npm run build` and `NITRO_PRESET=vercel`.
+   Keep native Git deployments disabled, including main; the existing main-based
+   deployment predates this policy and can remain until an approved release.
+2. Configure a stable Preview domain assigned to Git branch `dev` in this project
+   (or confirm Vercel's generated `dev` branch URL after the first Preview deploy).
+   Keep the current Production domain assigned to Production. Set `VITE_APP_URL`
+   to the matching stable URL in each environment. Configure and verify whole-site
+   protection on the dev URL before enabling persona review.
+3. Set Preview variables for `dev` and Production variables separately:
    `VITE_APP_TITLE`, `VITE_APP_URL`, `VITE_SUPABASE_URL`,
    `VITE_SUPABASE_ANON_KEY`. Set `SUPABASE_SERVICE_ROLE_KEY` only as a server
-   secret. For production set `STAGECOM_DEMO_MODE=false` and omit the demo
-   password. Hosted servers use `NODE_ENV=production` for Secure Auth cookies.
-4. Create GitHub environments named `dev` and `production`. Each holds its own
-   `VERCEL_TOKEN` secret and `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
-   `VERCEL_CLI_VERSION` variables. Select an exact published, validated CLI
-   version; the workflow refuses an empty value, `latest`, or a version range.
-   Store tokens through account/secret tooling, never in chat or git.
+   secret, pointing at the corresponding database. For Production set
+   `STAGECOM_DEMO_MODE=false` and omit `STAGECOM_DEMO_PASSWORD`. Hosted servers
+   use `NODE_ENV=production` for Secure Auth cookies. See the official
+   [branch-aware prebuilt deployment commands](https://vercel.com/docs/cli/deploy)
+   and [Preview variable pull](https://vercel.com/docs/cli/pull).
+4. Configure GitHub environments `dev` and `production`. Both use
+   `VERCEL_ORG_ID=team_5DinBWVxQJQbFt4CBlz5R5cZ` and
+   `VERCEL_PROJECT_ID=prj_mJz3CpHMcBFKVz3lWawYLlgCoJgU`, with a
+   `VERCEL_TOKEN` secret and exact `VERCEL_CLI_VERSION` variable in each.
+   Select a published, validated CLI version; empty values, `latest` and ranges
+   are refused. Store tokens through secret tooling, never in chat or git.
+   Current inspection found only the GitHub `dev` environment and its token;
+   project variables and the `production` environment remain to be configured.
 5. Require maintainer review for the production GitHub environment where the
    repository's plan supports it. The selected source is a release branch,
    but the workflow can run from main: environment deployment-branch rules
@@ -129,7 +144,7 @@ before the next release as appropriate. Main updates never deploy.
 ## Rollback
 
 Record known-good deployment IDs/URLs before each release. Roll back by pointing
-the production project to the chosen previous production deployment; do not
+the project’s Production domains to the chosen previous Production deployment; do not
 deploy main as a rollback. With the correctly linked project and authenticated
 CLI, the documented command is:
 
@@ -157,19 +172,20 @@ Done. Use contributing PR references during assembly and closing references
 only on final incorporation into main. Check actual target-specific settings
 before enabling automation; otherwise update statuses deliberately.
 
-## Local preparation evidence (2026-10-05)
+## Verification evidence (2026-10-05)
 
-- Typecheck passed; the Nitro Vercel build passed and generated Build Output API
-  version 3 under `.vercel/output` (ignored from git).
-- Application tests: 56 files and 183 tests passed; three database-dependent
-  files/tests skipped because a local database stack was unavailable.
-- Three delivery-policy checks passed, covering allowed names, forbidden
-  sandbox promotion and exclusion of main from deployment.
-- Workflow YAML parsed, local reusable workflow paths exist, all workflow shell
-  steps passed `bash -n`, and formatting/whitespace checks passed.
-- Scoped ESLint could not start: installed dependencies lack `@shadcn/lint`,
-  which the existing ESLint configuration imports.
-- Database and browser suites were not executed here: Docker socket access is
-  unavailable. Their remote CI execution remains required before deployment.
-- No live GitHub Actions run, hosted smoke check, branch protection change,
-  Vercel project mutation, deployment, migration, seed or release occurred.
+The original delivery baseline was main `67cc05f`; current main is `00d4f1f`.
+The browser investigation records its exact baseline and limits rather than
+assuming today's main has the same contents.
+
+- The browser follow-up passed all four focused journeys, 186 application tests,
+  591 fresh-database acceptance checks, typecheck and the Vercel build.
+- Its full browser run was 45 passed, one intermittent Event-publication failure
+  and one skipped fault-injection test. This is not a green full release gate.
+- Fast GitHub CI passed for browser follow-up `d9be772`; deployment was skipped.
+- The single-project revision adds executable fake-CLI delivery checks for Preview
+  branch variables/metadata, Production flags, unsafe demo settings and rejected
+  source branches. These run in both verification profiles without a live deploy.
+- Account setup, hosted dev smoke verification and a green full release run remain
+  necessary before delivery. No merge, deployment, remote migration or seed is
+  included in this revision.

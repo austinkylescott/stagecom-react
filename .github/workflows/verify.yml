@@ -39,7 +39,7 @@ jobs:
             fast|full) ;;
             *) echo "Unknown verification profile" >&2; exit 1 ;;
           esac
-      - run: node scripts/delivery-policy.check.mjs
+      - run: node --test scripts/delivery-policy.check.mjs scripts/deploy-vercel.check.mjs
       - run: npm run typecheck
       - name: Start disposable Supabase and apply tracked migrations
         if: inputs.profile == 'full'
