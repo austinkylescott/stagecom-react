@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 import { loadEnv } from 'vite'
 import { waitForReactHandler } from './support/hydration'
 
+test.use({ actionTimeout: 10_000, navigationTimeout: 20_000 })
+
 const env = { ...loadEnv('development', process.cwd(), ''), ...process.env }
 
 test('persisted Theater Calendar periods, disclosure and Occurrence return context', async ({
@@ -210,6 +212,20 @@ test('persisted Theater Calendar periods, disclosure and Occurrence return conte
         await waitForReactHandler(calendarEvent, 'onClick')
         await calendarEvent.click()
         await expect(page).toHaveURL(/\/events\/calendar-performance/)
+        // A URL change precedes loader completion. Inject failure only after the
+        // Event has rendered, so we interrupt the return request, not startup.
+        await expect(
+          page.getByRole('heading', {
+            name: 'Calendar Performance',
+            exact: true,
+            level: 1,
+          }),
+        ).toBeVisible()
+        const returnLink = page.getByRole('link', {
+          name: 'Back to Calendar',
+          exact: true,
+        })
+        await waitForReactHandler(returnLink, 'onClick')
         await expect.poll(() => calendarEndpoint).toBeDefined()
         let interrupted = 0
         await page.route('**/*', async (route) => {
@@ -218,9 +234,7 @@ test('persisted Theater Calendar periods, disclosure and Occurrence return conte
             await route.abort()
           } else await route.continue()
         })
-        await page
-          .getByRole('link', { name: 'Back to Calendar', exact: true })
-          .click()
+        await returnLink.click()
         await expect(
           page.getByRole('button', { name: 'Retry Calendar' }),
         ).toBeVisible()

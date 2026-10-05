@@ -62,8 +62,13 @@ The first full GitHub run passed database acceptance checks and all 186
 unit/integration tests. Browser regression took 7 minutes 55 seconds: 43 passed
 and four failed (Targeted Invitation magic-link request, connected review Event
 portfolio navigation, Reusable Join Link outcome, and Theater Calendar timeout).
-Those failures remain unresolved; switching dev to smoke coverage does not fix
-or suppress them in the full release profile.
+Switching dev to smoke coverage did not resolve these failures; the full release
+profile still runs every journey. A controlled comparison with baseline `67cc05f`
+found no application, dependency, migration, seed, or browser-test changes in the
+original delivery PR. The follow-up fixes synchronize browser interactions with
+hydration and destination rendering, and retain traces on the first failure.
+See [the browser regression investigation](hosted-browser-regression.md) for
+reproduction details, baseline limits, and focused verification.
 
 ## Account setup
 

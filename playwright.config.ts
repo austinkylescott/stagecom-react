@@ -11,7 +11,7 @@ export default defineConfig({
   },
   use: {
     baseURL: playwrightBaseUrl,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
   },
   webServer: {
     command: `npm run dev -- --port ${playwrightPort}`,
