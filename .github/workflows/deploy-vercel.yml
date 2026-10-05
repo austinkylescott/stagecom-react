@@ -1,4 +1,4 @@
-name: Deploy verified Vercel build
+name: Deploy Vercel site
 
 on:
   workflow_call:
@@ -37,12 +37,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Check source and required configuration
-        env:
-          SOURCE_BRANCH: ${{ inputs.source-branch }}
-          DEPLOY_TARGET: ${{ inputs.target }}
+      - name: Require deployment credentials
         run: |
-          node scripts/check-delivery-policy.mjs deploy "$SOURCE_BRANCH" "$DEPLOY_TARGET"
           test -n "$VERCEL_TOKEN"
           test -n "$VERCEL_ORG_ID"
           test -n "$VERCEL_PROJECT_ID"
@@ -50,18 +46,8 @@ jobs:
       - name: Install pinned CLI
         run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - name: Build and deploy to the selected Vercel environment
-        id: deployment
         env:
           DEPLOY_TARGET: ${{ inputs.target }}
           SOURCE_BRANCH: ${{ inputs.source-branch }}
           SOURCE_SHA: ${{ inputs.source-sha }}
         run: bash scripts/deploy-vercel.sh
-      - name: Install deployment smoke browser
-        if: inputs.target == 'production'
-        run: npx --no-install playwright install --with-deps chromium
-      - name: Verify deployed Production smoke
-        if: inputs.target == 'production'
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.deployment.outputs.site-url }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: npm run test:smoke

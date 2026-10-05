@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test'
 import { createHash, randomBytes } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
-import { waitForReactHandler } from './support/hydration'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../src/server/db/database.types'
@@ -100,9 +99,7 @@ test('recipient authentication preserves intent and accepts a Targeted Invitatio
       page.getByRole('heading', { name: `Join ${fixture.theaterName}` }),
     ).toBeVisible()
 
-    const signInLink = page.getByRole('link', { name: /sign in to accept/i })
-    await waitForReactHandler(signInLink, 'onClick')
-    await signInLink.click()
+    await page.getByRole('link', { name: /sign in to accept/i }).click()
     await expect(
       page.getByRole('heading', { name: /sign in to stagecom/i }),
     ).toBeVisible()
@@ -127,13 +124,8 @@ test('recipient authentication preserves intent and accepts a Targeted Invitatio
       await route.fulfill({ body: '{}', contentType: 'application/json' })
     })
 
-    const emailInput = page.getByLabel('Email address')
-    await waitForReactHandler(emailInput, 'onChange')
-    await waitForReactHandler(
-      emailInput.locator('xpath=ancestor::form'),
-      'onSubmit',
-    )
-    await emailInput.fill(fixture.recipientEmail)
+    await page.waitForTimeout(250)
+    await page.getByLabel('Email address').fill(fixture.recipientEmail)
     await page.getByRole('button', { name: /send magic link/i }).click()
     await expect.poll(() => otpRequestBody).toBeDefined()
     expect(otpRequestBody).toMatchObject({
@@ -167,10 +159,7 @@ test('recipient authentication preserves intent and accepts a Targeted Invitatio
     await expect(page).toHaveURL(new RegExp(`/join/${fixture.inviteToken}$`), {
       timeout: 5_000,
     })
-    await waitForReactHandler(
-      page.getByRole('button', { name: /accept invitation/i }),
-      'onClick',
-    )
+    await page.waitForTimeout(250)
     await Promise.all([
       page.waitForResponse((response) =>
         response.url().includes('/_serverFn/'),
@@ -210,10 +199,7 @@ test('recipient authentication preserves intent and accepts a Targeted Invitatio
     expect(consumedResult?.[0].result).toBe('consumed')
 
     await page.goto(`/join/${fixture.inviteToken}`)
-    await waitForReactHandler(
-      page.getByRole('button', { name: /accept invitation/i }),
-      'onClick',
-    )
+    await page.waitForTimeout(250)
     await Promise.all([
       page.waitForResponse((response) =>
         response.url().includes('/_serverFn/'),
@@ -373,7 +359,7 @@ test('Owner creates and revokes a Targeted Invitation from the Members screen', 
 
     const secondRecipient = `second-${crypto.randomUUID()}@example.com`
     await page.goto(`/app/${fixture.theaterSlug}/members`)
-    await waitForReactHandler(page.getByLabel('Recipient email'), 'onChange')
+    await page.waitForTimeout(500)
     await page.getByLabel('Recipient email').fill(secondRecipient)
     await page.getByRole('button', { name: /create invitation/i }).click()
 
@@ -472,7 +458,7 @@ test('authenticated user can submit profile completion', async ({
     ])
 
     await page.goto('/complete-profile?next=/onboarding')
-    await waitForReactHandler(page.getByLabel('Display name'), 'onChange')
+    await page.waitForTimeout(750)
     await page.getByLabel('Display name').fill('Authenticated Operator')
     await page.getByRole('button', { name: 'Continue' }).click()
 

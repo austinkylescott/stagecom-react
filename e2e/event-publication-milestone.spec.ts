@@ -93,10 +93,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     )
 
     await owner.page.goto(`/app/${fixture.theaterSlug}/members`)
-    await waitForReactHandler(
-      owner.page.getByLabel('Maximum uses (optional)'),
-      'onChange',
-    )
+    await owner.page.waitForTimeout(500)
     await owner.page.getByLabel('Maximum uses (optional)').fill('8')
     await owner.page.getByRole('button', { name: 'Create Join Link' }).click()
     const shareUrl = await owner.page
@@ -115,10 +112,7 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       multiRole,
     ]) {
       await joiner.page.goto(`/join-link/${joinToken}`)
-      await waitForReactHandler(
-        joiner.page.getByRole('button', { name: 'Join Theater' }),
-        'onClick',
-      )
+      await joiner.page.waitForTimeout(500)
       await joiner.page.getByRole('button', { name: 'Join Theater' }).click()
       await expect(
         joiner.page.getByRole('heading', {
@@ -284,10 +278,6 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     await expect(producer.page.getByText('Plan saved.')).toBeVisible()
 
     await openEventFromCallsheet(admin.page, fixture)
-    await waitForReactHandler(
-      admin.page.getByRole('link', { name: 'Cast & Team' }),
-      'onClick',
-    )
     await admin.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       admin.page.getByLabel('Staffing need'),
@@ -334,10 +324,6 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toBeVisible()
 
     await openEventFromCallsheet(director.page, fixture)
-    await waitForReactHandler(
-      director.page.getByRole('link', { name: 'Cast & Team' }),
-      'onClick',
-    )
     await director.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       director.page.getByLabel('Active Theater Member'),
@@ -393,10 +379,6 @@ test('seeded Members take one Event from Theater creation through anonymous admi
         '1 planned Rehearsal and 1 planned Performance. Exact dates and Calls are shared after acceptance.',
       ),
     ).toBeVisible()
-    await waitForReactHandler(
-      cast.page.getByRole('link', { name: 'Cast & Team' }),
-      'onClick',
-    )
     await cast.page.getByRole('link', { name: 'Cast & Team' }).click()
     await expect(cast.page.getByText('Candidate Slot 1')).toHaveCount(0)
     await waitForReactHandler(
@@ -412,10 +394,6 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .selectOption('available')
 
     await director.page.reload()
-    await waitForReactHandler(
-      director.page.getByRole('link', { name: 'Cast & Team' }),
-      'onClick',
-    )
     await director.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       director.page.getByLabel(
@@ -431,10 +409,6 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       .selectOption('required')
 
     await producer.page.reload()
-    await waitForReactHandler(
-      producer.page.getByRole('link', { name: 'Cast & Team' }),
-      'onClick',
-    )
     await producer.page.getByRole('link', { name: 'Cast & Team' }).click()
     await expect(producer.page).toHaveURL(/#cast-team$/)
     await expect(
@@ -524,10 +498,6 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     ).toBeVisible()
 
     await cast.page.reload()
-    await waitForReactHandler(
-      cast.page.getByRole('link', { name: 'Cast & Team' }),
-      'onClick',
-    )
     await cast.page.getByRole('link', { name: 'Cast & Team' }).click()
     await waitForReactHandler(
       cast.page.getByLabel('Availability for Candidate Slot 3'),

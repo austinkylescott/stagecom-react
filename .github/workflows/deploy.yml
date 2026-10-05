@@ -1,0 +1,19 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy-vercel.yml
+    with:
+      target: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
+      source-sha: ${{ github.sha }}
+      source-branch: ${{ github.ref_name }}
+    secrets: inherit
