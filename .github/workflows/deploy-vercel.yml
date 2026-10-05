@@ -1,0 +1,73 @@
+name: Deploy verified Vercel build
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        required: true
+      source-sha:
+        type: string
+        required: true
+      source-branch:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    timeout-minutes: 20
+    concurrency:
+      group: vercel-${{ inputs.target }}
+      cancel-in-progress: false
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_CLI_VERSION: ${{ vars.VERCEL_CLI_VERSION }}
+      NITRO_PRESET: vercel
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source-sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check source and required configuration
+        env:
+          SOURCE_BRANCH: ${{ inputs.source-branch }}
+          DEPLOY_TARGET: ${{ inputs.target }}
+        run: |
+          node scripts/check-delivery-policy.mjs deploy "$SOURCE_BRANCH" "$DEPLOY_TARGET"
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+          [[ "$VERCEL_CLI_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - name: Install pinned CLI
+        run: npm install --global "vercel@$VERCEL_CLI_VERSION"
+      - name: Pull host configuration
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Check production demo access is disabled
+        if: inputs.target == 'production'
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs'
+          import { parseEnv } from 'node:util'
+          const env = parseEnv(readFileSync('.vercel/.env.production.local', 'utf8'))
+          if (env.STAGECOM_DEMO_MODE !== 'false' || env.STAGECOM_DEMO_PASSWORD) {
+            throw new Error('Production must disable demo mode and omit the demo password.')
+          }
+          JS
+      - name: Build with the target project's environment
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy verified source
+        env:
+          SOURCE_BRANCH: ${{ inputs.source-branch }}
+          SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          url=$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN" --meta "gitCommitRef=$SOURCE_BRANCH" --meta "gitCommitSha=$SOURCE_SHA")
+          printf 'Deployment: %s\nSource: %s (%s)\n' "$url" "$SOURCE_BRANCH" "$SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"

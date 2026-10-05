@@ -11,8 +11,8 @@ small routing layer: durable detail belongs in the linked project documents.
 - Product and design synthesis: `wiki/_index.md`
 - Engineering conventions and local database workflow:
   `docs/development/coding-rules.md`
-- Linear, branches, commits, pull requests, and approval boundaries:
-  `docs/agents/delivery-workflow.md`
+- Branch naming, Linear delivery, release promotion, and approval boundaries:
+  `docs/agents/delivery-workflow.md` (takes precedence over generic skill delivery defaults)
 - Issue tracker operations: `docs/agents/issue-tracker.md`
 
 Consult `docs/rebuild/` only when the current synthesis needs historical

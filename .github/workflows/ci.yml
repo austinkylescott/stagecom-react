@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev, 'release/**']
+  push:
+    branches: [main, dev, 'release/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate branch and promotion target
+        env:
+          EVENT: ${{ github.event_name }}
+          SOURCE: ${{ github.head_ref || github.ref_name }}
+          TARGET: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            node scripts/check-delivery-policy.mjs pr "$SOURCE" "$TARGET"
+          else
+            node scripts/check-delivery-policy.mjs branch "$SOURCE"
+          fi
+  checks:
+    needs: policy
+    uses: ./.github/workflows/verify.yml
+  deploy-dev:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.HOSTED_DEV_ENABLED == 'true'
+    needs: checks
+    uses: ./.github/workflows/deploy-vercel.yml
+    with:
+      target: dev
+      source-sha: ${{ github.sha }}
+      source-branch: dev
+    secrets: inherit

@@ -1,0 +1,58 @@
+name: Verify application
+
+on:
+  workflow_call:
+    inputs:
+      source-ref:
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source-ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/delivery-policy.check.mjs
+      - run: npm run typecheck
+      - name: Start disposable Supabase and apply tracked migrations
+        run: npm run db:start:local
+      - name: Configure local test environment
+        run: |
+          npx --no-install supabase status -o json > "$RUNNER_TEMP/supabase-status.json"
+          node scripts/ci-local-env.mjs "$RUNNER_TEMP/supabase-status.json"
+          rm "$RUNNER_TEMP/supabase-status.json"
+      - name: Database acceptance checks
+        run: npm run db:test:local
+      - name: Seed disposable review story
+        run: npm run demo:seed
+      - run: npm run test
+      - name: Build Vercel output
+        run: npm run build
+        env:
+          NITRO_PRESET: vercel
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Verify browser journeys serially
+        run: npm run test:e2e -- --workers=1
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure-evidence
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - name: Stop disposable database
+        if: always()
+        run: npm run db:stop:local
