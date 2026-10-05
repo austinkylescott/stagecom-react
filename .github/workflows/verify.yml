@@ -39,24 +39,27 @@ jobs:
             fast|full) ;;
             *) echo "Unknown verification profile" >&2; exit 1 ;;
           esac
-      - run: node --test scripts/delivery-policy.check.mjs scripts/deploy-vercel.check.mjs
+      - run: node --test scripts/delivery-policy.check.mjs scripts/deploy-vercel.check.mjs scripts/release-verification.check.mjs
       - run: npm run typecheck
       - name: Start disposable Supabase and apply tracked migrations
         if: inputs.profile == 'full'
-        run: npm run db:start:local
+        run: |
+          node scripts/ci-supabase-config.mjs
+          npm run db:start:local
       - name: Configure local test environment
         if: inputs.profile == 'full'
         run: |
           npx --no-install supabase status -o json > "$RUNNER_TEMP/supabase-status.json"
           node scripts/ci-local-env.mjs "$RUNNER_TEMP/supabase-status.json"
           rm "$RUNNER_TEMP/supabase-status.json"
-      - name: Database acceptance checks
+      - name: Database invariants — authorization, transactions, scheduling and publication
         if: inputs.profile == 'full'
         run: npm run db:test:local
       - name: Seed disposable review story
         if: inputs.profile == 'full'
         run: npm run demo:seed
-      - run: npm run test
+      - name: Application behavior — commands, queries and integration contracts
+        run: npm run test
       - name: Build Vercel output
         run: npm run build
         env:
@@ -97,7 +100,9 @@ jobs:
       - run: npm ci
       - run: npx --no-install playwright install --with-deps chromium
       - name: Start this shard's disposable database
-        run: npm run db:start:local
+        run: |
+          node scripts/ci-supabase-config.mjs
+          npm run db:start:local
       - name: Configure local test environment
         run: |
           npx --no-install supabase status -o json > "$RUNNER_TEMP/supabase-status.json"
@@ -107,6 +112,12 @@ jobs:
         run: npm run demo:seed
       - name: Verify browser shard
         run: npm run test:e2e -- --shard=${{ matrix.shard }}/4 --workers=1
+      - name: Explain browser results and timings
+        if: always()
+        run: |
+          if [ -f playwright-report/results.json ]; then
+            node scripts/summarize-browser-results.mjs
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -137,3 +148,24 @@ jobs:
             test "$PROFILE" = fast
             test "$BROWSER_RESULT" = skipped
           fi
+      - uses: actions/checkout@v4
+        if: inputs.profile == 'full'
+        with:
+          ref: ${{ inputs.source-ref || github.sha }}
+      - uses: actions/setup-node@v4
+        if: inputs.profile == 'full'
+        with:
+          node-version: '24'
+      - name: Record the exact fully verified commit
+        if: inputs.profile == 'full'
+        env:
+          VERIFICATION_PROFILE: full
+          SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: node scripts/write-verification-receipt.mjs
+      - uses: actions/upload-artifact@v4
+        if: inputs.profile == 'full'
+        with:
+          name: full-verification
+          path: verification-evidence/verification.json
+          retention-days: 30
+          overwrite: true

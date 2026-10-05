@@ -13,7 +13,11 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 // Run the real delivery script against a fake CLI; never contact Vercel.
-function deploy(target, branch, demoEnv = 'STAGECOM_DEMO_MODE=false\n') {
+function deploy(
+  target,
+  branch,
+  demoEnv = 'STAGECOM_DEMO_MODE=false\nVITE_APP_URL=https://production.example.test\n',
+) {
   const dir = mkdtempSync(join(tmpdir(), 'stagecom-delivery-'))
   try {
     mkdirSync(join(dir, 'scripts'))
@@ -56,6 +60,7 @@ if (args[0] === 'deploy') console.log('https://example.vercel.app')
         VERCEL_ORG_ID: 'same-org',
         VERCEL_PROJECT_ID: 'same-project',
         GITHUB_STEP_SUMMARY: join(dir, 'summary'),
+        GITHUB_OUTPUT: join(dir, 'outputs'),
         TEST_DEMO_ENV: demoEnv,
       },
     })
@@ -65,7 +70,10 @@ if (args[0] === 'deploy') console.log('https://example.vercel.app')
           .split('\n')
           .map(JSON.parse)
       : []
-    return { ...result, calls }
+    const outputs = existsSync(join(dir, 'outputs'))
+      ? readFileSync(join(dir, 'outputs'), 'utf8')
+      : ''
+    return { ...result, calls, outputs }
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -80,6 +88,10 @@ test('dev pulls branch-specific Preview variables and never builds or deploys Pr
   assert.equal(result.calls.flat().includes('--prod'), false)
   assert.ok(result.calls[2].includes('githubCommitRef=dev'))
   assert.ok(result.calls[2].includes('githubCommitSha=verified-sha'))
+  assert.equal(
+    result.outputs,
+    'url=https://example.vercel.app\nsite-url=https://example.vercel.app\n',
+  )
 })
 
 test('release uses Production variables, build and deployment for the verified SHA', () => {
@@ -90,6 +102,10 @@ test('release uses Production variables, build and deployment for the verified S
   assert.ok(result.calls[2].includes('--prod'))
   assert.ok(result.calls[2].includes('githubCommitRef=release/0.1.0'))
   assert.ok(result.calls[2].includes('githubCommitSha=verified-sha'))
+  assert.equal(
+    result.outputs,
+    'url=https://example.vercel.app\nsite-url=https://production.example.test\n',
+  )
 })
 
 test('unsafe Production demo configuration stops before build or deploy', () => {
@@ -114,5 +130,21 @@ test('main and invalid source/target combinations stop before contacting Vercel'
     const result = deploy(target, branch)
     assert.notEqual(result.status, 0)
     assert.deepEqual(result.calls, [])
+  }
+})
+
+test('Production refuses missing, insecure or credential-bearing smoke URLs before deployment', () => {
+  for (const url of [
+    '',
+    'http://production.example.test',
+    'https://user:password@production.example.test',
+  ]) {
+    const result = deploy(
+      'production',
+      'release/0.1.0',
+      `STAGECOM_DEMO_MODE=false\nVITE_APP_URL=${url}\n`,
+    )
+    assert.notEqual(result.status, 0)
+    assert.equal(result.calls.length, 1)
   }
 })

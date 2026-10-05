@@ -23,3 +23,5 @@ playwright-report/
 supabase/.branches/
 supabase/.temp/
 wiki/.obsidian/
+
+verification-evidence/

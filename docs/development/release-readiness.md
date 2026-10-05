@@ -92,10 +92,20 @@ no remote database is used. Coverage listing confirms 47 tests, exactly once
 across shards (15, 9, 13, 10). The `checks / verify` aggregate fails if core checks
 or any shard fails or is cancelled. An open full-profile release PR owns push
 verification, avoiding a second full run of the same change. Release dispatch
-still verifies its pinned source through the same complete gate.
+requires a full CI receipt for its pinned source, then runs read-only deployment
+smoke instead of repeating regression.
 
 The two repeatable form failures consumed about 29 seconds each after inputs
 were filled before hydration. Navigation failures appeared in the Event
 milestone and public programming journeys. The follow-up waits for the actual
 React handlers, bounds individual actions, and retains list/JSON timing reports.
 It does not add retries, omit journeys or claim a green gate before CI confirms it.
+
+The first four-shard follow-up (`42e75d0`) completed in 7m 4s: core passed;
+browsers reported 46 passes and one failure, without retries or skipped tests.
+The remaining failure was the Event milestone's fixed-delay Join Theater click.
+The next revision waits for that handler, reduces unused CI services, records an
+exact-commit full CI receipt, and publishes explanatory browser summary tables.
+The approved release design now reuses completed full CI, then runs four short
+read-only production smoke checks. See [what the tests prove](testing-strategy.md).
+This revision has not run a live production deployment or production smoke.

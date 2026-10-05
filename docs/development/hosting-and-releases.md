@@ -48,8 +48,7 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
   tests. They do not start Supabase or run the full browser suite. Database-dependent
   tests remain outside this fast gate. This keeps the remote sandbox available
   for testing unfinished work; it does not establish release readiness.
-- Release/main PRs and pushes, and explicit production deployments, use full
-  verification: disposable local Supabase, tracked migrations, database acceptance
+- Release/main PRs and pushes use full verification: disposable local Supabase, tracked migrations, database acceptance
   tests, local review seed, unit/integration tests, Vercel build and the complete
   browser suite distributed over four independent disposable databases. Tests
   remain serial within each shard; the required verification gate demands core
@@ -57,14 +56,19 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
 - After checks pass on a dev push, hosted dev deploys only when repository
   variable `HOSTED_DEV_ENABLED` is `true`.
 - `release.yml` is manually dispatched with a release branch. It pins the
-  branch's commit before verification; deployment uses that same SHA even if
-  the branch changes while checks run. The workflow never merges into main.
+  branch's commit and requires a successful full CI receipt for that exact SHA.
+  It reuses completed verification instead of rerunning regression. Missing,
+  mismatched or expired evidence stops dispatch. Deployment uses the pinned SHA
+  even if the branch changes while approval is pending. The workflow never merges
+  into main. See [the test strategy](testing-strategy.md).
 - `deploy-vercel.yml` calls `scripts/deploy-vercel.sh` in the same Vercel project.
   Dev pulls Preview variables with `--git-branch=dev`, builds and deploys without
   `--prod`, and supplies GitHub branch/SHA metadata for branch URL assignment.
   Production pulls Production variables, checks demo mode is false and the demo
   password is absent, then builds and deploys with `--prod`. Both paths upload
-  the verified source's prebuilt output.
+  the verified source's prebuilt output. Production then runs four read-only
+  deployment smoke checks with a 60-second browser budget. A smoke failure marks
+  the release run red after deployment; it does not automatically roll back.
 - `vercel.json` disables Git deployments. GitHub checks alone do not prevent
   Vercel's independent auto-deploy path; keep this setting disabled.
 
@@ -114,7 +118,10 @@ reproduction details, baseline limits, and focused verification.
    The dev environment now has its token and all three variables, including
    CLI version `62.2.0`. GitHub also has an empty `Production` environment;
    its token, variables and protection rules remain to be configured. GitHub
-   environment names are case insensitive, so reuse that environment.
+   environment names are case insensitive, so reuse that environment. If
+   Production is protected by Vercel, configure `VERCEL_AUTOMATION_BYPASS_SECRET`
+   in this GitHub environment for the read-only smoke runner. It sends this
+   credential only to the Production origin and leaves protection enabled.
 5. Require maintainer review for the production GitHub environment where the
    repository's plan supports it. The selected source is a release branch,
    but the workflow can run from main: environment deployment-branch rules
@@ -138,9 +145,13 @@ the plugin's OAuth connection does not automatically supply GitHub Actions secre
 ## Using the workflow
 
 Create each new release from main, integrate approved work individually, and
-run CI on the assembled candidate. In GitHub Actions select **Deploy release**,
+run full CI on the assembled candidate. Inspect the core checks and browser
+summary tables; confirm a `full-verification` receipt was published for the
+release head SHA. In GitHub Actions select **Deploy release**,
 enter `release/0.1.0` (or the intended version), and dispatch. Approve the
-production environment after reviewing the pinned candidate and checks.
+production environment after reviewing the pinned candidate and linked completed
+CI. Dispatch reuses those checks, deploys, and runs the four deployment smoke
+checks; it does not repeat the full browser suite.
 
 Record the deployment URL, SHA, release inventory and immutable tag, for example
 `v0.1.0`. A hotfix redeployment gets a new immutable tag such as `v0.1.1`; do

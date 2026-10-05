@@ -50,8 +50,18 @@ jobs:
       - name: Install pinned CLI
         run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - name: Build and deploy to the selected Vercel environment
+        id: deployment
         env:
           DEPLOY_TARGET: ${{ inputs.target }}
           SOURCE_BRANCH: ${{ inputs.source-branch }}
           SOURCE_SHA: ${{ inputs.source-sha }}
         run: bash scripts/deploy-vercel.sh
+      - name: Install deployment smoke browser
+        if: inputs.target == 'production'
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Verify deployed Production smoke
+        if: inputs.target == 'production'
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.deployment.outputs.site-url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: npm run test:smoke

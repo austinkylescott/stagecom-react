@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: production-release
@@ -22,6 +23,8 @@ jobs:
       sha: ${{ steps.source.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -30,17 +33,20 @@ jobs:
         env:
           RELEASE_BRANCH: ${{ inputs.release-branch }}
         run: |
+          test "$GITHUB_REF" = refs/heads/main
           node scripts/check-delivery-policy.mjs deploy "$RELEASE_BRANCH" production
-          git fetch origin "refs/heads/$RELEASE_BRANCH"
-          printf 'sha=%s\n' "$(git rev-parse FETCH_HEAD)" >> "$GITHUB_OUTPUT"
-  checks:
-    needs: resolve
-    uses: ./.github/workflows/verify.yml
-    with:
-      source-ref: ${{ needs.resolve.outputs.sha }}
-      profile: full
+          git fetch origin refs/heads/main:refs/remotes/origin/main "refs/heads/$RELEASE_BRANCH:refs/remotes/origin/$RELEASE_BRANCH"
+          source_sha=$(git rev-parse "refs/remotes/origin/$RELEASE_BRANCH")
+          git merge-base --is-ancestor origin/main "$source_sha"
+          printf 'sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+      - name: Require successful full CI for that exact release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: ${{ inputs.release-branch }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: node scripts/find-release-verification.mjs
   deploy:
-    needs: [resolve, checks]
+    needs: resolve
     uses: ./.github/workflows/deploy-vercel.yml
     with:
       target: production

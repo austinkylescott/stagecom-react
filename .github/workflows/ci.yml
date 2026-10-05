@@ -58,6 +58,7 @@ jobs:
     if: needs.policy.outputs.verify == 'true'
     uses: ./.github/workflows/verify.yml
     with:
+      source-ref: ${{ github.event.pull_request.head.sha || github.sha }}
       profile: ${{ (github.base_ref == 'dev' || github.ref == 'refs/heads/dev') && 'fast' || 'full' }}
   deploy-dev:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.HOSTED_DEV_ENABLED == 'true'

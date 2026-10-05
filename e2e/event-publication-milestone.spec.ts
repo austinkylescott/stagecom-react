@@ -93,7 +93,10 @@ test('seeded Members take one Event from Theater creation through anonymous admi
     )
 
     await owner.page.goto(`/app/${fixture.theaterSlug}/members`)
-    await owner.page.waitForTimeout(500)
+    await waitForReactHandler(
+      owner.page.getByLabel('Maximum uses (optional)'),
+      'onChange',
+    )
     await owner.page.getByLabel('Maximum uses (optional)').fill('8')
     await owner.page.getByRole('button', { name: 'Create Join Link' }).click()
     const shareUrl = await owner.page
@@ -112,7 +115,10 @@ test('seeded Members take one Event from Theater creation through anonymous admi
       multiRole,
     ]) {
       await joiner.page.goto(`/join-link/${joinToken}`)
-      await joiner.page.waitForTimeout(500)
+      await waitForReactHandler(
+        joiner.page.getByRole('button', { name: 'Join Theater' }),
+        'onClick',
+      )
       await joiner.page.getByRole('button', { name: 'Join Theater' }).click()
       await expect(
         joiner.page.getByRole('heading', {

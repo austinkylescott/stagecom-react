@@ -96,6 +96,8 @@ For hosted dev, release-only production deployment, CI configuration and require
 account setup, see [Hosting and releases](docs/development/hosting-and-releases.md).
 `main` is never deployed. Vercel Git auto-deployments are disabled; GitHub Actions
 checks and deploys the selected source through the configured environment.
+See [what the tests prove](docs/development/testing-strategy.md) for coverage,
+release eligibility and deployment smoke expectations.
 
 This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
 
