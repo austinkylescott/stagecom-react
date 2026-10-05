@@ -171,6 +171,10 @@ test('anonymous Performance entry keeps its identity through sign-in and private
     page.getByText('Current private plan', { exact: true }),
   ).toBeVisible()
   await expect(page.locator(href!.slice(href!.indexOf('#')))).toBeVisible()
+  await waitForReactHandler(
+    page.getByRole('link', { name: 'Public Page', exact: true }),
+    'onClick',
+  )
   await page.getByRole('link', { name: 'Public Page', exact: true }).click()
   await expect(page.getByLabel('Public title')).toHaveValue(
     'Private working copy: Calendar Performance',

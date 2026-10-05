@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -16,6 +17,8 @@ concurrency:
 jobs:
   policy:
     runs-on: ubuntu-latest
+    outputs:
+      verify: ${{ steps.coverage.outputs.verify }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,8 +35,27 @@ jobs:
           else
             node scripts/check-delivery-policy.mjs branch "$SOURCE"
           fi
+      - name: Avoid duplicate release verification
+        id: coverage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          SOURCE: ${{ github.head_ref || github.ref_name }}
+        run: |
+          verify=true
+          if [ "$EVENT" = push ] && [[ "$SOURCE" == release/* ]]; then
+            count=$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls" \
+              -f "head=$GITHUB_REPOSITORY_OWNER:$SOURCE" -f state=open \
+              --jq '[.[] | select(.base.ref == "main" or (.base.ref | startswith("release/")))] | length')
+            if [ "$count" -gt 0 ]; then
+              verify=false
+              echo 'The open release PR owns full verification for this push.'
+            fi
+          fi
+          printf 'verify=%s\n' "$verify" >> "$GITHUB_OUTPUT"
   checks:
     needs: policy
+    if: needs.policy.outputs.verify == 'true'
     uses: ./.github/workflows/verify.yml
     with:
       profile: ${{ (github.base_ref == 'dev' || github.ref == 'refs/heads/dev') && 'fast' || 'full' }}

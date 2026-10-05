@@ -40,7 +40,8 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
 
 - `ci.yml` validates names and PR targets, then calls `verify.yml`.
 - Work branches are checked through PRs; direct pushes are checked on main,
-  dev and release branches. This avoids running the same full suite twice for
+  dev and release branches without an open full-profile PR. An open PR to main
+  or a release owns its branch verification, avoiding duplicate full runs. This avoids running the same full suite twice for
   every work-branch update while still checking the integrated source.
 - Dev PRs and dev pushes use fast verification: branch policy, typecheck, unit
   tests, Vercel build and the two existing home-page/sign-in-redirect browser
@@ -50,7 +51,9 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
 - Release/main PRs and pushes, and explicit production deployments, use full
   verification: disposable local Supabase, tracked migrations, database acceptance
   tests, local review seed, unit/integration tests, Vercel build and the complete
-  serial browser suite. The reusable workflow defaults to full verification.
+  browser suite distributed over four independent disposable databases. Tests
+  remain serial within each shard; the required verification gate demands core
+  checks and every browser shard succeed. The reusable workflow defaults to full verification.
 - After checks pass on a dev push, hosted dev deploys only when repository
   variable `HOSTED_DEV_ENABLED` is `true`.
 - `release.yml` is manually dispatched with a release branch. It pins the

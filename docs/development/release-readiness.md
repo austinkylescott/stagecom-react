@@ -11,7 +11,7 @@ Read-only account audit and local bootstrap preparation, 2026-10-05.
 | Manual release dispatch              | Main is `00d4f1f` and has no workflows. Dev is `1de0232` and includes PR #73.                                                                        | Publish and review the prepared bootstrap, then approve its incorporation into main.                                                               |
 | Required checks                      | Main and dev are unprotected; repository rulesets are empty. Latest CI reports `policy` and `checks / verify`.                                       | Require these exact checks on main, dev and release branches; protect release-to-main review.                                                      |
 | Independent Git deployments          | Main has no `vercel.json`; dev disables Git deployments.                                                                                             | Include that configuration in the bootstrap; verify the effective hosting policy after incorporation.                                              |
-| Full verification                    | Latest green dev CI is the fast profile. Earlier full local browser evidence is 45 passes, one intermittent failure and one skip.                    | Run the full CI profile on the bootstrap PR and assembled release candidate. Investigate any failure; do not substitute smoke coverage or retries. |
+| Full verification                    | Latest green dev CI is the fast profile. Bootstrap `2616927` full CI failed: branch 45 passed/2 failed; PR 43 passed/4 failed.                       | Run the full CI profile on the bootstrap PR and assembled release candidate. Investigate any failure; do not substitute smoke coverage or retries. |
 
 Hosted dev is already enabled: `HOSTED_DEV_ENABLED=true`, with a successful
 `deploy-dev / deploy` job in [run 37357631310](https://github.com/austinkylescott/stagecom-react/actions/runs/37357631310).
@@ -24,7 +24,10 @@ The local patch carries PR #73's four workflows, delivery scripts and their
 checks, Vercel configuration, related delivery guidance, and the four previously
 reviewed browser synchronization changes onto the main checkout. It excludes
 unrelated agent-skill changes from dev. The security patch is already on main.
-No new fix for the intermittent Event-publication failure is claimed.
+The follow-up adds hydration waits at the form and navigation failures observed
+in bootstrap CI, and distributes all 47 tests across four isolated CI shards.
+Timing reports are retained on success and failure. Verification of that
+follow-up is pending.
 
 Use a main-based release branch such as `release/0.0.0-bootstrap` for the
 bootstrap PR: current policy only permits release branches to enter main.
@@ -74,3 +77,25 @@ environment names are case insensitive. See [GitHub's environment guidance](http
 This is not a green full release run. The [browser investigation](hosted-browser-regression.md)
 retains the existing failure evidence. Nothing was committed, published, merged,
 migrated remotely or deployed during this preparation.
+
+## Release verification performance
+
+The first bootstrap branch spent 11m 6s in serial browser regression, with
+45 passes and two failures. Its PR spent 9m 23s there, with 43 passes and four
+failures. Fresh Supabase setup took about two minutes; database acceptance,
+application tests and build together took about 20 seconds. This is the measured
+baseline, not an acceptable release target.
+
+The follow-up runs core checks and four browser shards concurrently on separate
+GitHub machines. Every shard has its own migrated and seeded local database;
+no remote database is used. Coverage listing confirms 47 tests, exactly once
+across shards (15, 9, 13, 10). The `checks / verify` aggregate fails if core checks
+or any shard fails or is cancelled. An open full-profile release PR owns push
+verification, avoiding a second full run of the same change. Release dispatch
+still verifies its pinned source through the same complete gate.
+
+The two repeatable form failures consumed about 29 seconds each after inputs
+were filled before hydration. Navigation failures appeared in the Event
+milestone and public programming journeys. The follow-up waits for the actual
+React handlers, bounds individual actions, and retains list/JSON timing reports.
+It does not add retries, omit journeys or claim a green gate before CI confirms it.

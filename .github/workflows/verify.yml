@@ -17,9 +17,9 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  core:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.profile == 'fast' && 10 || 45 }}
+    timeout-minutes: 10
     env:
       STAGECOM_DEMO_MODE: 'false'
     steps:
@@ -62,16 +62,14 @@ jobs:
         env:
           NITRO_PRESET: vercel
       - run: npx --no-install playwright install --with-deps chromium
+        if: inputs.profile == 'fast'
       - name: Verify dev browser smoke
         if: inputs.profile == 'fast'
         run: npm run test:e2e -- e2e/home.spec.ts --workers=1
-      - name: Verify full browser regression serially
-        if: inputs.profile == 'full'
-        run: npm run test:e2e -- --workers=1
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: browser-failure-evidence
+          name: core-failure-evidence
           path: |
             playwright-report/
             test-results/
@@ -79,3 +77,63 @@ jobs:
       - name: Stop disposable database
         if: always() && inputs.profile == 'full'
         run: npm run db:stop:local
+
+  browsers:
+    if: inputs.profile == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source-ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Start this shard's disposable database
+        run: npm run db:start:local
+      - name: Configure local test environment
+        run: |
+          npx --no-install supabase status -o json > "$RUNNER_TEMP/supabase-status.json"
+          node scripts/ci-local-env.mjs "$RUNNER_TEMP/supabase-status.json"
+          rm "$RUNNER_TEMP/supabase-status.json"
+      - name: Seed this shard's review story
+        run: npm run demo:seed
+      - name: Verify browser shard
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4 --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-shard-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - name: Stop this shard's disposable database
+        if: always()
+        run: npm run db:stop:local
+
+  verify:
+    if: always()
+    needs: [core, browsers]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every applicable verification job
+        env:
+          PROFILE: ${{ inputs.profile }}
+          CORE_RESULT: ${{ needs.core.result }}
+          BROWSER_RESULT: ${{ needs.browsers.result }}
+        run: |
+          test "$CORE_RESULT" = success
+          if [ "$PROFILE" = full ]; then
+            test "$BROWSER_RESULT" = success
+          else
+            test "$PROFILE" = fast
+            test "$BROWSER_RESULT" = skipped
+          fi
