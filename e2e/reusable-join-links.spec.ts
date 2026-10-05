@@ -227,10 +227,7 @@ test('Reusable Join Link acceptance is idempotent and enforces every terminal st
             name: `Join ${fixture.theaterName}`,
           }),
         ).toBeVisible()
-        await waitForReactHandler(
-          contenderPage.getByRole('button', { name: 'Join Theater' }),
-          'onClick',
-        )
+        await contenderPage.waitForTimeout(500)
         return contenderPage
       }),
     )
