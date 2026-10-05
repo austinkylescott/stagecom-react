@@ -92,6 +92,9 @@ console.log(env.VITE_APP_TITLE)
 
 ## Deploy with Nitro
 
+For dev and production deployment configuration, see
+[Site deployment](docs/development/hosting-and-releases.md).
+
 This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
 
 ```bash
