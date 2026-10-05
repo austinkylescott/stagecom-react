@@ -35,6 +35,8 @@ jobs:
   checks:
     needs: policy
     uses: ./.github/workflows/verify.yml
+    with:
+      profile: ${{ (github.base_ref == 'dev' || github.ref == 'refs/heads/dev') && 'fast' || 'full' }}
   deploy-dev:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.HOSTED_DEV_ENABLED == 'true'
     needs: checks

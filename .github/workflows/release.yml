@@ -38,6 +38,7 @@ jobs:
     uses: ./.github/workflows/verify.yml
     with:
       source-ref: ${{ needs.resolve.outputs.sha }}
+      profile: full
   deploy:
     needs: [resolve, checks]
     uses: ./.github/workflows/deploy-vercel.yml

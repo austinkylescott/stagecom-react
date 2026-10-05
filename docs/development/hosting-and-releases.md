@@ -33,9 +33,15 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
 - Work branches are checked through PRs; direct pushes are checked on main,
   dev and release branches. This avoids running the same full suite twice for
   every work-branch update while still checking the integrated source.
-- Verification starts disposable local Supabase, applies the tracked migrations,
-  runs database acceptance tests, seeds local review data, runs unit/integration
-  tests, builds the Vercel output and runs browser tests with one worker.
+- Dev PRs and dev pushes use fast verification: branch policy, typecheck, unit
+  tests, Vercel build and the two existing home-page/sign-in-redirect browser
+  tests. They do not start Supabase or run the full browser suite. Database-dependent
+  tests remain outside this fast gate. This keeps the remote sandbox available
+  for testing unfinished work; it does not establish release readiness.
+- Release/main PRs and pushes, and explicit production deployments, use full
+  verification: disposable local Supabase, tracked migrations, database acceptance
+  tests, local review seed, unit/integration tests, Vercel build and the complete
+  serial browser suite. The reusable workflow defaults to full verification.
 - After checks pass on a dev push, hosted dev deploys only when repository
   variable `HOSTED_DEV_ENABLED` is `true`.
 - `release.yml` is manually dispatched with a release branch. It pins the
@@ -47,11 +53,17 @@ explicit access gate is implemented. Avoid sensitive real data in this site.
 - `vercel.json` disables Git deployments. GitHub checks alone do not prevent
   Vercel's independent auto-deploy path; keep this setting disabled.
 
-CI uses only disposable local database credentials. No remote migrations or
-remote seeding are part of these workflows. Existing pgTAP/browser failures
-remain failures and prevent deployment; do not mask them to obtain a green gate.
-The earlier STA-75 record disclosed legacy pgTAP issues and a full-browser rerun
-gap. First hosted CI execution must establish the actual current baseline.
+Full CI uses only disposable local database credentials. No remote migrations or
+remote seeding are part of these workflows. Full-regression failures prevent
+production deployment; they do not gate the dev sandbox. Do not mask them to
+obtain a green release gate.
+
+The first full GitHub run passed database acceptance checks and all 186
+unit/integration tests. Browser regression took 7 minutes 55 seconds: 43 passed
+and four failed (Targeted Invitation magic-link request, connected review Event
+portfolio navigation, Reusable Join Link outcome, and Theater Calendar timeout).
+Those failures remain unresolved; switching dev to smoke coverage does not fix
+or suppress them in the full release profile.
 
 ## Account setup
 
