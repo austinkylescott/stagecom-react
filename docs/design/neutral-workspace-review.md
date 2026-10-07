@@ -15,6 +15,35 @@ Automated behavior and layout checks supply evidence; they do not constitute a
 maintainer presentation decision. Actual-device software-keyboard observations
 are a separate, still-pending review item; viewport emulation cannot establish them.
 
+## Review approach agreed October 5, 2026
+
+The maintainer confirmed these review-planning decisions through grill-with-docs:
+
+- The outcome of this pass is readiness for branding. Theater pilot readiness
+  requires additional operational and real-user evidence.
+- The maintainer reviews first to settle page structure and obvious friction;
+  a few uncoached users follow to test understanding without explanation.
+- Start with a Member responding from Callsheet: find an outstanding response,
+  open its Event, respond, and verify that the task clears while confirmed
+  commitments remain visible.
+- Review and repair one journey at a time. Record accepted, revised and deferred
+  findings here and verify each repair before moving to the next journey.
+- The maintainer operates the application while the agent captures findings,
+  so navigation choices and friction remain observable.
+- A journey is ready to move on when the maintainer can find and complete the
+  task, explain what changed and what remains committed, and encounter no
+  unresolved blocking problems on desktop or phone. Minor presentation issues
+  may be explicitly deferred; unclear participation, commitment or authority
+  requires revision.
+
+These decisions establish the review approach, not acceptance of any page.
+The review plan was confirmed. During the maintainer review, broad hierarchy and
+repetitive-copy concerns prompted a pause in the page-by-page walkthrough.
+The agreed Callsheet refinement uses existing data, with actions beside the
+agenda on desktop and before it on phone. Implementation and successive
+snapshots are recorded in [Callsheet hierarchy review](callsheet-hierarchy-review.md).
+Maintainer acceptance of the refinement and subsequent journeys remains pending.
+
 ## Reproduce the connected review
 
 Use the existing application and `docs/development/demo-environment.md`. Configure

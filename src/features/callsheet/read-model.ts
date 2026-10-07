@@ -116,6 +116,15 @@ export type CallsheetTheater = {
 }
 
 export type CallsheetEvent = {
+  relationships?: string[]
+  lifecycle?: string
+  nextDate?: string | null
+  scheduleVisible?: boolean
+  castMembers?: Array<{
+    userId: string
+    displayName: string
+    avatarUrl: string | null
+  }> | null
   id: string
   title: string
   href: string

@@ -125,10 +125,14 @@ export async function getMyCallsheet() {
     )
     events.push(
       ...related.map((event) => ({
-        id: `${theater.id}:${event.id}`,
         title: event.title,
         href: event.overviewHref,
         theaterName: theater.name,
+        lifecycle: event.lifecycle,
+        ...portfolio.data.workspaceDetails.find(
+          (details) => details.id === event.id,
+        ),
+        id: `${theater.id}:${event.id}`,
       })),
     )
     const relatedPublicDestinations = new Set(
@@ -142,6 +146,8 @@ export async function getMyCallsheet() {
           title: event.title,
           href: event.href,
           theaterName: theater.name,
+          nextDate: event.startsAt,
+          scheduleVisible: true,
         })),
     )
   }

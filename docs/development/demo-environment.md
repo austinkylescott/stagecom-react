@@ -120,6 +120,19 @@ npm run demo:reset
 
 ## Hosted Demo
 
+### Hosted dev review access (October 5, 2026)
+
+The maintainer approved enabling the existing persona chooser and deploying dev.
+Open [dev sign-in](https://stagecom-app-dev.vercel.app/login) and choose a persona;
+no magic link is required. Theater Member enters Callsheet.
+
+`stagecom-react-dev` has `STAGECOM_DEMO_MODE=true` and the existing seeded
+`STAGECOM_DEMO_PASSWORD`, scoped to Preview on the `dev` branch. Deployment
+[37388986345](https://github.com/austinkylescott/stagecom-react/actions/runs/37388986345)
+succeeded. Browser verification signed in as Theater Member and loaded the
+authenticated Callsheet with its pending Admin invitation and confirmed Call.
+No seed/reset or migration was needed. Production configuration was not changed.
+
 Create a dedicated Supabase project and a deployment configured with that
 project's URL, anon key, and service-role key. Set the same demo-mode and
 password variables on both the deployment and the machine running the seed.

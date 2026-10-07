@@ -23,6 +23,8 @@ Every wiki page declares one of these implementation states:
 
 - Product: `wiki/product/overview.md`
 - Connected neutral workspace review checkpoint (STA-75): `docs/design/neutral-workspace-review.md`
+- Callsheet commitment clarity follow-up spec (STA-76): `docs/specs/callsheet-commitment-clarity.md`
+- Callsheet hierarchy refinement and before/after snapshots: `docs/design/callsheet-hierarchy-review.md`
 - Reviewed Team Cast invitation verification (STA-73): `docs/design/team-cast-invitation-review.md`
 - People and self-service Teams: `wiki/features/self-service-teams.md`
 - Membership and governance: `wiki/product/membership-and-governance.md`

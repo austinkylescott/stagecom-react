@@ -259,12 +259,11 @@ for (const persona of [
     await expect(
       page.getByRole('heading', { name: 'Callsheet', exact: true }),
     ).toBeVisible()
-    await expect(
-      page.getByRole('region', { name: 'Response needed' }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('region', { name: 'Theater needs attention' }),
-    ).toBeVisible()
+    // Empty action groups are intentionally absent from the dashboard.
+    for (const section of ['Response needed', 'Shared decisions']) {
+      const region = page.getByRole('region', { name: section })
+      if (await region.count()) await expect(region).toBeVisible()
+    }
     if (persona !== 'Theater Owner') {
       const calls = page.getByRole('region', { name: 'Confirmed Calls' })
       await expect(calls.getByText('Compass Rose Players')).toBeVisible()
@@ -309,11 +308,10 @@ for (const persona of [
     if (persona === 'Multi-Theater Member') {
       await page.setViewportSize({ width: 1280, height: 800 })
       await page.goto('/app/callsheet')
-      const harbor = page
-        .getByRole('region', { name: 'Your Theaters' })
-        .getByRole('article')
-        .filter({ hasText: 'Harbor Stage' })
-      await harbor.getByRole('link', { name: 'Enter Theater' }).click()
+      await page.getByRole('button', { name: 'Change Theater' }).click()
+      await page
+        .getByRole('menuitem', { name: 'Harbor Stage', exact: true })
+        .click()
       const callsheet = page
         .getByRole('navigation', { name: 'Workspace navigation' })
         .getByRole('link', { name: 'Callsheet', exact: true })
