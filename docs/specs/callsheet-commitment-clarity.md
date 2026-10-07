@@ -1,6 +1,6 @@
 # Callsheet commitment and acceptance clarity
 
-Status: draft for test-seam and ticket-breakdown approval. October 7, 2026.
+Status: approved and published as [STA-76](https://linear.app/stagecom/issue/STA-76/clarify-callsheet-commitments-and-acceptance). October 7, 2026.
 
 ## Problem Statement
 
@@ -79,7 +79,7 @@ destination without looping back to the same failed page.
 
 ## Testing Decisions
 
-Proposed primary seam: the existing authenticated Callsheet browser journey,
+Primary seam: the existing authenticated Callsheet browser journey,
 from visible navigation through a real response and persistence check against
 local Supabase. Test observable behavior and domain outcomes, not component
 structure, private helper calls or exact incidental formatting.
@@ -112,9 +112,8 @@ priority issues from the October 7 dual-agent critique. Existing compact UI work
 is the baseline, not implementation of this follow-up specification. The review
 record remains the source for prior accepted/revised/deferred layout choices.
 
-Tracker plan: publish this as a new Stagecom specification with ready-for-agent,
-then create five child tickets with native blocking relationships. The four
+Published in Linear with ready-for-agent and five child tickets with native
+blocking relationships. See the companion ticket breakdown for their links. The four
 feature slices can begin independently; the integrated verification ticket is
 blocked by all four. Completed historical issues are context only and must not
-be reopened or altered. Test seams and ticket granularity await the requested
-skill review before publication.
+be reopened or altered. Test seams and ticket granularity were approved by the maintainer on October 7, 2026.

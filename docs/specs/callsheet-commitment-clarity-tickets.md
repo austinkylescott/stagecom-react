@@ -1,13 +1,15 @@
-# Callsheet commitment clarity — proposed tickets
+# Callsheet commitment clarity — implementation tickets
 
-Status: draft for approval; not yet published to Linear. October 7, 2026.
+Status: approved and published under [STA-76](https://linear.app/stagecom/issue/STA-76/clarify-callsheet-commitments-and-acceptance). October 7, 2026.
 
 Source: the Callsheet commitment and acceptance clarity specification. All five
-issues will be children of its new Linear specification and carry ready-for-agent.
+issues are children of its Linear specification and carry ready-for-agent.
 Each feature ticket includes its scoped query/UI/test path; there is no separate
 schema-only, API-only or UI-only ticket. No prefactor is currently required.
 
 ## 1. Explain invitation responsibility before acceptance
+
+Linear: [STA-77](https://linear.app/stagecom/issue/STA-77/explain-invitation-responsibility-before-acceptance)
 
 ### What to build
 
@@ -34,6 +36,8 @@ None (can start immediately).
 
 ## 2. Show what each confirmed personal Call requires
 
+Linear: [STA-78](https://linear.app/stagecom/issue/STA-78/show-what-each-confirmed-personal-call-requires)
+
 ### What to build
 
 Make the person's gathering and attendance expectation understandable in the
@@ -59,6 +63,8 @@ None (can start immediately).
 
 ## 3. Distinguish same-title Event destinations accessibly
 
+Linear: [STA-79](https://linear.app/stagecom/issue/STA-79/distinguish-same-title-event-destinations-accessibly)
+
 ### What to build
 
 Let people choose the intended Event workspace from visible links or a screen
@@ -82,6 +88,8 @@ sufficient; this slice does not require ticket 2's new Call fields.
 
 ## 4. Recover from a failed Callsheet read
 
+Linear: [STA-80](https://linear.app/stagecom/issue/STA-80/recover-from-a-failed-callsheet-read)
+
 ### What to build
 
 Give a person an explicit way to retry a failed Callsheet load and a valid
@@ -104,6 +112,8 @@ failure with an empty personal workspace.
 None (can start immediately).
 
 ## 5. Integrate and verify the clarified Callsheet journey
+
+Linear: [STA-81](https://linear.app/stagecom/issue/STA-81/integrate-and-verify-the-clarified-callsheet-journey)
 
 ### What to build
 
