@@ -33,14 +33,22 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
-import type { CallsheetTheater } from '@/features/callsheet/read-model'
+import type {
+  CallsheetTheater,
+  CallsheetCommitment,
+} from '@/features/callsheet/read-model'
+import { PersonalAgenda } from '@/features/callsheet/personal-agenda'
 
 export function WorkspaceNav({
   email,
   theaters,
+  calls = [],
+  callsFailed = false,
 }: {
   email?: string
   theaters: CallsheetTheater[]
+  calls?: CallsheetCommitment[]
+  callsFailed?: boolean
 }) {
   const { setOpenMobile } = useSidebar()
   const pathname = useRouterState({
@@ -184,6 +192,7 @@ export function WorkspaceNav({
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>
+        <PersonalAgenda calls={calls} failed={callsFailed} />
       </SidebarContent>
       <SidebarFooter className="hidden md:flex">
         <SidebarMenu>

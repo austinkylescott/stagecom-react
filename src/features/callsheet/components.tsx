@@ -1,6 +1,14 @@
 import { useState } from 'react'
+import { useHydrated } from '@tanstack/react-router'
+import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip'
 
 import { respondToTheaterAdminInvitationFn } from '@/features/admin-invitations/server-functions'
 import { respondToTheaterOwnershipTransferFn } from '@/features/ownership-transfers/server-functions'
@@ -33,196 +41,259 @@ export function CallsheetPage({
   const actions = commitments.filter(
     (item) => item.kind !== 'occurrence_call' && !resolvedIds.includes(item.id),
   )
-  const calls = commitments.filter((item) => item.kind === 'occurrence_call')
+  const calls = commitments
+    .filter((item) => item.kind === 'occurrence_call')
+    .sort((a, b) => (a.actionableAt ?? '').localeCompare(b.actionableAt ?? ''))
+
   async function resolved(id: string, message: string) {
     setResolvedIds((current) => [...current, id])
     setFeedback(message)
     await onResponded?.()
   }
+
   return (
-    <main className="page-wrap py-6">
-      <header className="max-w-2xl">
-        <p className="text-xs font-medium tracking-normal text-muted-foreground">
-          Personal workspace
-        </p>
-        <h1 className="display-title mt-3 text-2xl font-medium text-foreground">
+    <main className="page-wrap py-6 sm:py-8">
+      <header className="border-b pb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
           Callsheet
         </h1>
-        <p className="mt-3 text-muted-foreground">
-          Your commitments and shared work across every active Theater.
-        </p>
+        {actions.length + sharedWork.length + calls.length > 0 ? (
+          <nav
+            aria-label="Callsheet overview"
+            className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm"
+          >
+            {actions.length > 0 ? (
+              <a
+                className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                href="#response-needed"
+              >
+                {actions.length}{' '}
+                {actions.length === 1 ? 'response needed' : 'responses needed'}
+              </a>
+            ) : null}
+            {sharedWork.length > 0 ? (
+              <a
+                className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                href="#theater-needs-attention"
+              >
+                {sharedWork.length}{' '}
+                {sharedWork.length === 1
+                  ? 'shared decision'
+                  : 'shared decisions'}
+              </a>
+            ) : null}
+            {calls.length > 0 ? (
+              <a
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                href="#confirmed-calls"
+              >
+                {calls.length}{' '}
+                {calls.length === 1 ? 'confirmed Call' : 'confirmed Calls'}
+              </a>
+            ) : null}
+          </nav>
+        ) : null}
       </header>
 
       {feedback ? (
-        <p role="status" className="mt-4 text-sm">
+        <p role="status" className="mt-4 rounded-md bg-muted px-4 py-3 text-sm">
           {feedback}
         </p>
       ) : null}
-      <section aria-labelledby="response-needed" className="mt-8">
-        <h2 id="response-needed" className="text-2xl font-semibold">
-          Response needed
-        </h2>
-        {actions.length ? (
-          <div className="mt-4 grid gap-3">
-            {actions.map((commitment) => (
-              <CommitmentCard
-                key={commitment.id}
-                commitment={commitment}
-                onResolved={resolved}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="mt-4 rounded-lg border border-dashed p-5">
-            Nothing needs your response right now.
-          </p>
-        )}
-      </section>
-      <section aria-labelledby="confirmed-calls" className="mt-8">
-        <h2 id="confirmed-calls" className="text-2xl font-semibold">
-          Confirmed Calls
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Your upcoming agenda across Theaters.
-        </p>
-        {calls.length ? (
-          <div className="mt-4 grid gap-3">
-            {[...calls]
-              .sort((a, b) =>
-                (a.actionableAt ?? '').localeCompare(b.actionableAt ?? ''),
-              )
-              .map((commitment) => (
-                <CommitmentCard
-                  key={commitment.id}
-                  commitment={commitment}
-                  onResolved={resolved}
-                />
-              ))}
-          </div>
-        ) : (
-          <p className="mt-4 rounded-lg border border-dashed p-5">
-            No upcoming confirmed Calls.
-          </p>
-        )}
-      </section>
-      <EventSection
-        title="Relevant Events"
-        id="relevant-events"
-        events={events}
-        empty="Your Event relationships will appear here, including Events without a current action."
-      />
-      <EventSection
-        title="Discover Events"
-        id="discover-events"
-        events={discovery}
-        empty="No upcoming published Events in your Theaters."
-      />
 
-      <section
-        aria-labelledby="theater-needs-attention"
-        className="mt-10 border-t border-border pt-8"
-      >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2
-            className="text-2xl font-semibold text-foreground"
-            id="theater-needs-attention"
-          >
-            Theater needs attention
-          </h2>
-          <p className="text-sm font-semibold text-muted-foreground">
-            {sharedWork.length === 1
-              ? '1 decision'
-              : `${sharedWork.length} decisions`}
-          </p>
+      {actions.length + sharedWork.length + calls.length > 0 ? (
+        <div className="space-y-7 py-6">
+          {actions.length + sharedWork.length > 0 ? (
+            <div className="min-w-0">
+              <h2 className="mb-4 text-xl font-semibold tracking-tight">
+                Needs your attention
+              </h2>
+              {actions.length > 0 ? (
+                <section
+                  aria-labelledby="response-needed"
+                  className="scroll-mt-6"
+                >
+                  <SectionHeading
+                    id="response-needed"
+                    title="Response needed"
+                    count={actions.length}
+                  />
+
+                  <div className="mt-2 divide-y">
+                    {actions.map((commitment) => (
+                      <CommitmentCard
+                        key={commitment.id}
+                        commitment={commitment}
+                        onResolved={resolved}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {sharedWork.length > 0 ? (
+                <section
+                  aria-labelledby="theater-needs-attention"
+                  className="mt-5 scroll-mt-6"
+                >
+                  <SectionHeading
+                    id="theater-needs-attention"
+                    title="Shared decisions"
+                    count={sharedWork.length}
+                  />
+
+                  <ol className="mt-2 divide-y border-t">
+                    {sharedWork.map((item) => (
+                      <li
+                        className="min-w-0 py-4 sm:flex sm:items-center sm:justify-between sm:gap-8"
+                        key={`${item.theaterName}:${item.id}`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <h4 className="mt-1 break-words text-base font-semibold leading-snug">
+                            {item.eventTitle ?? item.theaterName}
+                          </h4>
+                          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                            {decisionReason(item)}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {item.theaterName} · {item.relationship}
+                          </p>
+                        </div>
+                        <Button
+                          asChild
+                          className="mt-3 min-h-11 h-auto max-w-full shrink-0 whitespace-normal text-left sm:mt-0 sm:max-w-64"
+                          variant="outline"
+                        >
+                          <a href={item.href}>
+                            {item.label}
+                            <span className="sr-only">
+                              : {item.eventTitle ?? item.theaterName}
+                            </span>
+                            <ArrowRight
+                              aria-hidden="true"
+                              className="shrink-0"
+                            />
+                          </a>
+                        </Button>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ) : null}
+            </div>
+          ) : null}
+
+          {calls.length > 0 ? (
+            <section
+              aria-labelledby="confirmed-calls"
+              className="min-w-0 scroll-mt-6 border-t pt-6"
+            >
+              <h2
+                id="confirmed-calls"
+                className="flex items-baseline justify-between gap-3 text-base font-semibold tracking-tight"
+              >
+                Confirmed Calls
+                <span
+                  aria-hidden="true"
+                  className="text-sm font-normal tabular-nums text-muted-foreground"
+                >
+                  {calls.length}
+                </span>
+              </h2>
+
+              <ol className="mt-4 divide-y">
+                {calls.map((commitment) => (
+                  <li
+                    key={commitment.id}
+                    className="py-4 first:pt-0 sm:grid sm:grid-cols-[12rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-6"
+                  >
+                    <p className="text-sm font-medium tabular-nums">
+                      {formatCommitmentTime(commitment.actionableAt)}
+                    </p>
+                    <div className="min-w-0">
+                      <h3 className="mt-2 break-words text-base font-semibold leading-snug sm:mt-0">
+                        {commitment.event.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        <span>{commitment.theater.title}</span> ·{' '}
+                        <span>{commitment.relationship}</span>
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="mt-2 -ml-3 min-h-11"
+                    >
+                      <a href={commitmentHref(commitment)}>
+                        {commitment.action}
+                        <ArrowRight aria-hidden="true" />
+                      </a>
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
         </div>
-        <p className="mt-2 text-muted-foreground">
-          Shared Work Queue decisions you can resolve with your current
-          relationships.
-        </p>
-        {sharedWork.length ? (
-          <ol className="mt-4 grid gap-3">
-            {sharedWork.map((item) => (
-              <li
-                className="min-w-0 rounded-lg px-5 py-5"
-                key={`${item.theaterName}:${item.id}`}
-              >
-                <p className="flex flex-wrap gap-x-2 text-xs font-medium tracking-normal text-muted-foreground">
-                  <span>{item.theaterName}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{item.relationship}</span>
-                </p>
-                <h3 className="mt-2 break-words text-xl font-semibold text-foreground">
-                  {item.eventTitle ?? 'Theater publication'}
-                </h3>
-                <p className="mt-2 break-words text-sm text-muted-foreground">
-                  <span className="font-medium">Urgency:</span>{' '}
-                  {item.priorityReason}
-                </p>
-                <Button
-                  asChild
-                  variant="default"
-                  className="mt-4 w-full sm:w-auto"
-                >
-                  <a href={item.href}>{item.label}</a>
-                </Button>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="mt-4 rounded-lg border border-dashed border-border px-5 py-6 text-muted-foreground">
-            No shared decisions are ready for you right now.
-          </p>
-        )}
-      </section>
+      ) : null}
 
-      <section
-        aria-labelledby="your-theaters"
-        className="mt-10 border-t border-border pt-8"
-      >
-        <h2
-          className="text-2xl font-semibold text-foreground"
-          id="your-theaters"
-        >
-          Your Theaters
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          Enter a Theater when you need its shared work or schedule.
-        </p>
-        {theaters.length > 0 ? (
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {theaters.map((theater) => (
-              <Card
-                role="article"
-                className=" px-5 py-5 gap-0"
-                key={theater.id}
-              >
-                <p className="text-xs font-medium tracking-normal text-muted-foreground">
-                  {theater.status} {theater.isDefault ? '· Default' : ''}
-                </p>
-                <h3 className="mt-2 text-xl font-semibold text-foreground">
-                  {theater.name}
-                </h3>
-                <Button
-                  asChild
-                  variant="default"
-                  className="mt-5 w-full sm:w-auto"
-                >
-                  <a href={`/app/${theater.slug}`}>Enter Theater</a>
-                </Button>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-4 rounded-lg border border-dashed border-border px-5 py-6 text-muted-foreground">
-            <p>No Theater memberships yet. Create a Theater to begin.</p>
-            <Button asChild variant="default" className="mt-4 w-full sm:w-auto">
-              <a href="/onboarding/theater">Create a Theater</a>
-            </Button>
-          </div>
-        )}
-      </section>
+      {events.length + discovery.length > 0 ? (
+        <div className="grid gap-6 py-6">
+          <EventSection
+            title="Your Event workspaces"
+            id="relevant-events"
+            events={events}
+            description="Events you participate in, lead, or oversee."
+          />
+          <EventSection
+            title="More Events to explore"
+            id="discover-events"
+            events={discovery}
+          />
+        </div>
+      ) : null}
+
+      {!theaters.length ? (
+        <div className="border-t pt-6">
+          <p className="text-sm text-muted-foreground">
+            No Theater memberships yet.
+          </p>
+          <Button asChild className="mt-3 min-h-11">
+            <a href="/onboarding/theater">Create a Theater</a>
+          </Button>
+        </div>
+      ) : null}
     </main>
   )
+}
+
+function SectionHeading({
+  id,
+  title,
+  count,
+}: {
+  id: string
+  title: string
+  count: number
+}) {
+  return (
+    <h3
+      id={id}
+      className="flex items-baseline justify-between gap-3 text-base font-semibold"
+    >
+      {title}
+      <span
+        aria-hidden="true"
+        className="text-sm font-normal tabular-nums text-muted-foreground"
+      >
+        {count}
+      </span>
+    </h3>
+  )
+}
+
+function commitmentHref(commitment: CallsheetCommitment) {
+  return `/app/${commitment.theater.slug}/events/${commitment.event.slug}${commitment.targetAnchor}`
 }
 
 function CommitmentCard({
@@ -281,29 +352,26 @@ function CommitmentCard({
   }
 
   return (
-    <Card className="min-w-0 rounded-lg px-5 py-5">
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium tracking-normal text-muted-foreground">
-        <span>{commitment.theater.title}</span>
-        <span aria-hidden="true">·</span>
+    <article className="min-w-0 py-4" aria-busy={pending}>
+      <p className="text-sm text-muted-foreground">
+        <span>{commitment.theater.title}</span> ·{' '}
         <span>{commitment.relationship}</span>
-      </div>
-      <h3 className="mt-2 text-xl font-semibold text-foreground">
+      </p>
+      <h4 className="mt-1 break-words text-base font-semibold leading-snug">
         {commitment.event.title}
-      </h3>
-      <p className="mt-2 text-sm font-semibold text-muted-foreground">
-        {commitment.action}
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {formatCommitmentTime(commitment.actionableAt)}
-      </p>
-      {commitment.urgencyReason ? (
-        <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm font-medium text-foreground">
-          {commitment.urgencyReason}
+      </h4>
+      {commitment.actionableAt ? (
+        <p className="mt-2 text-sm tabular-nums text-muted-foreground">
+          {formatCommitmentTime(commitment.actionableAt)}
         </p>
       ) : null}
+      {commitment.urgencyReason ? (
+        <p className="mt-2 text-sm font-medium">{commitment.urgencyReason}</p>
+      ) : null}
       {commitment.responseId ? (
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Button
+            className="min-h-11"
             disabled={pending}
             onClick={() => respond('accepted')}
             type="button"
@@ -315,8 +383,8 @@ function CommitmentCard({
                 : 'Accept Admin authority'}
           </Button>
           <Button
+            className="min-h-11"
             variant="outline"
-
             disabled={pending}
             onClick={() => respond('declined')}
             type="button"
@@ -325,20 +393,27 @@ function CommitmentCard({
           </Button>
         </div>
       ) : (
-        <Button asChild variant="default" className="mt-5 w-full sm:w-auto">
-          <a
-            href={`/app/${commitment.theater.slug}/events/${commitment.event.slug}${commitment.targetAnchor}`}
-          >
+        <Button
+          asChild
+          className="mt-3 min-h-11 h-auto max-w-full whitespace-normal text-left"
+        >
+          <a href={commitmentHref(commitment)}>
             {commitment.action}
+            <ArrowRight aria-hidden="true" className="shrink-0" />
           </a>
         </Button>
       )}
+      {pending ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          Saving your response…
+        </p>
+      ) : null}
       {message ? (
-        <p role="alert" className="mt-3 text-sm font-semibold">
+        <p role="alert" className="mt-3 text-sm font-medium">
           {message}
         </p>
       ) : null}
-    </Card>
+    </article>
   )
 }
 
@@ -354,41 +429,187 @@ function EventSection({
   title,
   id,
   events,
-  empty,
+  description,
 }: {
   title: string
   id: string
   events: CallsheetEvent[]
-  empty: string
+  description?: string
 }) {
+  if (!events.length) return null
   return (
-    <section aria-labelledby={id} className="mt-8">
-      <h2 id={id} className="text-2xl font-semibold">
+    <section aria-labelledby={id} className="min-w-0">
+      <h2
+        id={id}
+        className="flex items-baseline justify-between gap-3 text-base font-semibold"
+      >
         {title}
+        <span
+          aria-hidden="true"
+          className="text-sm font-normal tabular-nums text-muted-foreground"
+        >
+          {events.length}
+        </span>
       </h2>
-      {events.length ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {description ? (
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      ) : null}
+      <TooltipProvider delayDuration={150}>
+        <ul className="mt-2 grid gap-x-8 sm:grid-cols-2">
           {events.map((event) => (
-            <Card role="article" className="min-w-0 gap-2 p-5" key={event.id}>
-              <p className="text-sm text-muted-foreground">
-                {event.theaterName}
-              </p>
-              <h3 className="break-words text-lg font-semibold">
-                {event.title}
-              </h3>
-              <Button asChild variant="outline">
-                <a href={event.href}>
-                  Open Event<span className="sr-only">: {event.title}</span>
-                </a>
-              </Button>
-            </Card>
+            <li key={event.id} className="min-w-0 border-b py-3">
+              <a
+                className="group flex min-h-11 items-start justify-between gap-3 rounded-md underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                href={event.href}
+                aria-label={`Open Event: ${event.title}`}
+              >
+                <div className="min-w-0">
+                  <h3 className="break-words text-sm font-semibold leading-snug group-hover:underline">
+                    {event.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {event.theaterName}
+                    {event.relationships?.length
+                      ? ` · ${event.relationships.join(' · ')}`
+                      : ''}
+                    {event.lifecycle ? (
+                      <span className="capitalize">
+                        {' '}
+                        · {event.lifecycle.replaceAll('_', ' ')}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                <ArrowRight
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                />
+              </a>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <EventSchedule event={event} />
+                <CastAvatars members={event.castMembers} />
+              </div>
+            </li>
           ))}
-        </div>
-      ) : (
-        <p className="mt-4 rounded-lg border border-dashed p-5 text-muted-foreground">
-          {empty}
-        </p>
-      )}
+        </ul>
+      </TooltipProvider>
     </section>
   )
+}
+
+function CastAvatars({ members }: { members: CallsheetEvent['castMembers'] }) {
+  if (!members?.length) return null
+  const visible = members.slice(0, 5)
+  const remaining = members.slice(5)
+  return (
+    <div
+      role="group"
+      aria-label={`${members.length} Cast Members`}
+      className="flex -space-x-4 sm:-space-x-2"
+    >
+      {visible.map((member) => (
+        <CastAvatar
+          key={member.userId}
+          name={member.displayName}
+          avatarUrl={member.avatarUrl}
+        />
+      ))}
+      {remaining.length ? (
+        <CastAvatar
+          name={remaining.map((member) => member.displayName).join(', ')}
+          label={`${remaining.length} more Cast Members`}
+          count={remaining.length}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function CastAvatar({
+  name,
+  avatarUrl,
+  count,
+  label,
+}: {
+  name: string
+  avatarUrl?: string | null
+  count?: number
+  label?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const initials =
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase() || '?'
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label ?? name}
+          onClick={() => setOpen((current) => !current)}
+          className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-background hover:z-10 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:size-8"
+        >
+          <Avatar className="size-8 ring-2 ring-background sm:size-7">
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
+            <AvatarFallback className="text-[10px] font-medium text-foreground">
+              {count ? `+${count}` : initials}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={5} className="max-w-64">
+        {name}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function EventSchedule({ event }: { event: CallsheetEvent }) {
+  const hydrated = useHydrated()
+  if (event.nextDate)
+    return (
+      <p className="text-xs font-medium">
+        Next:{' '}
+        <time dateTime={event.nextDate}>
+          {new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short',
+            timeZone: hydrated ? undefined : 'UTC',
+          }).format(new Date(event.nextDate))}
+        </time>
+      </p>
+    )
+  if (event.scheduleVisible === undefined) return null
+  if (!event.scheduleVisible)
+    return <p className="text-xs text-muted-foreground">Schedule not shared</p>
+  return (
+    <p className="text-xs text-muted-foreground">
+      {['cancelled', 'completed'].includes(event.lifecycle ?? '')
+        ? 'No upcoming dates'
+        : 'No confirmed dates ahead'}
+    </p>
+  )
+}
+
+function decisionReason(item: WorkQueueItem) {
+  // Only translate known copy; preserve deadline overrides and other priority facts.
+  if (
+    item.priorityReason === 'Public-content snapshot is ready for Publication'
+  )
+    return 'Review the public page before publishing this Event.'
+  if (item.priorityReason === 'Theater profile is ready for Publication')
+    return 'Review the Theater profile before publishing it.'
+  if (item.priorityReason === 'Proposal Revision awaits review')
+    return 'Review the proposed plan and make a decision.'
+  return item.priorityReason
 }

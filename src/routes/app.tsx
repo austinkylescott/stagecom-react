@@ -8,6 +8,8 @@ import {
 } from '@/features/application-shell/components'
 import { getCurrentUserFn } from '@/features/auth/server-functions'
 import { getMyTheatersFn } from '@/features/theaters/server-functions'
+import { getMyUpcomingCallsFn } from '@/features/callsheet/server-functions'
+import { MobilePersonalAgenda } from '@/features/callsheet/personal-agenda'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async ({ location }) => {
@@ -39,18 +41,28 @@ export const Route = createFileRoute('/app')({
     }
   },
   errorComponent: ({ error }) => <WorkspaceErrorState error={error} />,
+  loader: () => getMyUpcomingCallsFn(),
+  staleTime: 30_000,
   pendingComponent: WorkspaceLoadingState,
   component: AppLayout,
 })
 
 function AppLayout() {
   const { currentUser, theaters } = Route.useRouteContext()
+  const callsResult = Route.useLoaderData()
+  const calls = callsResult.ok ? callsResult.data : []
 
   return (
     <SidebarProvider>
-      <WorkspaceNav email={currentUser.email} theaters={theaters} />
+      <WorkspaceNav
+        email={currentUser.email}
+        theaters={theaters}
+        calls={calls}
+        callsFailed={!callsResult.ok}
+      />
       <SidebarInset className="min-w-0">
         <WorkspaceHeader email={currentUser.email} />
+        <MobilePersonalAgenda calls={calls} failed={!callsResult.ok} />
         <Outlet />
       </SidebarInset>
     </SidebarProvider>

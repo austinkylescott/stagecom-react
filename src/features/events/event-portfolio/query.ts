@@ -21,7 +21,7 @@ export async function getEventPortfolio(
   const [leadership, cast, staff, capabilities] = await Promise.all([
     service
       .from('show_leadership')
-      .select('show_id')
+      .select('show_id, role')
       .eq('user_id', actorUserId),
     service
       .from('show_cast')
@@ -67,6 +67,7 @@ export async function getEventPortfolio(
       `
     id, title, slug, lifecycle_status, publication_status, operational_health,
     show_leadership(user_id, role, profiles!show_leadership_user_id_fkey(display_name)),
+    show_cast(user_id, status, profiles!show_cast_user_id_fkey(display_name, avatar_url)),
     show_proposal_revisions!show_proposal_revisions_show_id_fkey(revision_number, decision_state),
     show_occurrences(status, confirmed_candidate_slot_id, confirmed_slot:show_candidate_slots!show_occurrences_confirmed_candidate_slot_id_fkey(starts_at), candidate_slots:show_candidate_slots!show_candidate_slots_occurrence_id_fkey(id, starts_at))
   `,
@@ -127,6 +128,101 @@ export async function getEventPortfolio(
         'Event portfolio could not be loaded.',
       ),
     )
+  // Accepted Cast may see the schedule and Cast roster, as in the Event workspace.
+  // Pending invitees and Staff do not gain these fields through this summary.
+  const acceptedCastIds = cast.data
+    .filter((row) => row.status === 'accepted' && !privateIds.has(row.show_id))
+    .map((row) => row.show_id)
+  const castEvents = acceptedCastIds.length
+    ? await service
+        .from('shows')
+        .select(
+          `
+        id, show_cast(user_id, status, profiles!show_cast_user_id_fkey(display_name, avatar_url)),
+        show_occurrences(status, confirmed_slot:show_candidate_slots!show_occurrences_confirmed_candidate_slot_id_fkey(starts_at))
+      `,
+        )
+        .eq('theater_id', theater.id)
+        .eq('event_type', 'show')
+        .in('id', acceptedCastIds)
+    : { data: [], error: null }
+  if (castEvents.error)
+    return err(
+      appError('external_service_error', 'Event schedule could not be loaded.'),
+    )
+  const visibleDetails = new Map(
+    [...privateEvents.data, ...castEvents.data].map((event) => [
+      event.id,
+      {
+        dates: event.show_occurrences.flatMap((occurrence) =>
+          occurrence.status !== 'cancelled' && occurrence.confirmed_slot
+            ? [occurrence.confirmed_slot.starts_at]
+            : [],
+        ),
+        castMembers: event.show_cast
+          .filter((member) => member.status === 'accepted')
+          .map((member) => ({
+            userId: member.user_id,
+            displayName: member.profiles.display_name,
+            avatarUrl: member.profiles.avatar_url,
+          }))
+          .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+      },
+    ]),
+  )
+  const eventSlugById = new Map(
+    [...privateEvents.data, ...limitedPrivate.data].map((event) => [
+      event.id,
+      event.slug,
+    ]),
+  )
+  const workspaceDetails = [...new Set([...privateIds, ...participantIds])].map(
+    (id) => {
+      const details = visibleDetails.get(id)
+      const personalDates = personalWork.data
+        .filter(
+          (item) =>
+            item.kind === 'occurrence_call' &&
+            item.event.slug === eventSlugById.get(id),
+        )
+        .flatMap((item) => (item.actionableAt ? [item.actionableAt] : []))
+      return {
+        id,
+        relationships: [
+          ...(operator ? ['Theater Operator'] : []),
+          ...(reviewer ? ['Reviewer'] : []),
+          ...leadership.data
+            .filter((row) => row.show_id === id)
+            .map((row) => (row.role === 'producer' ? 'Producer' : 'Director')),
+          ...cast.data
+            .filter(
+              (row) =>
+                row.show_id === id &&
+                (row.status === 'accepted' ||
+                  (row.status === 'pending' && row.source === 'invited')),
+            )
+            .map((row) =>
+              row.status === 'accepted' ? 'Cast Member' : 'Cast invitee',
+            ),
+          ...staff.data
+            .filter(
+              (row) =>
+                row.show_id === id &&
+                ['accepted', 'pending'].includes(row.status),
+            )
+            .map((row) =>
+              row.status === 'accepted' ? 'Event staff' : 'Staff invitee',
+            ),
+        ],
+        scheduleVisible: Boolean(details) || personalDates.length > 0,
+        nextDate:
+          [...(details?.dates ?? personalDates)]
+            .sort()
+            .find((date) => Date.parse(date) >= Date.now()) ?? null,
+        castMembers: details?.castMembers ?? null,
+      }
+    },
+  )
   const limitedById = new Map(
     [
       ...publicEvents.data.filter((event) => !privateIds.has(event.id)),
@@ -153,6 +249,7 @@ export async function getEventPortfolio(
     })),
   ]
   return ok({
+    workspaceDetails,
     workspaceEventIds: [...new Set([...privateIds, ...participantIds])],
     theater,
     portfolio: createEventPortfolioReadModel({
