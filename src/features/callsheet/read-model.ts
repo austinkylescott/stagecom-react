@@ -21,6 +21,12 @@ export type CallsheetCommitmentInput = {
   event: { slug: string; title: string }
   id: string
   responseId?: string
+  invitation?: {
+    offeredBy: string | null
+    offeredAt: string | null
+    formerOwnerRole?: 'admin' | 'member' | null
+    responsibility?: string | null
+  }
   kind: CallsheetCommitmentKind
   relationship: string
   targetAnchor: string

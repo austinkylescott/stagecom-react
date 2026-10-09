@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useHydrated } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,11 @@ export function CallsheetPage({
   async function resolved(id: string, message: string) {
     setResolvedIds((current) => [...current, id])
     setFeedback(message)
-    await onResponded?.()
+    try {
+      await onResponded?.()
+    } catch {
+      setFeedback(`${message} Refresh to load the updated Callsheet.`)
+    }
   }
 
   return (
@@ -305,9 +309,11 @@ function CommitmentCard({
 }) {
   const [message, setMessage] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const submitting = useRef(false)
 
   async function respond(response: 'accepted' | 'declined') {
-    if (!commitment.responseId) return
+    if (!commitment.responseId || submitting.current) return
+    submitting.current = true
     setPending(true)
     setMessage(null)
     try {
@@ -341,12 +347,13 @@ function CommitmentCard({
           : commitment.kind === 'ownership_transfer'
             ? 'Theater ownership transfer'
             : 'Admin authority'
-      await onResolved(commitment.id, `${subject} ${response}.`)
+      await onResolved(commitment.id, `${subject} ${result.data.status}.`)
     } catch {
       setMessage(
         'Could not complete the response. Refresh to check its status or try again.',
       )
     } finally {
+      submitting.current = false
       setPending(false)
     }
   }
@@ -360,6 +367,9 @@ function CommitmentCard({
       <h4 className="mt-1 break-words text-base font-semibold leading-snug">
         {commitment.event.title}
       </h4>
+      {commitment.responseId ? (
+        <InvitationDetails commitment={commitment} />
+      ) : null}
       {commitment.actionableAt ? (
         <p className="mt-2 text-sm tabular-nums text-muted-foreground">
           {formatCommitmentTime(commitment.actionableAt)}
@@ -414,6 +424,83 @@ function CommitmentCard({
         </p>
       ) : null}
     </article>
+  )
+}
+
+function InvitationDetails({
+  commitment,
+}: {
+  commitment: CallsheetCommitment
+}) {
+  const hydrated = useHydrated()
+  const invitation = commitment.invitation
+  const offeredAt = invitation?.offeredAt
+  const validOfferTime = offeredAt && Number.isFinite(Date.parse(offeredAt))
+  return (
+    <div className="mt-2 space-y-2 text-sm leading-relaxed">
+      {commitment.kind === 'ownership_transfer' ? (
+        <p>
+          Acceptance makes you the Theater Owner, with final authority for this
+          Theater.{' '}
+          {invitation?.formerOwnerRole === 'admin'
+            ? 'The former Owner becomes an Admin.'
+            : invitation?.formerOwnerRole === 'member'
+              ? 'The former Owner becomes a Theater Member.'
+              : "The former Owner's resulting role is unavailable."}{' '}
+          Declining leaves ownership unchanged.
+        </p>
+      ) : commitment.kind === 'staff_invitation' ? (
+        <p>
+          Acceptance confirms your Event staff responsibility:{' '}
+          {invitation?.responsibility ||
+            'Responsibility not recorded or unavailable'}
+          . You count toward staffing coverage after accepting; any Occurrence
+          Calls are assigned separately. Declining does not accept the
+          assignment.
+        </p>
+      ) : (
+        <p>
+          Acceptance grants Admin authority to manage this Theater. Declining
+          grants no Admin authority and keeps your Theater membership.
+        </p>
+      )}
+      <details>
+        <summary className="min-h-11 cursor-pointer content-center rounded-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          Review invitation details
+        </summary>
+        <div className="space-y-2 text-muted-foreground">
+          <p>
+            {invitation?.offeredBy
+              ? `${commitment.kind === 'ownership_transfer' ? 'Proposed' : 'Invited'} by ${invitation.offeredBy}`
+              : 'Inviter not recorded or unavailable.'}
+          </p>
+          <p>
+            {validOfferTime ? (
+              <>
+                Offered:{' '}
+                <time dateTime={offeredAt}>
+                  {new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZoneName: 'short',
+                    timeZone: hydrated ? undefined : 'UTC',
+                  }).format(new Date(offeredAt))}
+                </time>
+              </>
+            ) : (
+              'Offer time not recorded or unavailable.'
+            )}
+          </p>
+          <p>
+            Reading these details does not accept the invitation. Choose Accept
+            or Decline to record your response.
+          </p>
+        </div>
+      </details>
+    </div>
   )
 }
 

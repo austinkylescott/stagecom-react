@@ -183,7 +183,7 @@ test('Member answers a personal action and keeps a confirmed Call across Theater
     await expect(agenda.getByText('Opening Night')).toBeVisible()
     await expect(
       page
-        .getByRole('region', { name: 'Relevant Events' })
+        .getByRole('region', { name: 'Your Event workspaces' })
         .getByRole('heading', { name: 'Opening Night' }),
     ).toBeVisible()
     const switcher = page.getByRole('button', { name: 'Change Theater' })
