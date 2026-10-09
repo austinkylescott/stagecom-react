@@ -106,3 +106,15 @@ Team authority never grants Theater or Event capabilities. Anonymous reads and
 direct client table writes remain denied. Membership loss ends Team authority
 and performs deterministic recovery/dissolution. See the
 [authority contract](../../docs/design/team-authority-contract.md).
+
+## Callsheet invitation deciding context
+
+An active Theater Member may review their own pending Admin, ownership or Staff
+offer in Callsheet without accepting it. The authorized projection includes
+recorded inviter/proposer name and offer time where available, plus the recorded
+former-Owner role or Staff responsibility. Historical gaps remain explicit.
+Pending Staff receive no accepted-Cast roster, Candidate Slots, private notes or
+private schedule fields. Only explicit Accept/Decline invokes the existing
+recipient/current-state response command. See the
+[STA-77 review record](../../docs/design/callsheet-invitation-review.md) for
+local authorization, browser and presentation evidence.

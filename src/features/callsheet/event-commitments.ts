@@ -59,7 +59,9 @@ export async function getEventCommitments({
     await Promise.all([
       supabase
         .from('show_staff_assignments')
-        .select('id, show_id, responsibility, status')
+        .select(
+          'id, show_id, responsibility, status, invited_at, inviter:profiles!show_staff_assignments_invited_by_user_id_fkey(display_name, deleted_at)',
+        )
         .eq('user_id', actorUserId)
         .in('status', ['pending', 'accepted']),
       supabase
@@ -361,7 +363,14 @@ export async function getEventCommitments({
             id: `staff-assignment:${assignment.id}`,
             responseId: assignment.id,
             kind: 'staff_invitation',
-            relationship: `Event staff invitee · ${assignment.responsibility}`,
+            invitation: {
+              offeredBy: assignment.inviter?.deleted_at
+                ? null
+                : assignment.inviter?.display_name || null,
+              offeredAt: assignment.invited_at,
+              responsibility: assignment.responsibility,
+            },
+            relationship: `Event staff invitee · ${assignment.responsibility || 'Responsibility unavailable'}`,
             targetAnchor: '#event-staff-assignment',
             theaterById,
           })
