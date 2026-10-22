@@ -121,3 +121,13 @@ name. Otherwise identical summaries gain a visible “Matching Event N of M”
 qualifier, shared across both sections; this is current result position rather
 than a durable identity. Compact rows and independently focusable/tappable Cast
 name controls remain. See [STA-79 verification](../../docs/design/event-link-review.md).
+
+## Callsheet recovery (STA-80)
+
+Unavailable Callsheet data offers **Retry Callsheet** and **Open Notifications**
+inside the workspace shell. Retry preserves the current Callsheet location;
+failure, pending and successful empty reads stay distinct. Expired sessions offer
+sign-in with a return destination, while denied access explains the restriction
+without offering a retry promise. Your Next Events retries its own upcoming-Calls
+read independently on desktop and phone. See the
+[behavior, browser evidence and verification limits](../../docs/design/callsheet-recovery-review.md).

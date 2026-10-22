@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useRouter } from '@tanstack/react-router'
 import { CalendarDays, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,9 +13,13 @@ import { callHref, callMeaning } from './upcoming-calls'
 import { ScheduleTime } from './schedule-time'
 import type { CallsheetCommitment } from './read-model'
 
-type AgendaProps = { calls: CallsheetCommitment[]; failed: boolean }
+type AgendaProps = {
+  calls: CallsheetCommitment[]
+  failed: boolean
+  onRetry: () => Promise<void>
+}
 
-export function PersonalAgenda({ calls, failed }: AgendaProps) {
+export function PersonalAgenda({ calls, failed, onRetry }: AgendaProps) {
   if (!failed && !calls.length) return null
   return (
     <section
@@ -24,7 +27,7 @@ export function PersonalAgenda({ calls, failed }: AgendaProps) {
       className="hidden border-t px-3 py-4 md:block"
     >
       <h2 className="mb-2 px-1 text-sm font-semibold">Your Next Events</h2>
-      <AgendaList calls={calls} failed={failed} />
+      <AgendaList calls={calls} failed={failed} onRetry={onRetry} />
       <a
         href="/app/callsheet#confirmed-calls"
         className="mt-2 inline-flex min-h-11 items-center px-1 text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
@@ -35,7 +38,7 @@ export function PersonalAgenda({ calls, failed }: AgendaProps) {
   )
 }
 
-export function MobilePersonalAgenda({ calls, failed }: AgendaProps) {
+export function MobilePersonalAgenda({ calls, failed, onRetry }: AgendaProps) {
   const [open, setOpen] = useState(false)
   const next = calls.at(0)
   if (!failed && !calls.length) return null
@@ -76,6 +79,7 @@ export function MobilePersonalAgenda({ calls, failed }: AgendaProps) {
             <AgendaList
               calls={calls}
               failed={failed}
+              onRetry={onRetry}
               onNavigate={() => setOpen(false)}
             />
             <a
@@ -95,9 +99,10 @@ export function MobilePersonalAgenda({ calls, failed }: AgendaProps) {
 function AgendaList({
   calls,
   failed,
+  onRetry,
   onNavigate,
 }: AgendaProps & { onNavigate?: () => void }) {
-  const router = useRouter()
+  const [retrying, setRetrying] = useState(false)
   if (failed)
     return (
       <div>
@@ -107,9 +112,17 @@ function AgendaList({
         <Button
           variant="ghost"
           className="min-h-11"
-          onClick={() => router.invalidate()}
+          disabled={retrying}
+          onClick={async () => {
+            setRetrying(true)
+            try {
+              await onRetry()
+            } finally {
+              setRetrying(false)
+            }
+          }}
         >
-          Retry Events
+          {retrying ? 'Retrying Events…' : 'Retry Events'}
         </Button>
       </div>
     )
