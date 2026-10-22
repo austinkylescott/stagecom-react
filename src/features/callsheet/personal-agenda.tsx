@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useRouter, useHydrated } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 import { CalendarDays, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,7 +10,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
-import { callHref, callTime } from './upcoming-calls'
+import { callHref, callMeaning } from './upcoming-calls'
+import { ScheduleTime } from './schedule-time'
 import type { CallsheetCommitment } from './read-model'
 
 type AgendaProps = { calls: CallsheetCommitment[]; failed: boolean }
@@ -55,7 +56,7 @@ export function MobilePersonalAgenda({ calls, failed }: AgendaProps) {
                 {failed ? (
                   'Could not load'
                 ) : next ? (
-                  <CallDate call={next} />
+                  <ScheduleTime at={next.actionableAt} />
                 ) : (
                   'None upcoming'
                 )}
@@ -128,8 +129,9 @@ function AgendaList({
             className="block min-h-11 rounded-md px-1 py-3 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
           >
             <p className="text-xs font-medium tabular-nums">
-              <CallDate call={call} />
+              <ScheduleTime at={call.actionableAt} />
             </p>
+            <p className="mt-1 text-xs font-medium">{callMeaning(call)}</p>
             <p className="mt-1 break-words text-sm font-medium leading-snug">
               {call.event.title}
             </p>
@@ -140,17 +142,5 @@ function AgendaList({
         </li>
       ))}
     </ol>
-  )
-}
-
-function CallDate({ call }: { call: CallsheetCommitment }) {
-  const hydrated = useHydrated()
-  const timeZone = hydrated
-    ? Intl.DateTimeFormat().resolvedOptions().timeZone
-    : 'UTC'
-  return (
-    <time dateTime={call.actionableAt ?? undefined}>
-      {callTime(call, timeZone)}
-    </time>
   )
 }

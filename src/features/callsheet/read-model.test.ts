@@ -3,6 +3,26 @@ import { describe, expect, it } from 'vitest'
 import { createCallsheetReadModel } from './read-model'
 
 describe('Callsheet read model', () => {
+  it('preserves each personal Call obligation and gathering across the projection', () => {
+    const model = createCallsheetReadModel({
+      commitments: [
+        {
+          ...commitment({ id: 'optional' }),
+          kind: 'occurrence_call',
+          call: { requirement: 'optional', occurrenceType: 'performance' },
+        },
+        {
+          ...commitment({ id: 'required' }),
+          kind: 'occurrence_call',
+          call: { requirement: 'required', occurrenceType: 'rehearsal' },
+        },
+      ],
+    })
+    expect(model.commitments.map((item) => item.call)).toEqual([
+      { requirement: 'optional', occurrenceType: 'performance' },
+      { requirement: 'required', occurrenceType: 'rehearsal' },
+    ])
+  })
   it('keeps shared Theater decisions separate from personal commitments and orders them across Theaters', () => {
     const model = createCallsheetReadModel({
       commitments: [commitment({ id: 'personal', relationship: 'Producer' })],

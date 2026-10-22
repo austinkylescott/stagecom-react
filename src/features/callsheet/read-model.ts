@@ -27,6 +27,10 @@ export type CallsheetCommitmentInput = {
     formerOwnerRole?: 'admin' | 'member' | null
     responsibility?: string | null
   }
+  call?: {
+    requirement: 'required' | 'optional'
+    occurrenceType: 'rehearsal' | 'performance'
+  }
   kind: CallsheetCommitmentKind
   relationship: string
   targetAnchor: string

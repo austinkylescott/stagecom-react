@@ -275,7 +275,8 @@ export async function getEventCommitments({
   const { data: callOccurrences, error: occurrenceError } = occurrenceIds.length
     ? await supabase
         .from('show_occurrences')
-        .select('confirmed_candidate_slot_id, id')
+        .select('confirmed_candidate_slot_id, id, occurrence_type, show_id')
+        .neq('status', 'cancelled')
         .in('id', occurrenceIds)
     : { data: [], error: null }
 
@@ -303,6 +304,9 @@ export async function getEventCommitments({
     )
   }
 
+  const callOccurrenceById = new Map(
+    callOccurrences.map((occurrence) => [occurrence.id, occurrence]),
+  )
   const callStartsAtByOccurrenceId = new Map(
     callOccurrences.map((occurrence) => [
       occurrence.id,
@@ -441,14 +445,27 @@ export async function getEventCommitments({
         (cast) => cast.show_id === call.show_id && cast.status === 'accepted',
       )
       if (!staffAssignment && !castMember) return []
+      const occurrence = callOccurrenceById.get(call.occurrence_id)
       const startsAt = callStartsAtByOccurrenceId.get(call.occurrence_id)
-      if (!startsAt || Date.parse(startsAt) < Date.parse(now)) return []
+      if (
+        !occurrence ||
+        occurrence.show_id !== call.show_id ||
+        !startsAt ||
+        !Number.isFinite(Date.parse(startsAt)) ||
+        Date.parse(startsAt) < Date.parse(now) ||
+        (call.call !== 'required' && call.call !== 'optional')
+      )
+        return []
       return toCommitment({
         action: 'Review call',
         actionableAt: startsAt,
         event: eventById.get(call.show_id),
         id: `occurrence-call:${call.occurrence_id}`,
         kind: 'occurrence_call',
+        call: {
+          requirement: call.call,
+          occurrenceType: occurrence.occurrence_type,
+        },
         relationship: castMember
           ? 'Cast Member'
           : `Event staff · ${staffAssignment?.responsibility ?? 'Assigned responsibility'}`,

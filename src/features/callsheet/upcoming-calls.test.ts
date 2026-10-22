@@ -40,4 +40,12 @@ describe('personal upcoming Calls', () => {
       '/app/harbor/events/harbor#occurrence-call-harbor',
     )
   })
+  it('orders actual instants across offsets and breaks simultaneous Calls by identity', () => {
+    const first = commitment('a', '2026-11-01T02:00:00-04:00')
+    const second = commitment('b', '2026-11-01T01:30:00-05:00')
+    const tie = commitment('c', '2026-11-01T06:30:00Z')
+    expect(
+      upcomingCalls([tie, second, first], Date.parse('2026-10-01')),
+    ).toEqual([first, second, tie])
+  })
 })
