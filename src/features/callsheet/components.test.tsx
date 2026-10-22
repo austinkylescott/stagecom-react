@@ -155,6 +155,115 @@ describe('CallsheetPage', () => {
     ).toBeNull()
     expect(screen.getByRole('link', { name: 'Create a Theater' })).toBeTruthy()
   })
+  it('distinguishes same-title destinations by Theater, lifecycle and authorized date', () => {
+    const events = [
+      {
+        id: 'one',
+        title: 'Opening Night',
+        theaterName: 'North Stage',
+        lifecycle: 'approved',
+        nextDate: '2030-10-23T23:00:00Z',
+        scheduleVisible: true,
+        href: '/app/north/events/one',
+      },
+      {
+        id: 'two',
+        title: 'Opening Night',
+        theaterName: 'South Stage',
+        lifecycle: 'draft',
+        scheduleVisible: false,
+        href: '/app/south/events/two',
+      },
+      {
+        id: 'three',
+        title: 'Opening Night',
+        theaterName: 'North Stage',
+        lifecycle: 'approved',
+        nextDate: '2030-10-24T23:00:00Z',
+        scheduleVisible: true,
+        href: '/app/north/events/three',
+      },
+      {
+        id: 'four',
+        title: 'Opening Night',
+        theaterName: 'North Stage',
+        lifecycle: 'draft',
+        scheduleVisible: false,
+        href: '/app/north/events/four',
+      },
+    ]
+    render(
+      <CallsheetPage
+        commitments={[]}
+        sharedWork={[]}
+        theaters={[]}
+        events={events.slice(0, 3)}
+        discovery={events.slice(3)}
+      />,
+    )
+    const destinations = [
+      [
+        'Opening Night North Stage · approved Next Event date: Oct 23, 2030, 11:00 PM UTC',
+        '/app/north/events/one',
+      ],
+      [
+        'Opening Night South Stage · draft Schedule not shared',
+        '/app/south/events/two',
+      ],
+      [
+        'Opening Night North Stage · approved Next Event date: Oct 24, 2030, 11:00 PM UTC',
+        '/app/north/events/three',
+      ],
+      [
+        'Opening Night North Stage · draft Schedule not shared',
+        '/app/north/events/four',
+      ],
+    ]
+    for (const [name, href] of destinations) {
+      const link = screen.getByRole('link', { name })
+      expect(link.getAttribute('href')).toBe(href)
+      link.focus()
+      expect(document.activeElement).toBe(link)
+    }
+  })
+
+  it('distinguishes otherwise matching summaries without leaking withheld dates or route IDs', () => {
+    render(
+      <CallsheetPage
+        commitments={[]}
+        sharedWork={[]}
+        theaters={[]}
+        events={[
+          {
+            id: 'opaque-a',
+            title: 'Opening Night',
+            theaterName: 'North Stage',
+            lifecycle: 'draft',
+            scheduleVisible: false,
+            nextDate: '2030-10-23T23:00:00Z',
+            href: '/app/north/events/opaque-a',
+          },
+          {
+            id: 'opaque-b',
+            title: 'Opening Night',
+            theaterName: 'North Stage',
+            lifecycle: 'draft',
+            scheduleVisible: false,
+            nextDate: '2031-10-23T23:00:00Z',
+            href: '/app/north/events/opaque-b',
+          },
+        ]}
+      />,
+    )
+    for (const [index, route] of ['opaque-a', 'opaque-b'].entries()) {
+      const link = screen.getByRole('link', {
+        name: `Opening Night North Stage · draft · Matching Event ${index + 1} of 2 Schedule not shared`,
+      })
+      expect(link.getAttribute('href')).toBe(`/app/north/events/${route}`)
+    }
+    expect(screen.queryByText(/2030|2031|opaque-/)).toBeNull()
+  })
+
   it('explains workspace relevance and reveals Cast names on avatar activation', async () => {
     render(
       <CallsheetPage
@@ -183,8 +292,9 @@ describe('CallsheetPage', () => {
       screen.getByRole('region', { name: 'Your Event workspaces' }).textContent,
     ).toContain('Events you participate in, lead, or oversee.')
     expect(
-      screen.getByRole('link', { name: 'Open Event: Opening Night' })
-        .textContent,
+      screen.getByRole('link', {
+        name: /Opening Night Main Stage · Theater Operator · draft Next Event date:/,
+      }).textContent,
     ).toContain('Main Stage · Theater Operator · draft')
     expect(screen.getByRole('button', { name: 'Morgan' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Casey' })).toBeTruthy()
