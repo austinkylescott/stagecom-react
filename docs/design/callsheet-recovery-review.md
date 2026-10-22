@@ -7,7 +7,9 @@ October 22, 2026. Implements the recovery slice of the approved STA-76 specifica
 A failed full Callsheet read stays inside the workspace shell. **Retry Callsheet**
 invalidates the Callsheet route and preserves its location, including the
 Confirmed Calls anchor. Repeated failure restores the same usable controls;
-pending work disables retry and says **Retrying Callsheet…**. **Open Notifications**
+pending work initially disables retry and says **Retrying Callsheet…**. A slow
+route invalidation displays **Preparing your Callsheet** without a second retry
+control until the read settles. **Open Notifications**
 provides another authenticated destination without loading the failed Callsheet.
 
 An unauthenticated read offers **Sign in again**, preserving the intended

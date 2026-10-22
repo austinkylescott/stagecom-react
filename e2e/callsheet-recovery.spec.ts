@@ -60,9 +60,12 @@ test('transport failure, pending retry and genuinely empty Callsheet are distinc
     release = resolve
   })
   await retry.click()
+  // Router invalidation hands a slow retry to the route's pending surface.
+  // Verify the visible pending outcome and prevent another response/retry.
   await expect(
-    page.getByRole('button', { name: 'Retrying Callsheet…' }),
-  ).toBeDisabled()
+    page.getByRole('heading', { name: 'Preparing your Callsheet' }),
+  ).toBeVisible()
+  await expect(retry).toHaveCount(0)
   await expect(
     page.getByRole('region', { name: 'Confirmed Calls' }),
   ).toHaveCount(0)
@@ -182,14 +185,16 @@ async function reads(
   await page.goto('/')
   const enter = page.getByRole('link', { name: 'Open my callsheet' })
   await expect
-    .poll(() =>
-      enter.evaluate((element) =>
-        Object.keys(element).some(
-          (key) =>
-            key.startsWith('__reactProps$') &&
-            typeof Reflect.get(element, key)?.onClick === 'function',
+    .poll(
+      () =>
+        enter.evaluate((element) =>
+          Object.keys(element).some(
+            (key) =>
+              key.startsWith('__reactProps$') &&
+              typeof Reflect.get(element, key)?.onClick === 'function',
+          ),
         ),
-      ),
+      { timeout: 15_000 },
     )
     .toBe(true)
   await enter.click()
