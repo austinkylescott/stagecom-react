@@ -114,3 +114,10 @@ invalid entries are excluded.
 Personal Calls and Event dates share UTC server/initial-hydration output, then
 browser-local formatting with an explicit timezone. Event workspace rows label
 their date **Next Event date**. See the [behavior and verification record](../../docs/design/personal-call-review.md).
+
+Callsheet Event workspace and discovery links include their visible title,
+Theater, relationship/lifecycle and authorized Event date in the accessible
+name. Otherwise identical summaries gain a visible “Matching Event N of M”
+qualifier, shared across both sections; this is current result position rather
+than a durable identity. Compact rows and independently focusable/tappable Cast
+name controls remain. See [STA-79 verification](../../docs/design/event-link-review.md).

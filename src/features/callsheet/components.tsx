@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useHydrated } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,7 @@ export function CallsheetPage({
   discovery?: CallsheetEvent[]
   onResponded?: () => Promise<void>
 }) {
+  const matchingLabels = eventMatchingLabels([...events, ...discovery])
   const [resolvedIds, setResolvedIds] = useState<string[]>([])
   const [feedback, setFeedback] = useState<string | null>(null)
   const actions = commitments.filter(
@@ -253,12 +254,14 @@ export function CallsheetPage({
             title="Your Event workspaces"
             id="relevant-events"
             events={events}
+            matchingLabels={matchingLabels}
             description="Events you participate in, lead, or oversee."
           />
           <EventSection
             title="More Events to explore"
             id="discover-events"
             events={discovery}
+            matchingLabels={matchingLabels}
           />
         </div>
       ) : null}
@@ -514,11 +517,13 @@ function EventSection({
   title,
   id,
   events,
+  matchingLabels,
   description,
 }: {
   title: string
   id: string
   events: CallsheetEvent[]
+  matchingLabels: Map<string, string>
   description?: string
 }) {
   if (!events.length) return null
@@ -542,43 +547,104 @@ function EventSection({
       <TooltipProvider delayDuration={150}>
         <ul className="mt-2 grid gap-x-8 sm:grid-cols-2">
           {events.map((event) => (
-            <li key={event.id} className="min-w-0 border-b py-3">
-              <a
-                className="group flex min-h-11 items-start justify-between gap-3 rounded-md underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                href={event.href}
-                aria-label={`Open Event: ${event.title}`}
-              >
-                <div className="min-w-0">
-                  <h3 className="break-words text-sm font-semibold leading-snug group-hover:underline">
-                    {event.title}
-                  </h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {event.theaterName}
-                    {event.relationships?.length
-                      ? ` · ${event.relationships.join(' · ')}`
-                      : ''}
-                    {event.lifecycle ? (
-                      <span className="capitalize">
-                        {' '}
-                        · {event.lifecycle.replaceAll('_', ' ')}
-                      </span>
-                    ) : null}
-                  </p>
-                </div>
-                <ArrowRight
-                  aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                />
-              </a>
-              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                <EventSchedule event={event} />
-                <CastAvatars members={event.castMembers} />
-              </div>
-            </li>
+            <EventRow
+              key={event.id}
+              event={event}
+              matchingLabel={matchingLabels.get(event.id)}
+            />
           ))}
         </ul>
       </TooltipProvider>
     </section>
+  )
+}
+
+// Compare only the facts already available to this viewer, never route identities.
+function eventSummaryKey(event: CallsheetEvent) {
+  const date =
+    event.scheduleVisible !== false && event.nextDate
+      ? new Date(event.nextDate)
+      : null
+  return JSON.stringify([
+    event.title.trim().replace(/\s+/g, ' ').toLowerCase(),
+    event.theaterName.trim().replace(/\s+/g, ' ').toLowerCase(),
+    event.lifecycle?.replaceAll('_', ' ') ?? '',
+    (event.relationships ?? []).join(' · '),
+    date && Number.isFinite(date.getTime())
+      ? date.toISOString().slice(0, 16)
+      : date
+        ? 'time unavailable'
+        : null,
+    date ? 'dated' : event.scheduleVisible,
+  ])
+}
+
+function eventMatchingLabels(events: CallsheetEvent[]) {
+  const groups = new Map<string, CallsheetEvent[]>()
+  for (const event of events) {
+    const key = eventSummaryKey(event)
+    const group = groups.get(key) ?? []
+    group.push(event)
+    groups.set(key, group)
+  }
+  const labels = new Map<string, string>()
+  for (const group of groups.values()) {
+    if (group.length < 2) continue
+    group.forEach((event, index) => {
+      labels.set(event.id, `Matching Event ${index + 1} of ${group.length}`)
+    })
+  }
+  return labels
+}
+
+function EventRow({
+  event,
+  matchingLabel,
+}: {
+  event: CallsheetEvent
+  matchingLabel?: string
+}) {
+  const id = useId()
+  return (
+    <li className="min-w-0 border-b py-3">
+      <a
+        className="group flex min-h-11 items-start justify-between gap-3 rounded-md underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        href={event.href}
+        aria-labelledby={`${id}-title ${id}-context ${id}-schedule`}
+      >
+        <div className="min-w-0">
+          <h3
+            id={`${id}-title`}
+            className="break-words text-sm font-semibold leading-snug group-hover:underline"
+          >
+            {event.title}
+          </h3>
+          <p
+            id={`${id}-context`}
+            className="mt-1 break-words text-xs text-muted-foreground"
+          >
+            {event.theaterName}
+            {event.relationships?.length
+              ? ` · ${event.relationships.join(' · ')}`
+              : ''}
+            {event.lifecycle
+              ? ` · ${event.lifecycle.replaceAll('_', ' ')}`
+              : ''}
+            {matchingLabel ? ` · ${matchingLabel}` : ''}
+          </p>
+        </div>
+        <ArrowRight
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+        />
+      </a>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <div id={`${id}-schedule`}>
+          <EventSchedule event={event} />
+        </div>
+        <CastAvatars members={event.castMembers} />
+      </div>
+    </li>
   )
 }
 
@@ -656,7 +722,7 @@ function CastAvatar({
 }
 
 function EventSchedule({ event }: { event: CallsheetEvent }) {
-  if (event.nextDate)
+  if (event.scheduleVisible !== false && event.nextDate)
     return (
       <p className="text-xs font-medium">
         Next Event date: <ScheduleTime at={event.nextDate} />
