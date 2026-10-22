@@ -2,6 +2,12 @@
 
 Status: approved and published as [STA-76](https://linear.app/stagecom/issue/STA-76/clarify-callsheet-commitments-and-acceptance). October 7, 2026.
 
+Implementation: STA-77–80 are integrated on main. STA-81 adds the combined
+authenticated desktop/phone response and persistence journey. The
+[integration review record](../design/callsheet-journey-review.md) distinguishes
+executed evidence, remaining verification limits and pending maintainer
+acceptance. The approved scope and testing decisions below remain the contract.
+
 ## Problem Statement
 
 Callsheet now has a clearer personal-first hierarchy, compact Event workspaces,

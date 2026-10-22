@@ -131,3 +131,15 @@ sign-in with a return destination, while denied access explains the restriction
 without offering a retry promise. Your Next Events retries its own upcoming-Calls
 read independently on desktop and phone. See the
 [behavior, browser evidence and verification limits](../../docs/design/callsheet-recovery-review.md).
+
+## Integrated commitment journey (STA-81)
+
+The integrated authenticated local scenario is authored to review a Staff offer, respond
+explicitly, reloads, and retains the same confirmed personal Calls. It also
+checks long same-title Event destinations, keyboard and phone disclosures,
+explicit timezones, and transient full-read recovery into real data. Ordinary
+Member, multi-Theater Member and mixed Operator/Cast fixtures include separate
+authority assertions. This combined scenario and its new captures remain
+unverified; the maintainer requested skipping database checks in this session.
+The independent recovery suite passed. See the [review journey and execution record](../../docs/design/callsheet-journey-review.md)
+for evidence and remaining acceptance limits.
