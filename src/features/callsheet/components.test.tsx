@@ -21,6 +21,35 @@ afterEach(() => {
 })
 
 describe('CallsheetPage', () => {
+  it('shows the gathering, obligation and zoned time before opening a personal Call', () => {
+    render(
+      <CallsheetPage
+        commitments={[
+          {
+            id: 'occurrence-call:rehearsal',
+            kind: 'occurrence_call',
+            action: 'Review call',
+            actionableAt: '2030-11-03T05:30:00Z',
+            relationship: 'Cast Member',
+            call: { requirement: 'optional', occurrenceType: 'rehearsal' },
+            event: { slug: 'opening', title: 'Opening Night' },
+            theater: { slug: 'north', title: 'North Stage' },
+            targetAnchor: '#occurrence-call-rehearsal',
+          },
+        ]}
+        sharedWork={[]}
+        theaters={[]}
+      />,
+    )
+    const calls = screen.getByRole('region', { name: 'Confirmed Calls' })
+    expect(calls.textContent).toContain('Rehearsal · Optional Call')
+    expect(calls.textContent).toContain('UTC')
+    expect(calls.querySelector('time')?.dateTime).toBe('2030-11-03T05:30:00Z')
+    expect(calls.querySelector('a')?.getAttribute('href')).toBe(
+      '/app/north/events/opening#occurrence-call-rehearsal',
+    )
+  })
+
   it('keeps a personal invitation and shared decision for the same Event in separate phone-ready sections', () => {
     render(
       <CallsheetPage

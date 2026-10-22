@@ -11,21 +11,25 @@ export function upcomingCalls(
         call.actionableAt &&
         Date.parse(call.actionableAt) >= now,
     )
-    .sort((a, b) => (a.actionableAt ?? '').localeCompare(b.actionableAt ?? ''))
+    .sort(compareCalls)
+}
+
+export function compareCalls(a: CallsheetCommitment, b: CallsheetCommitment) {
+  return (
+    Date.parse(a.actionableAt ?? '') - Date.parse(b.actionableAt ?? '') ||
+    a.id.localeCompare(b.id)
+  )
 }
 
 export function callHref(call: CallsheetCommitment) {
   return `/app/${call.theater.slug}/events/${call.event.slug}${call.targetAnchor}`
 }
 
-export function callTime(call: CallsheetCommitment, timeZone = 'UTC') {
-  if (!call.actionableAt) return 'Time unavailable'
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone,
-    timeZoneName: 'short',
-  }).format(new Date(call.actionableAt))
+export function callMeaning(call: CallsheetCommitment) {
+  if (!call.call) return null
+  const type =
+    call.call.occurrenceType === 'rehearsal' ? 'Rehearsal' : 'Performance'
+  const requirement =
+    call.call.requirement === 'required' ? 'Required' : 'Optional'
+  return `${type} · ${requirement} Call`
 }

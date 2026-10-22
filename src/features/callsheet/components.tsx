@@ -14,6 +14,9 @@ import { respondToTheaterAdminInvitationFn } from '@/features/admin-invitations/
 import { respondToTheaterOwnershipTransferFn } from '@/features/ownership-transfers/server-functions'
 import { respondToEventStaffInvitationFn } from '@/features/events/server-functions'
 
+import { callMeaning, compareCalls } from './upcoming-calls'
+import { ScheduleTime } from './schedule-time'
+
 import type {
   CallsheetCommitment,
   CallsheetTheater,
@@ -43,7 +46,7 @@ export function CallsheetPage({
   )
   const calls = commitments
     .filter((item) => item.kind === 'occurrence_call')
-    .sort((a, b) => (a.actionableAt ?? '').localeCompare(b.actionableAt ?? ''))
+    .sort(compareCalls)
 
   async function resolved(id: string, message: string) {
     setResolvedIds((current) => [...current, id])
@@ -212,9 +215,12 @@ export function CallsheetPage({
                     className="py-4 first:pt-0 sm:grid sm:grid-cols-[12rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-6"
                   >
                     <p className="text-sm font-medium tabular-nums">
-                      {formatCommitmentTime(commitment.actionableAt)}
+                      <ScheduleTime at={commitment.actionableAt} />
                     </p>
                     <div className="min-w-0">
+                      <p className="text-sm font-medium">
+                        {callMeaning(commitment)}
+                      </p>
                       <h3 className="mt-2 break-words text-base font-semibold leading-snug sm:mt-0">
                         {commitment.event.title}
                       </h3>
@@ -372,7 +378,7 @@ function CommitmentCard({
       ) : null}
       {commitment.actionableAt ? (
         <p className="mt-2 text-sm tabular-nums text-muted-foreground">
-          {formatCommitmentTime(commitment.actionableAt)}
+          <ScheduleTime at={commitment.actionableAt} />
         </p>
       ) : null}
       {commitment.urgencyReason ? (
@@ -502,14 +508,6 @@ function InvitationDetails({
       </details>
     </div>
   )
-}
-
-function formatCommitmentTime(actionableAt: string | null) {
-  if (!actionableAt) return 'Response needed'
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(actionableAt))
 }
 
 function EventSection({
@@ -658,22 +656,10 @@ function CastAvatar({
 }
 
 function EventSchedule({ event }: { event: CallsheetEvent }) {
-  const hydrated = useHydrated()
   if (event.nextDate)
     return (
       <p className="text-xs font-medium">
-        Next:{' '}
-        <time dateTime={event.nextDate}>
-          {new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZoneName: 'short',
-            timeZone: hydrated ? undefined : 'UTC',
-          }).format(new Date(event.nextDate))}
-        </time>
+        Next Event date: <ScheduleTime at={event.nextDate} />
       </p>
     )
   if (event.scheduleVisible === undefined) return null

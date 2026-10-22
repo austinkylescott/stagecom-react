@@ -100,3 +100,17 @@ consume the venue; unconfirmed candidates do not create Calendar entries. Privat
 occupancy remains opaque, and staff-only detail follows called confirmed
 Occurrences. See the [neutral Calendar review record](../../docs/design/theater-calendar-review.md)
 for persisted demo scenarios, verification and remaining human/device review.
+
+## Personal Call meaning (STA-78)
+
+Confirmed Calls now show the stored Required/Optional requirement and
+Rehearsal/Performance type on the Callsheet, desktop Your Next Events agenda and
+mobile disclosure. Accepted Cast and Staff see only their own eligible future
+Calls across active Theaters, independent of Publication; leadership and Operator
+authority do not create attendance. Calls sort by instant with deterministic ties.
+Cancelled Occurrences, cancelled/completed Events, not-called, past, undated and
+invalid entries are excluded.
+
+Personal Calls and Event dates share UTC server/initial-hydration output, then
+browser-local formatting with an explicit timezone. Event workspace rows label
+their date **Next Event date**. See the [behavior and verification record](../../docs/design/personal-call-review.md).

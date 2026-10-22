@@ -153,6 +153,7 @@ test('Member answers a personal action and keeps a confirmed Call across Theater
     const agenda = page.getByRole('region', { name: 'Confirmed Calls' })
     await expect(actions.getByText('Admin authority invitation')).toBeVisible()
     await expect(agenda.getByText('Opening Night')).toBeVisible()
+    await expect(agenda).toContainText('Rehearsal · Required Call')
     await page
       .getByRole('link', { name: 'Notifications', exact: true })
       .first()
