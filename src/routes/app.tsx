@@ -10,6 +10,7 @@ import { getCurrentUserFn } from '@/features/auth/server-functions'
 import { getMyTheatersFn } from '@/features/theaters/server-functions'
 import { getMyUpcomingCallsFn } from '@/features/callsheet/server-functions'
 import { MobilePersonalAgenda } from '@/features/callsheet/personal-agenda'
+import { usePersonalAgenda } from '@/features/callsheet/use-personal-agenda'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async ({ location }) => {
@@ -49,20 +50,20 @@ export const Route = createFileRoute('/app')({
 
 function AppLayout() {
   const { currentUser, theaters } = Route.useRouteContext()
-  const callsResult = Route.useLoaderData()
-  const calls = callsResult.ok ? callsResult.data : []
+  const agenda = usePersonalAgenda(Route.useLoaderData())
 
   return (
     <SidebarProvider>
       <WorkspaceNav
         email={currentUser.email}
         theaters={theaters}
-        calls={calls}
-        callsFailed={!callsResult.ok}
+        calls={agenda.calls}
+        callsFailed={agenda.failed}
+        onRetryCalls={agenda.onRetry}
       />
       <SidebarInset className="min-w-0">
         <WorkspaceHeader email={currentUser.email} />
-        <MobilePersonalAgenda calls={calls} failed={!callsResult.ok} />
+        <MobilePersonalAgenda {...agenda} />
         <Outlet />
       </SidebarInset>
     </SidebarProvider>

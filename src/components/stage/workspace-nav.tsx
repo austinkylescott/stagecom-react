@@ -44,11 +44,13 @@ export function WorkspaceNav({
   theaters,
   calls = [],
   callsFailed = false,
+  onRetryCalls,
 }: {
   email?: string
   theaters: CallsheetTheater[]
   calls?: CallsheetCommitment[]
   callsFailed?: boolean
+  onRetryCalls: () => Promise<void>
 }) {
   const { setOpenMobile } = useSidebar()
   const pathname = useRouterState({
@@ -192,7 +194,11 @@ export function WorkspaceNav({
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>
-        <PersonalAgenda calls={calls} failed={callsFailed} />
+        <PersonalAgenda
+          calls={calls}
+          failed={callsFailed}
+          onRetry={onRetryCalls}
+        />
       </SidebarContent>
       <SidebarFooter className="hidden md:flex">
         <SidebarMenu>
